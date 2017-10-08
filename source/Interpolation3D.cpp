@@ -1,6 +1,7 @@
 #include "../include/Interpolation3D.hpp"
 #include "../include/Laser.hpp"
 #include "../include/ThreeVector.hpp"
+#include <limits>
 
 std::vector<std::pair<unsigned, float>>
 GetClosestTracksInfo(std::vector<LaserTrack> &LaserTrackSet, const unsigned NumberOfClosestTracks) {
