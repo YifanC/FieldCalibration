@@ -29,31 +29,52 @@ typedef CGAL::Triangulation_data_structure_3<Vb> Tds;
 // Use the Fast_location tag. Default or Compact_location works too.
 // typedef CGAL::Delaunay_triangulation_3<InterpKernel, Tds, CGAL::Fast_location > Delaunay;
 // Use the Lock for parallel computing
-typedef CGAL::Delaunay_triangulation_3< InterpKernel, Tds > Delaunay;
+typedef CGAL::Delaunay_triangulation_3<InterpKernel, Tds> Delaunay;
 typedef Delaunay::Point Point;
 
-std::vector<std::pair<unsigned,float>> GetClosestTracksInfo(std::vector<LaserTrack>&,const unsigned);
-std::vector<std::pair<unsigned int, unsigned int>> GetClosestLaserSample(std::vector<LaserTrack>&, const unsigned);
-std::array<float,2> AnglesFromPoynting(ThreeVector<float>&);
-ThreeVector<float> PoyntingFromAngles(const std::array<float,2>&);
-bool PairSortFunction(std::pair<unsigned int,float>, std::pair<unsigned int,float>);
-Delaunay TrackMesher(const std::vector<LaserTrack>&);
-Point VectorToPoint(ThreeVector<float>&);
-ThreeVector<float> PointToVector(Point&);
+std::vector<std::pair<unsigned, float>> GetClosestTracksInfo(std::vector<LaserTrack> &, const unsigned);
 
-ThreeVector<float> InterpolateCGAL(const std::vector<LaserTrack>& LaserTrackSet, const std::vector<LaserTrack>& LaserMeshSet, const Delaunay& Mesh, ThreeVector<float> Location, bool Map = false);
-std::vector<ThreeVector<float>> InterpolateMap(const std::vector<LaserTrack>& LaserTrackSet, const std::vector<LaserTrack>& LaserMeshSet, const Delaunay& Mesh, const TPCVolumeHandler& TPC, bool CorrMapFlag = false);
-void InterpolateTrack(LaserTrack& ,const std::vector<LaserTrack>& , const Delaunay&);
+std::vector<std::pair<unsigned int, unsigned int>> GetClosestLaserSample(std::vector<LaserTrack> &, const unsigned);
+
+std::array<float, 2> AnglesFromPoynting(ThreeVector<float> &);
+
+ThreeVector<float> PoyntingFromAngles(const std::array<float, 2> &);
+
+bool PairSortFunction(std::pair<unsigned int, float>, std::pair<unsigned int, float>);
+
+Delaunay TrackMesher(const std::vector<LaserTrack> &);
+
+Point VectorToPoint(ThreeVector<float> &);
+
+ThreeVector<float> PointToVector(Point &);
+
+ThreeVector<float>
+InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<LaserTrack> &LaserMeshSet,
+                const Delaunay &Mesh, ThreeVector<float> Location, bool Map = false);
+
+std::vector<ThreeVector<float>>
+InterpolateMap(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<LaserTrack> &LaserMeshSet,
+               const Delaunay &Mesh, const TPCVolumeHandler &TPC, bool CorrMapFlag = false);
+
+void InterpolateTrack(LaserTrack &, const std::vector<LaserTrack> &, const Delaunay &);
 
 /////////////////E map session
 typedef CGAL::Triangulation_vertex_base_with_info_3<int, InterpKernel> xVb;
 typedef CGAL::Triangulation_data_structure_3<xVb> xTds;
-typedef CGAL::Delaunay_triangulation_3< InterpKernel, xTds > xDelaunay;
+typedef CGAL::Delaunay_triangulation_3<InterpKernel, xTds> xDelaunay;
 typedef xDelaunay::Point xPoint;
-xDelaunay Mesher(std::vector<ThreeVector<float>>& Position, TPCVolumeHandler& TPC);
-xPoint xVectorToPoint(ThreeVector<float>&);
-ThreeVector<float> EInterpolateCGAL(std::vector<ThreeVector<float>>& En, std::vector<ThreeVector<float>>& Position, const xDelaunay& Mesh, ThreeVector<float> Location, const TPCVolumeHandler& TPC);
-std::vector<ThreeVector<float>> EInterpolateMap(std::vector<ThreeVector<float>>& En, std::vector<ThreeVector<float>>& Position, const xDelaunay& Mesh, const TPCVolumeHandler& TPC, ThreeVector<unsigned long> EReso);
+
+xDelaunay Mesher(std::vector<ThreeVector<float>> &Position, TPCVolumeHandler &TPC);
+
+xPoint xVectorToPoint(ThreeVector<float> &);
+
+ThreeVector<float>
+EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::vector<ThreeVector<float>> &Position, const xDelaunay &Mesh,
+                 ThreeVector<float> Location, const TPCVolumeHandler &TPC);
+
+std::vector<ThreeVector<float>>
+EInterpolateMap(std::vector<ThreeVector<float>> &En, std::vector<ThreeVector<float>> &Position, const xDelaunay &Mesh,
+                const TPCVolumeHandler &TPC, ThreeVector<unsigned long> EReso);
 /////////////////E map session
 
 #endif

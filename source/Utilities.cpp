@@ -4,7 +4,7 @@
 
 #include "../include/Utilities.hpp"
 
-std::vector<Laser> ReachedExitPoint(const Laser& LaserSet, float ExitBoundary) {
+std::vector<Laser> ReachedExitPoint(const Laser &LaserSet, float ExitBoundary) {
     /*
      * Function that splits the input data set into two sets. The first set contains the
      * tracks that have a distance between the last reconstructed point and the expected
@@ -15,22 +15,20 @@ std::vector<Laser> ReachedExitPoint(const Laser& LaserSet, float ExitBoundary) {
     std::vector<Laser> Selection;
     Selection.resize(2);
 
-    for(auto& Track : LaserSet.GetTrackSet())
-    {
+    for (auto &Track : LaserSet.GetTrackSet()) {
         auto ExitToLast = Track.GetExitPoint() - Track.GetBack();
         auto d = ExitToLast.GetNorm();
 
         if (d < ExitBoundary) {
             Selection.front().AppendTrack(Track);
-        }
-        else {
+        } else {
             Selection.back().AppendTrack(Track);
         }
     }
     return Selection;
 }
 
-std::vector<Laser> SplitTrackSet(const Laser& LaserSet, unsigned int Downsample) {
+std::vector<Laser> SplitTrackSet(const Laser &LaserSet, unsigned int Downsample) {
     /*
      * This function separates the input laser data set into multiple smaller data sets,
      * the number of produced set is specified by the Downsample value.
@@ -38,15 +36,14 @@ std::vector<Laser> SplitTrackSet(const Laser& LaserSet, unsigned int Downsample)
     std::vector<Laser> Sets;
     Sets.resize(Downsample);
 
-    for(auto& Track : LaserSet.GetTrackSet())
-    {
+    for (auto &Track : LaserSet.GetTrackSet()) {
 
         auto SourceTrack = Track.GetReco();
 
-        for (unsigned long offset=0; offset < Downsample; offset++){
+        for (unsigned long offset = 0; offset < Downsample; offset++) {
             std::vector<ThreeVector<float>> SampledRecoTrack;
 
-            for (unsigned long idx=offset; idx < SourceTrack.size(); idx += Downsample) {
+            for (unsigned long idx = offset; idx < SourceTrack.size(); idx += Downsample) {
                 SampledRecoTrack.push_back(SourceTrack[idx]);
             }
             LaserTrack SampledTrack(Track.GetEntryPoint(), Track.GetExitPoint(), SampledRecoTrack);

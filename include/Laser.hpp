@@ -18,40 +18,50 @@
 #ifndef LASER_H
 #define LASER_H
 
-class Laser
-{
+class Laser {
 private:
-  std::vector<LaserTrack> LaserTrackSet;
+    std::vector<LaserTrack> LaserTrackSet;
 
 public:
-  Laser();
-  Laser(std::vector<LaserTrack>);
-  
-  std::vector<LaserTrack>::iterator begin();
-  std::vector<LaserTrack>::iterator end();
-  
-  void AppendTrack(const LaserTrack& InputTrack);
-  static Laser Merge(std::vector<Laser>& LaserVec);
-  
-  LaserTrack GetTrack(const unsigned long int&);
-  LaserTrack GetLastTrack();
-  LaserTrack GetFirstTrack();
-  
-  void SortTracks();
-  unsigned long int GetNumberOfTracks() const;
-  
-  std::vector<LaserTrack> GetTrackSet() const;
-  
-  void DistortTrackSet(std::string, TPCVolumeHandler&);
-  void CalcDisplacement(const LaserTrack::DisplacementAlgo& Algo, int Nstep);
-  void AddCorrectionToReco(bool plus);
-  void SetDisplacement(Laser LaserReco, bool Corr);
-  void InterpolateTrackSet(const std::vector<LaserTrack>& ,const Delaunay&);
-  void InterpolateTrackSet(const Laser& ,const Delaunay&);
-  
-  void DrawTrack(const unsigned long int&);
+    Laser();
+
+    Laser(std::vector<LaserTrack>);
+
+    std::vector<LaserTrack>::iterator begin();
+
+    std::vector<LaserTrack>::iterator end();
+
+    void AppendTrack(const LaserTrack &InputTrack);
+
+    static Laser Merge(std::vector<Laser> &LaserVec);
+
+    LaserTrack GetTrack(const unsigned long int &);
+
+    LaserTrack GetLastTrack();
+
+    LaserTrack GetFirstTrack();
+
+    void SortTracks();
+
+    unsigned long int GetNumberOfTracks() const;
+
+    std::vector<LaserTrack> GetTrackSet() const;
+
+    void DistortTrackSet(std::string, TPCVolumeHandler &);
+
+    void CalcDisplacement(const LaserTrack::DisplacementAlgo &Algo, int Nstep);
+
+    void AddCorrectionToReco(bool plus);
+
+    void SetDisplacement(Laser LaserReco, bool Corr);
+
+    void InterpolateTrackSet(const std::vector<LaserTrack> &, const Delaunay &);
+
+    void InterpolateTrackSet(const Laser &, const Delaunay &);
+
+    void DrawTrack(const unsigned long int &);
 //   void Interpolate
-  
+
 };
 
 #endif
