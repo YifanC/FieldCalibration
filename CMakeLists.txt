@@ -59,12 +59,14 @@ include_directories(./include)
 set(SOURCE_FILES
         source/Laser.cpp
         source/LaserTrack.cpp
-        source/Laser.cpp
         source/Matrix3x3.cpp
+        source/ThreeVector.cpp
         source/TPCVolumeHandler
         source/Interpolation3D.cpp
         source/Utilities.cpp
-        source/DriftVelocity.cpp include/DriftVelocity.hpp)
+        source/DriftVelocity.cpp
+        source/EfieldCalculation.cpp
+        )
 
 #set(HEADER_FILES include/Laser.hpp include/LaserTrack.hpp include/Laser.hpp include/ThreeVector.hpp include/Matrix3x3.hpp include/TPCVolumeHandler include/Interpolation3D.hpp source/Utilities.cpp include/Utilities.hpp)
 
@@ -84,10 +86,10 @@ endif()
 # Add the executable, and link it to the necessary libraries
 #
 if(TESTING)
-
+  add_library(fieldcal SHARED ${SOURCE_FILES} )
 endif()
 
-add_executable(FieldCal FieldCal.cpp ${SOURCE_FILES} source/DriftVelocity.cpp include/DriftVelocity.hpp)
+add_executable(FieldCal FieldCal.cpp ${SOURCE_FILES} )
 target_link_libraries(FieldCal ${ROOT_LIBRARIES} ${CGAL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 #----------------------------------------------------------------------------
