@@ -60,7 +60,7 @@ set(SOURCE_FILES
         source/Laser.cpp
         source/LaserTrack.cpp
         source/Matrix3x3.cpp
-        source/ThreeVector.cpp
+#        source/ThreeVector.cpp
         source/TPCVolumeHandler
         source/Interpolation3D.cpp
         source/Utilities.cpp
