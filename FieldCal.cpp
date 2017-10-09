@@ -413,8 +413,9 @@ int main(int argc, char **argv) {
     // The Emap calculation works when the input is correction map
     if (DoEmap) {
         // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
-        std::vector<ThreeVector<float>> En = Efield(Detector, cryoTemp, E0, v0, ss_outfile.str().c_str()).first;
-        std::vector<ThreeVector<float>> Position = Efield(Detector, cryoTemp, E0, v0, ss_outfile.str().c_str()).second;
+        auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_outfile.str().c_str());
+        std::vector<ThreeVector<float>> En = E_field.first;
+        std::vector<ThreeVector<float>> Position = E_field.second;
 
 //        std::vector<ThreeVector<float>> Position = Eposition(Detector, cryoTemp, E0, v0, ss_outfile.str().c_str());
 //        std::vector<ThreeVector<float>> En = Elocal(Detector, cryoTemp, E0, v0, ss_outfile.str().c_str());
