@@ -66,6 +66,7 @@ set(SOURCE_FILES
         source/Utilities.cpp
         source/DriftVelocity.cpp
         source/EfieldCalculation.cpp
+        source/LaserDisplacementIteration.cpp
         )
 
 #set(HEADER_FILES include/Laser.hpp include/LaserTrack.hpp include/Laser.hpp include/ThreeVector.hpp include/Matrix3x3.hpp include/TPCVolumeHandler include/Interpolation3D.hpp source/Utilities.cpp include/Utilities.hpp)

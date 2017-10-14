@@ -190,7 +190,8 @@ void LaserTrack::DerivativeDisplAlgo() {
 }
 
 // This algorithm calculates the displacement by projecting the reco samples to the closest point on the true track
-void LaserTrack::ClosestPointDisplAlgo(bool CorrMapFlag = true, int Nstep = 1) {
+//void LaserTrack::ClosestPointDisplAlgo(bool CorrMapFlag = true, int Nstep = 1) {
+void LaserTrack::ClosestPointDisplAlgo(int Nstep = 1) {
     // Initialize scaling parameter for point on true laser beam
     float TrueTrackPara;
 
@@ -203,12 +204,12 @@ void LaserTrack::ClosestPointDisplAlgo(bool CorrMapFlag = true, int Nstep = 1) {
                         ThreeVector<float>::DotProduct(TrueTrack, TrueTrack);
 
         // Calculate displacement
-        if (CorrMapFlag) {
+//        if (CorrMapFlag) {
             LaserDisplacement[sample_no] = (EntryPoint + TrueTrackPara * TrueTrack) - LaserReco[sample_no];
             LaserDisplacement[sample_no] /= Nstep;
-        } else {
-            LaserDisplacement[sample_no] = LaserReco[sample_no] - (EntryPoint + TrueTrackPara * TrueTrack);
-        }
+//        } else {
+//            LaserDisplacement[sample_no] = LaserReco[sample_no] - (EntryPoint + TrueTrackPara * TrueTrack);
+//        }
     }
 }
 
@@ -302,11 +303,14 @@ void LaserTrack::CalcDisplacement(const DisplacementAlgo &Algo, int Nstep) {
         case TrackDerivative :
             DerivativeDisplAlgo();
             break;
-        case ClosestPointCorr :
-            ClosestPointDisplAlgo(true, Nstep);
-            break;
-        case ClosestPointDist :
-            ClosestPointDisplAlgo(false);
+//        case ClosestPointCorr :
+//            ClosestPointDisplAlgo(true, Nstep);
+//            break;
+//        case ClosestPointDist :
+//            ClosestPointDisplAlgo(false);
+//            break;
+        case ClosestPoint :
+            ClosestPointDisplAlgo(Nstep);
             break;
         case LinearStretch :
             LinearStretchDisplAlgo();
@@ -317,22 +321,33 @@ void LaserTrack::CalcDisplacement(const DisplacementAlgo &Algo, int Nstep) {
     }
 }
 
-// Add correction to the reco position (correction is the negative displacement). 
-// This is important for generating a displacement map in non-distorted detector coordinates.
-void LaserTrack::AddCorrectionToRecoM() {
-    // Loop over track points
-    for (unsigned long sample = 0; sample < LaserReco.size(); sample++) {
-        // "Add" DISTORTION to reconstructed track position
-        // The sign should be minus here, since AddCorrectionToReco is only used for meshing on true coord
-        // In that case, we calculate the distortion vectors
-        // To drag the reco track back on true, we use minus sign for the direction of the vectors
-        LaserReco[sample] -= LaserDisplacement[sample];
-    }
-}
+//// Add correction to the reco position (correction is the negative displacement).
+//// This is important for generating a displacement map in non-distorted detector coordinates.
+//void LaserTrack::AddCorrectionToRecoM() {
+//    // Loop over track points
+//    for (unsigned long sample = 0; sample < LaserReco.size(); sample++) {
+//        // "Add" DISTORTION to reconstructed track position
+//        // The sign should be minus here, since AddCorrectionToReco is only used for meshing on true coord
+//        // In that case, we calculate the distortion vectors
+//        // To drag the reco track back on true, we use minus sign for the direction of the vectors
+//        LaserReco[sample] -= LaserDisplacement[sample];
+//    }
+//}
+//
+//// Add correction to the reco position (correction is the negative displacement).
+//// This is important for generating a displacement map in non-distorted detector coordinates.
+//void LaserTrack::AddCorrectionToRecoP() {
+//    // Loop over track points
+//    for (unsigned long sample = 0; sample < LaserReco.size(); sample++) {
+//        // Add CORRECTION to reconstructed track position
+//        // drag to the reco to the true postion
+//        LaserReco[sample] += LaserDisplacement[sample];
+//    }
+//}
 
 // Add correction to the reco position (correction is the negative displacement).
 // This is important for generating a displacement map in non-distorted detector coordinates.
-void LaserTrack::AddCorrectionToRecoP() {
+void LaserTrack::AddCorrectionToReco() {
     // Loop over track points
     for (unsigned long sample = 0; sample < LaserReco.size(); sample++) {
         // Add CORRECTION to reconstructed track position
@@ -343,15 +358,14 @@ void LaserTrack::AddCorrectionToRecoP() {
 
 // Add correction to the reco position with (e.g 1/10 of) the correction vector calculated by the other side laser displacement
 void LaserTrack::AddCorrectionToRecoPart(std::vector<ThreeVector<float>> CorrPart) {
-    for (unsigned long sample = 0; sample < LaserReco.size(); sample++) {
-        // Add part of the correction to reconstructed track position
-        if (LaserReco.size() == CorrPart.size()) {
+    if (LaserReco.size() == CorrPart.size()) {
+        for (unsigned long sample = 0; sample < LaserReco.size(); sample++) {
+            // Add part of the correction to reconstructed track position
             LaserReco[sample] += CorrPart[sample];
-        } else {
-            std::cerr
-                    << "This laser track does not have the same size as the corresponding correction vector. Please check."
-                    << std::endl;
         }
+    }
+    else {
+        std::cerr << "This laser track does not have the same size as the corresponding correction vector. Please check." << std::endl;
     }
 }
 
@@ -361,6 +375,7 @@ void LaserTrack::AddCorrectionToRecoPart(std::vector<ThreeVector<float>> CorrPar
 void LaserTrack::Displacement(LaserTrack LaserTrackReco, bool Corr = true) {
     // Check if the tracks of the two LaserSets have the same size
     if (LaserReco.size() == LaserTrackReco.LaserReco.size()) {
+        // LaserReco is the true laser tracks
         if (Corr) {
             // Loop over track points
             for (unsigned long sample = 0; sample < LaserReco.size(); sample++) {

@@ -377,9 +377,9 @@ InterpolateMap(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<L
 
     // For the case of the reco coord base, Extend the range to cover the true TPC volume
     unsigned Extension = 0;
-    if (CorrMapFlag) {
-        Extension = 2;
-    }
+//    if (CorrMapFlag) {
+//        Extension = 2;
+//    }
 
     // Loop over all xbins of the TPC
     for (unsigned xbin = 0 - Extension; xbin < TPC.GetDetectorResolution()[0] + Extension; xbin++) {

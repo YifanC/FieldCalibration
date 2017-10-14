@@ -65,12 +65,20 @@ void Laser::CalcDisplacement(const LaserTrack::DisplacementAlgo &Algo, int Nstep
     }
 }
 
+//// Add displacement to the reco position. This is important for generating a displacement map in non-distorted detector coordinates
+//void Laser::AddCorrectionToReco(bool plus = true) {
+//    // Loop over all tracks, and calculate displacement
+//    for (auto &Track : LaserTrackSet) {
+//        if (plus) { Track.AddCorrectionToRecoP(); }
+//        if (!plus) { Track.AddCorrectionToRecoM(); }
+//    }
+//}
+
 // Add displacement to the reco position. This is important for generating a displacement map in non-distorted detector coordinates
-void Laser::AddCorrectionToReco(bool plus = true) {
+void Laser::AddCorrectionToReco() {
     // Loop over all tracks, and calculate displacement
     for (auto &Track : LaserTrackSet) {
-        if (plus) { Track.AddCorrectionToRecoP(); }
-        if (!plus) { Track.AddCorrectionToRecoM(); }
+        Track.AddCorrectionToReco();
     }
 }
 

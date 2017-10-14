@@ -54,6 +54,7 @@
 #include "include/Utilities.hpp"
 #include "include/DriftVelocity.hpp"
 #include "include/EfieldCalculation.hpp"
+#include "include/LaserDisplacementIteration.hpp"
 
 // Initialize functions defined below
 
@@ -153,7 +154,7 @@ int main(int argc, char **argv) {
         tree->Add(filename.c_str());
         int side;
         tree->SetBranchAddress("side", &side);
-        TCanvas *c1;
+//        TCanvas *c1;
         tree->Draw("side>>hside", "");
         TH1F *hside = (TH1F *) gDirectory->Get("hside");
         int LCS = hside->GetMean();
@@ -230,93 +231,110 @@ int main(int argc, char **argv) {
         std::vector<Laser> LaserSets1 = SplitTrackSet(FullTracks1, n_split);
         std::vector<Laser> LaserSets2 = SplitTrackSet(FullTracks2, n_split);
 
-        std::vector<Laser> LaserRecoOrigin1 = LaserSets1;
-        std::vector<Laser> LaserRecoOrigin2 = LaserSets2;
+//        std::vector<Laser> LaserRecoOrigin1 = LaserSets1;
+//        std::vector<Laser> LaserRecoOrigin2 = LaserSets2;
 
 
         // Now we loop over each individual set and compute the displacement vectors.
         // TODO: This could be parallelized
-        for (unsigned int set = 0; set < n_split; set++) {
+//        for (unsigned int set = 0; set < n_split; set++) {
+        for (unsigned int set = 0; set < 1; set++) {
+
+            // The disadvantage is the LaserRecoOrigin will be discard after the calculation of this set
+            Laser LaserRecoOrigin1 = LaserSets1[set];
+            Laser LaserRecoOrigin2 = LaserSets2[set];
+
             std::cout << "Processing subset " << set << " ... " << std::endl;
 
             // Calculate track displacement
             std::cout << "Find track displacements... " << std::endl;
 
-            ////////////////////////////////////////////
+//            for (int n = 0; n < Nstep; n++) {
+//
+//                std::cout << "Processing correction step N " << n << " ... " << std::endl;
+//
+//
+//                LaserSets1[set].CalcDisplacement(LaserTrack::ClosestPointCorr, Nstep - n);
+//                LaserSets2[set].CalcDisplacement(LaserTrack::ClosestPointCorr, Nstep - n);
+//
+//                // when it becomes the last step, we require the biased track points will be dragged to the true track lines
+//                if (n == (Nstep - 1)) {
+//                    // the TRUE stands for opposite direction of the distortion direction (we calculate) and the correction direction (we will do here)
+//                    LaserSets1[set].AddCorrectionToReco(true);
+//                    LaserSets2[set].AddCorrectionToReco(true);
+//                } else {
+//
+//                    std::cout << "A" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+//
+//                    Delaunay Mesh1 = TrackMesher(LaserSets1[set].GetTrackSet());
+//                    Delaunay Mesh2 = TrackMesher(LaserSets2[set].GetTrackSet());
+//
+//                    std::cout << "B" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+//                    std::cout << "total track " << LaserSets1[set].GetTrackSet().size() << std::endl;
+//
+//                    for (unsigned long track = 0; track < LaserSets1[set].GetTrackSet().size(); track++) {
+//                        std::cout << "Laser1:::Set--" << set << "--Nsetp--" << n << "--track--" << track << "--number--"
+//                                  << LaserSets1[set].GetTrackSet()[track].GetNumberOfSamples() << "||"
+//                                  << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+//                        // reserve the space for the correction vector for each track
+//                        std::vector<ThreeVector<float>> CorrPart1(
+//                                LaserSets1[set].GetTrackSet()[track].GetNumberOfSamples(),
+//                                ThreeVector<float>(float_max, float_max, float_max));
+////                        std::vector<ThreeVector<float>> CorrPart1(LaserSets1[set].GetTrackSet()[track].GetNumberOfSamples(),ThreeVector<float>(0,0,0));
+//
+//                        // Loop over data points (samples) of each track
+//                        for (unsigned long sample = 0;
+//                             sample < LaserSets1[set].GetTrackSet()[track].GetNumberOfSamples(); sample++) {
+//                            CorrPart1[sample] = InterpolateCGAL(LaserSets2[set].GetTrackSet(),
+//                                                                LaserSets2[set].GetTrackSet(), Mesh2,
+//                                                                LaserSets1[set].GetTrackSet()[track].GetSamplePosition(
+//                                                                        sample));
+//                        }
+//
+//                        LaserSets1[set].GetTrackSet()[track].AddCorrectionToRecoPart(CorrPart1);
+//                    }
+//                    std::cout << "F" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+//
+//                    for (unsigned long track = 0; track < LaserSets2[set].GetTrackSet().size(); track++) {
+//                        std::cout << "Laser2:::Set--" << set << "--Nsetp--" << Nstep << "--track--" << track
+//                                  << "--number--" << LaserSets2[set].GetTrackSet()[track].GetNumberOfSamples() << "||"
+//                                  << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+//                        // reserve the space for the correction vector for each track
+//                        std::vector<ThreeVector<float>> CorrPart2(
+//                                LaserSets2[set].GetTrackSet()[track].GetNumberOfSamples(),
+//                                ThreeVector<float>(float_max, float_max, float_max));
+////                        std::vector<ThreeVector<float>> CorrPart2(LaserSets2[set].GetTrackSet()[track].GetNumberOfSamples(),ThreeVector<float>(0,0,0));
+//
+//                        // Loop over data points (samples) of each track
+//                        for (unsigned long sample = 0;
+//                             sample < LaserSets2[set].GetTrackSet()[track].GetNumberOfSamples(); sample++) {
+//                            CorrPart2[sample] = InterpolateCGAL(LaserSets1[set].GetTrackSet(),
+//                                                                LaserSets1[set].GetTrackSet(), Mesh1,
+//                                                                LaserSets2[set].GetTrackSet()[track].GetSamplePosition(
+//                                                                        sample));
+//                        }
+//                        LaserSets2[set].GetTrackSet()[track].AddCorrectionToRecoPart(CorrPart2);
+//                    }
+//                }
+//            }
+//            LaserSets1[set].SetDisplacement(LaserRecoOrigin1[set], CorrMapFlag);
+//            LaserSets2[set].SetDisplacement(LaserRecoOrigin2[set], CorrMapFlag);
 
-//            Laser LaserRecoOrigin1 = LaserSets1;
-//            Laser LaserRecoOrigin2 = LaserSets2;
+            std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, LaserSets1[set], LaserSets2[set], CorrMapFlag);
 
-            for (int n = 0; n < Nstep; n++) {
-
-                std::cout << "Processing correction step N " << n << " ... " << std::endl;
-
-
-                LaserSets1[set].CalcDisplacement(LaserTrack::ClosestPointCorr, Nstep - n);
-                LaserSets2[set].CalcDisplacement(LaserTrack::ClosestPointCorr, Nstep - n);
-
-                // when it becomes the last step, we require the biased track points will be dragged to the true track lines
-                if (n == (Nstep - 1)) {
-                    // the TRUE stands for opposite direction of the distortion direction (we calculate) and the correction direction (we will do here)
-                    LaserSets1[set].AddCorrectionToReco(true);
-                    LaserSets2[set].AddCorrectionToReco(true);
-                } else {
-
-                    std::cout << "A" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
-
-                    Delaunay Mesh1 = TrackMesher(LaserSets1[set].GetTrackSet());
-                    Delaunay Mesh2 = TrackMesher(LaserSets2[set].GetTrackSet());
-
-                    std::cout << "B" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
-                    std::cout << "total track " << LaserSets1[set].GetTrackSet().size() << std::endl;
-
-                    for (unsigned long track = 0; track < LaserSets1[set].GetTrackSet().size(); track++) {
-                        std::cout << "Laser1:::Set--" << set << "--Nsetp--" << n << "--track--" << track << "--number--"
-                                  << LaserSets1[set].GetTrackSet()[track].GetNumberOfSamples() << "||"
-                                  << std::difftime(std::time(NULL), timer) << " s" << std::endl;
-                        // reserve the space for the correction vector for each track
-                        std::vector<ThreeVector<float>> CorrPart1(
-                                LaserSets1[set].GetTrackSet()[track].GetNumberOfSamples(),
-                                ThreeVector<float>(float_max, float_max, float_max));
-//                        std::vector<ThreeVector<float>> CorrPart1(LaserSets1[set].GetTrackSet()[track].GetNumberOfSamples(),ThreeVector<float>(0,0,0));
-
-                        // Loop over data points (samples) of each track
-                        for (unsigned long sample = 0;
-                             sample < LaserSets1[set].GetTrackSet()[track].GetNumberOfSamples(); sample++) {
-                            CorrPart1[sample] = InterpolateCGAL(LaserSets2[set].GetTrackSet(),
-                                                                LaserSets2[set].GetTrackSet(), Mesh2,
-                                                                LaserSets1[set].GetTrackSet()[track].GetSamplePosition(
-                                                                        sample));
-                        }
-
-                        LaserSets1[set].GetTrackSet()[track].AddCorrectionToRecoPart(CorrPart1);
-                    }
-                    std::cout << "F" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
-
-                    for (unsigned long track = 0; track < LaserSets2[set].GetTrackSet().size(); track++) {
-                        std::cout << "Laser2:::Set--" << set << "--Nsetp--" << Nstep << "--track--" << track
-                                  << "--number--" << LaserSets2[set].GetTrackSet()[track].GetNumberOfSamples() << "||"
-                                  << std::difftime(std::time(NULL), timer) << " s" << std::endl;
-                        // reserve the space for the correction vector for each track
-                        std::vector<ThreeVector<float>> CorrPart2(
-                                LaserSets2[set].GetTrackSet()[track].GetNumberOfSamples(),
-                                ThreeVector<float>(float_max, float_max, float_max));
-//                        std::vector<ThreeVector<float>> CorrPart2(LaserSets2[set].GetTrackSet()[track].GetNumberOfSamples(),ThreeVector<float>(0,0,0));
-
-                        // Loop over data points (samples) of each track
-                        for (unsigned long sample = 0;
-                             sample < LaserSets2[set].GetTrackSet()[track].GetNumberOfSamples(); sample++) {
-                            CorrPart2[sample] = InterpolateCGAL(LaserSets1[set].GetTrackSet(),
-                                                                LaserSets1[set].GetTrackSet(), Mesh1,
-                                                                LaserSets2[set].GetTrackSet()[track].GetSamplePosition(
-                                                                        sample));
-                        }
-                        LaserSets2[set].GetTrackSet()[track].AddCorrectionToRecoPart(CorrPart2);
-                    }
-                }
-            }
-            LaserSets1[set].SetDisplacement(LaserRecoOrigin1[set], CorrMapFlag);
-            LaserSets2[set].SetDisplacement(LaserRecoOrigin2[set], CorrMapFlag);
+//            for(int Ntrack;Ntrack<LaserSets1[set].GetTrackSet().size();Ntrack++){
+//                for(int Nsample;Nsample<LaserSets1[set].GetTrackSet()[Ntrack].GetNumberOfSamples();Nsample++){
+//                    std::cout<<"LaserOrigin1: "<<LaserRecoOrigin1.GetTrackSet()[Ntrack].GetSamplePosition(Nsample)[0]
+//                             <<", "<<LaserRecoOrigin1.GetTrackSet()[Ntrack].GetSamplePosition(Nsample)[1]
+//                             <<", "<<LaserRecoOrigin1.GetTrackSet()[Ntrack].GetSamplePosition(Nsample)[2]
+//                             <<"-- LaserSet1: "<<LaserSets1[set].GetTrackSet()[Ntrack].GetSamplePosition(Nsample)[0]
+//                             <<", "<<LaserSets1[set].GetTrackSet()[Ntrack].GetSamplePosition(Nsample)[1]
+//                             <<", "<<LaserSets1[set].GetTrackSet()[Ntrack].GetSamplePosition(Nsample)[2]
+//                             <<"-- LaserWithDisp1: "<<LaserWithDisp.first.GetTrackSet()[Ntrack].GetSamplePosition(Nsample)[0]
+//                             <<", "<<LaserWithDisp.first.GetTrackSet()[Ntrack].GetSamplePosition(Nsample)[1]
+//                             <<", "<<LaserWithDisp.first.GetTrackSet()[Ntrack].GetSamplePosition(Nsample)[2]<<std::endl;
+//                }
+//            }
 
             std::cout << "Time after N-step correction" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
@@ -347,13 +365,18 @@ int main(int argc, char **argv) {
 
             // The correction map is built on the mesh of reconstructed position which is the origin LaserSets
             if (CorrMapFlag) {
-                MeshMap1 = TrackMesher(LaserRecoOrigin1[set].GetTrackSet());
-                MeshMap2 = TrackMesher(LaserRecoOrigin2[set].GetTrackSet());
+//                MeshMap1 = TrackMesher(LaserRecoOrigin1[set].GetTrackSet());
+//                MeshMap2 = TrackMesher(LaserRecoOrigin2[set].GetTrackSet());
+                MeshMap1 = TrackMesher(LaserRecoOrigin1.GetTrackSet());
+                MeshMap2 = TrackMesher(LaserRecoOrigin2.GetTrackSet());
             }
                 // The distortion map is built on the mesh of true position which is moved LaserSets
             else {
-                MeshMap1 = TrackMesher(LaserSets1[set].GetTrackSet());
-                MeshMap2 = TrackMesher(LaserSets2[set].GetTrackSet());
+//                MeshMap1 = TrackMesher(LaserSets1[set].GetTrackSet());
+//                MeshMap2 = TrackMesher(LaserSets2[set].GetTrackSet());
+
+                MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
+                MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
             }
 
 //            Delaunay Mesh = TrackMesher(LaserSets[set].GetTrackSet());
@@ -364,20 +387,32 @@ int main(int argc, char **argv) {
 
             // The correction map is based on reco space coord
             if (CorrMapFlag) {
+//                DisplMapsHolder.push_back(
+//                        InterpolateMap(LaserSets1[set].GetTrackSet(), LaserRecoOrigin1[set].GetTrackSet(), MeshMap1,
+//                                       Detector, CorrMapFlag));
+//                DisplMapsHolder.push_back(
+//                        InterpolateMap(LaserSets2[set].GetTrackSet(), LaserRecoOrigin2[set].GetTrackSet(), MeshMap2,
+//                                       Detector, CorrMapFlag));
                 DisplMapsHolder.push_back(
-                        InterpolateMap(LaserSets1[set].GetTrackSet(), LaserRecoOrigin1[set].GetTrackSet(), MeshMap1,
+                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1,
                                        Detector, CorrMapFlag));
                 DisplMapsHolder.push_back(
-                        InterpolateMap(LaserSets2[set].GetTrackSet(), LaserRecoOrigin2[set].GetTrackSet(), MeshMap2,
+                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserRecoOrigin2.GetTrackSet(), MeshMap2,
                                        Detector, CorrMapFlag));
             }
                 // The distortion map is based on true space coord
             else {
+//                DisplMapsHolder.push_back(
+//                        InterpolateMap(LaserSets1[set].GetTrackSet(), LaserSets1[set].GetTrackSet(), MeshMap1, Detector,
+//                                       CorrMapFlag));
+//                DisplMapsHolder.push_back(
+//                        InterpolateMap(LaserSets2[set].GetTrackSet(), LaserSets2[set].GetTrackSet(), MeshMap2, Detector,
+//                                       CorrMapFlag));
                 DisplMapsHolder.push_back(
-                        InterpolateMap(LaserSets1[set].GetTrackSet(), LaserSets1[set].GetTrackSet(), MeshMap1, Detector,
+                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(), MeshMap1, Detector,
                                        CorrMapFlag));
                 DisplMapsHolder.push_back(
-                        InterpolateMap(LaserSets2[set].GetTrackSet(), LaserSets2[set].GetTrackSet(), MeshMap2, Detector,
+                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserWithDisp.second.GetTrackSet(), MeshMap2, Detector,
                                        CorrMapFlag));
             }
 //            DisplMapsHolder[set] = InterpolateMap(LaserSets[set].GetTrackSet(), MeshMap1, Detector);
@@ -536,9 +571,9 @@ void WriteRootFile(std::vector<ThreeVector<float>> &InterpolationData, TPCVolume
 
     // For Reco coord based
     unsigned Extension = 0;
-    if (CorrMapFlag) {
-        Extension = 2; //Must be consistent with the setup as "InterpolationData"
-    }
+//    if (CorrMapFlag) {
+//        Extension = 2; //Must be consistent with the setup as "InterpolationData"
+//    }
     // Initialize all TH3F
     std::vector<TH3F> RecoDisplacement;
     //2 in "2*Extension" stands for extension of both sides

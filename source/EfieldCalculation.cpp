@@ -9,6 +9,7 @@
 #include "../include/DriftVelocity.hpp"
 
 // pair<En,Position>
+// *root_name is the name of the correction map
 std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
 Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const char *root_name) {
 
@@ -75,124 +76,30 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
     return field;
 }
 
+// This function uses Faraday's Law to calculate Ex at the boundary where the mesh didn't cover
+// This function uses Maxwell-Faraday equation (Faraday's law of induction) that Ey, Ez = 0 at anode and cathode
+// In principle, the methode can be generalised to extend E field in more generalised location of TPC,
+// but we will lose the condition at the induction...
+// 0 + -V_Lx + Int[(0 + Ez_dist(x,y,z))*dz,0,Lz] + Int[(E_drift + E_dist(x,y,z))*dx,0,Lx] = 0
+// Int[(Ez_dist(x,y,z))*dz,0,Lz] + Int[(E_dist(x,y,z))*dx,0,Lx] = 0
+// Coord is (xbin, ybin, zbin)
+float EdgeEx(std::vector<ThreeVector<float>> &Efield, ThreeVector<unsigned long> Resolution, ThreeVector<float> Coord){
 
-//std::vector<ThreeVector<float>>
-//Eposition(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const char *root_name) {
-//    ThreeVector<unsigned long> Resolution = TPCVolume.GetDetectorResolution();
-//    ThreeVector<float> DetectorReso = {TPCVolume.GetDetectorSize()[0] / (Resolution[0] - 1),
-//                                       TPCVolume.GetDetectorSize()[1] / (Resolution[1] - 1),
-//                                       TPCVolume.GetDetectorSize()[2] / (Resolution[2] - 1)};
-//
-//    std::cout << "name: " << root_name << std::endl;
-//    TFile *InFile = new TFile(root_name, "READ");
-//
-//    TH3F *Dx = (TH3F *) InFile->Get("Reco_Displacement_X");
-//    TH3F *Dy = (TH3F *) InFile->Get("Reco_Displacement_Y");
-//    TH3F *Dz = (TH3F *) InFile->Get("Reco_Displacement_Z");
-//    float Delta_x = DetectorReso[0]; //cm
-//
-////    std::vector<ThreeVector<float>> Position(Resolution[2]*Resolution[1]*(Resolution[0]-1));
-//    std::vector<ThreeVector<float>> Position;
-//
-//    // the position should be consistent to the one in the EInterpolateMap()
-//    for (unsigned zbin = 0; zbin < Resolution[2]; zbin++) {
-//        for (unsigned ybin = 0; ybin < Resolution[1]; ybin++) {
-//            // since we calculate Elocal by the gap, the number of x bin in Emap is one less than in the displacement map
-//            for (unsigned Nx = 0; Nx < (Resolution[0] - 1); Nx++) {
-//                //Nx =1, x=5 close to the anode; Nx = Nx, x=250 close to the cathode
-//                ThreeVector<float> RecoGrid(Nx * DetectorReso[0],
-//                                            ybin * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
-//                                            zbin * DetectorReso[2]);
-//                ThreeVector<float> Dxyz = {(float) Dx->GetBinContent(Nx + 1, ybin + 1, zbin + 1),
-//                                           (float) Dy->GetBinContent(Nx + 1, ybin + 1, zbin + 1),
-//                                           (float) Dz->GetBinContent(Nx + 1, ybin + 1, zbin + 1)};
-//                ThreeVector<float> True = RecoGrid + Dxyz;
-//
-//                ThreeVector<float> RecoGrid_next((Nx + 1) * DetectorReso[0],
-//                                                 ybin * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
-//                                                 zbin * DetectorReso[2]);
-//                ThreeVector<float> Dxyz_next = {(float) Dx->GetBinContent(Nx + 2, ybin + 1, zbin + 1),
-//                                                (float) Dy->GetBinContent(Nx + 2, ybin + 1, zbin + 1),
-//                                                (float) Dz->GetBinContent(Nx + 2, ybin + 1, zbin + 1)};
-//                ThreeVector<float> True_next = RecoGrid_next + Dxyz_next;
-//
-//                ThreeVector<float> Rn = True_next - True;
-//
-//                // To synchronize the vector order of En and Position through the output of searchE (if the output is floatmax, then abandon both elements in Position and En)
-//                float vn = Rn.GetNorm() / Delta_x * v0;
-//                if (searchE(vn, cryoTemp, E0) < 0.5 * std::numeric_limits<float>::max()) {
-//                    Position.push_back(searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn);
-//                }
-////                Position[Nx+ybin*(Resolution[0]-1)+zbin*(Resolution[0]-1)*Resolution[1]] = True + (float) 0.5 * Rn;
-//            }
-//        }
-//    }
-//    std::cout << "Position size: " << Position.size() << std::endl;
-//    return Position;
-//}
-//
-//// The root file does not have to be the argument
-//std::vector<ThreeVector<float>>
-//Elocal(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const char *root_name) {
-////    TFile *InFile = new TFile("RecoCorrection.root","READ");
-//    TFile *InFile = new TFile(root_name, "READ");
-//
-//    TH3F *Dx = (TH3F *) InFile->Get("Reco_Displacement_X");
-//    TH3F *Dy = (TH3F *) InFile->Get("Reco_Displacement_Y");
-//    TH3F *Dz = (TH3F *) InFile->Get("Reco_Displacement_Z");
-//
-//    ThreeVector<unsigned long> Resolution = TPCVolume.GetDetectorResolution();
-//    ThreeVector<float> DetectorReso = {TPCVolume.GetDetectorSize()[0] / (Resolution[0] - 1),
-//                                       TPCVolume.GetDetectorSize()[1] / (Resolution[1] - 1),
-//                                       TPCVolume.GetDetectorSize()[2] / (Resolution[2] - 1)};
-//    float Delta_x = DetectorReso[0]; //cm
-//
-////    std::vector<ThreeVector< float>> En(TPCVolume.GetDetectorResolution()[2] * TPCVolume.GetDetectorResolution()[1] * (TPCVolume.GetDetectorResolution()[0]-1));
-//    std::vector<ThreeVector<float>> En;
-//
-//    for (unsigned zbin = 0; zbin < TPCVolume.GetDetectorResolution()[2]; zbin++) {
-//        for (unsigned ybin = 0; ybin < TPCVolume.GetDetectorResolution()[1]; ybin++) {
-//            // the number of x bin in Emap is one less than in the displacement map
-//            // because we only consider the gap here
-//            for (unsigned Nx = 0; Nx < (TPCVolume.GetDetectorResolution()[0] - 1); Nx++) {
-//                //Nx =1, x=5 close to the anode; Nx = Nx, x=250 close to the cathode
-//                // the corner has the weight of the bin. Do not move the weight to the geometry center!
-//                ThreeVector<float> RecoGrid(Nx * DetectorReso[0],
-//                                            ybin * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
-//                                            zbin * DetectorReso[2]);
-//                ThreeVector<float> Dxyz = {(float) Dx->GetBinContent(Nx + 1, ybin + 1, zbin + 1),
-//                                           (float) Dy->GetBinContent(Nx + 1, ybin + 1, zbin + 1),
-//                                           (float) Dz->GetBinContent(Nx + 1, ybin + 1, zbin + 1)};
-//                ThreeVector<float> True = RecoGrid + Dxyz;
-//
-//                ThreeVector<float> RecoGrid_next((Nx + 1) * DetectorReso[0],
-//                                                 ybin * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
-//                                                 zbin * DetectorReso[2]);
-//                ThreeVector<float> Dxyz_next = {(float) Dx->GetBinContent(Nx + 2, ybin + 1, zbin + 1),
-//                                                (float) Dy->GetBinContent(Nx + 2, ybin + 1, zbin + 1),
-//                                                (float) Dz->GetBinContent(Nx + 2, ybin + 1, zbin + 1)};
-//                ThreeVector<float> True_next = RecoGrid_next + Dxyz_next;
-//
-//                ThreeVector<float> Rn = True_next - True;
-//                float vn = Rn.GetNorm() / Delta_x * v0; // mm/us, the magnitude of the drift velocity at the local point
-//                //To be very careful that Rn.GetNorm() and Delta_x are in the unit of cm, not mm
-//
-////                if(searchE(vn,cryoTemp,E0)>0.6){
-////                    std::cout<<"Need investigation! Nx: "<<Nx<<"; ybin: "<<ybin<<"; zbin: "<<zbin<<"; |Rn|: "<<Rn.GetNorm()<<"; |E|: "<<searchE(vn,cryoTemp,E0)<<std::endl;
-////                }
-//
-//                // the E field as a vector has the same direction of Rn (Threevector)
-//                if (searchE(vn, cryoTemp, E0) < 0.5 * std::numeric_limits<float>::max()) {
-//                    En.push_back(searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn);
-//                }
-//
-////                En[Nx+ybin*(Resolution[0]-1)+zbin*(Resolution[0]-1)*Resolution[1]] = searchE(vn,cryoTemp,E0) / Rn.GetNorm() * Rn;
-//            }
-//        }
-//    }
-//
-//    std::cout << "En size: " << En.size() << std::endl;
-//    return En;
-//}
+
+    for (unsigned xbin = 0; xbin < Resolution[0]; xbin++) {
+        for (unsigned ybin = 0; ybin < Resolution[1]; ybin++) {
+            for (unsigned zbin = 0; zbin < Resolution[2]; zbin++) {
+                // Loop over all coordinates dx,dy,dz
+                for (unsigned coord = 0; coord < 3; coord++) {
+                    // Fill interpolated grid points into histograms. bin=0 is underflow, bin = nbin+1 is overflow
+                    Emap[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1, Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]);
+                } // end coordinate loop
+//                std::cout<<"xbin: "<<xbin<<"; ybin: "<<ybin<<"; zbin: "<<zbin<<"---Ex: "<<Efield[zbin+ybin*Resolution[2]+xbin*Resolution[2]*Resolution[1]][0]<<"; Ey: "<<Efield[zbin+ybin*Resolution[2]+xbin*Resolution[2]*Resolution[1]][1]<<"; Ez: "<< Efield[zbin+ybin*Resolution[2]+xbin*Resolution[2]*Resolution[1]][2]<<std::endl;
+            } // end zbin loop
+        } // end ybin loop
+    } // end zbin loop
+
+}
+
 
 

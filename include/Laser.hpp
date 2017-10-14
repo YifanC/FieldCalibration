@@ -51,7 +51,8 @@ public:
 
     void CalcDisplacement(const LaserTrack::DisplacementAlgo &Algo, int Nstep);
 
-    void AddCorrectionToReco(bool plus);
+//    void AddCorrectionToReco(bool plus);
+    void AddCorrectionToReco();
 
     void SetDisplacement(Laser LaserReco, bool Corr);
 

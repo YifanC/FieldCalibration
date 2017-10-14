@@ -40,7 +40,8 @@ private:
     // Displacement algorithms
     void DerivativeDisplAlgo();
 
-    void ClosestPointDisplAlgo(bool CorrMapFlag, int Nstep);
+//    void ClosestPointDisplAlgo(bool CorrMapFlag, int Nstep);
+    void ClosestPointDisplAlgo(int Nstep);
 
     void LinearStretchDisplAlgo(bool CorrMapFlag);
 
@@ -62,8 +63,9 @@ public:
     // Displacement Algorithm names. Add new algorithm name if new algo is introduced
     enum DisplacementAlgo {
         TrackDerivative,
-        ClosestPointCorr,
-        ClosestPointDist,
+//        ClosestPointCorr,
+//        ClosestPointDist,
+        ClosestPoint,
         LinearStretch
     };
 
@@ -73,9 +75,11 @@ public:
 
     void CalcDisplacement(const DisplacementAlgo &Algo, int Nstep);
 
-    void AddCorrectionToRecoP();
+//    void AddCorrectionToRecoP();
+//
+//    void AddCorrectionToRecoM();
 
-    void AddCorrectionToRecoM();
+    void AddCorrectionToReco();
 
     void AddCorrectionToRecoPart(std::vector<ThreeVector<float>> CorrPart);
 
