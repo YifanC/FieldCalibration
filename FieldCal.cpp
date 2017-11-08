@@ -69,12 +69,11 @@ void LaserInterpThread(Laser &, const Laser &, const Delaunay &);
 
 std::vector<Laser> ReachedExitPoint(const Laser &, float);
 
-std::vector<ThreeVector<float>> Elocal(TPCVolumeHandler &, float cryoTemp, float E0, float v0, const char *);
-
-std::vector<ThreeVector<float>> Eposition(TPCVolumeHandler &, float cryoTemp, float E0, float v0, const char *);
+//std::vector<ThreeVector<float>> Elocal(TPCVolumeHandler &, float cryoTemp, float E0, float v0, const char *);
+//std::vector<ThreeVector<float>> Eposition(TPCVolumeHandler &, float cryoTemp, float E0, float v0, const char *);
 
 void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TPCVolume,
-                   ThreeVector<unsigned long> Resolution, std::string);
+                   ThreeVector<unsigned long> Resolution, float E0, std::string);
 
 // Set if the output displacement map is correction map (on reconstructed coordinate) or distortion map (on true coordinate)
 // By default set it as correction map so we could continue calculate the E field map
@@ -200,6 +199,11 @@ int main(int argc, char **argv) {
     float float_max = std::numeric_limits<float>::max();
     ThreeVector<float> Empty = {float_max, float_max, float_max};
 
+
+
+    /////////////////////////////////////
+    /////////////////////////
+    // needs to be improved if there is no correction map calculation!!!???
 //    // Set the name for Dmap
 //    if (CorrMapFlag) {
 //        ss_outfile << "RecoCorrection-N" << Nstep << "-S" << n_split << ".root";
@@ -212,6 +216,11 @@ int main(int argc, char **argv) {
 
     ss_outfile << "RecoCorr-Simu.root";
     ss_Eoutfile << "Emap-Simu.root";
+
+//    ss_outfile << "RecoCorrection-N2-S10.root";
+//    ss_Eoutfile << "EMap-N2-S10.root";
+
+
 
     if (DoCorr) {
         std::vector<std::vector<ThreeVector<float>>> DisplMapsHolder;
@@ -465,7 +474,7 @@ int main(int argc, char **argv) {
 
         // Fill displacement map into TH3 histograms and write them to file
         std::cout << "Write Emap to File ..." << std::endl;
-        WriteEmapRoot(EMap, Detector, EMapResolution, ss_Eoutfile.str());
+        WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
     }
 
 
@@ -669,10 +678,11 @@ void LaserInterpThread(Laser &LaserTrackSet, const Laser &InterpolationLaser, co
 
 // Write Emap into TH3 and store in root file
 void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TPCVolume,
-                   ThreeVector<unsigned long> Resolution, std::string OutputFilename) {
+                   ThreeVector<unsigned long> Resolution, float E0, std::string OutputFilename) {
     // Store TPC properties which are important for the TH3 generation
 //    ThreeVector<unsigned long> Resolution = {21,21,81};
 //    ThreeVector<unsigned long> Resolution = TPCVolume.GetDetectorResolution();
+    float float_max = std::numeric_limits<float>::max();
     ThreeVector<float> MinimumCoord = TPCVolume.GetMapMinimum();
     ThreeVector<float> MaximumCoord = TPCVolume.GetMapMaximum();
     ThreeVector<float> Unit = {TPCVolume.GetDetectorSize()[0] / (Resolution[0] - 1),
@@ -694,17 +704,52 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
                         MaximumCoord[1] + Unit[1] * 0.5, Resolution[2], MinimumCoord[2] - Unit[2] * 0.5,
                         MaximumCoord[2] + Unit[2] * 0.5));
 
+//    ThreeVector<unsigned long> Coord = {0, 4, 14};
+//    EdgeEx(Efield, Resolution, Unit, E0, Coord);
+//
+//    ThreeVector<unsigned long> Coord2 = {0, 11, 41};
+//    EdgeEx(Efield, Resolution, Unit, E0, Coord2);
+//
+//    ThreeVector<unsigned long> Coord3 = {Resolution[1]-1, 11, 41};
+//    EdgeEx(Efield, Resolution, Unit, E0, Coord3);
+
     // the loop should be consistent to the one in the EInterpolateMap()
     for (unsigned xbin = 0; xbin < Resolution[0]; xbin++) {
         for (unsigned ybin = 0; ybin < Resolution[1]; ybin++) {
             for (unsigned zbin = 0; zbin < Resolution[2]; zbin++) {
-                // Loop over all coordinates dx,dy,dz
-                for (unsigned coord = 0; coord < 3; coord++) {
-                    // Fill interpolated grid points into histograms. bin=0 is underflow, bin = nbin+1 is overflow
-                    Emap[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1, Efield[zbin + ybin * Resolution[2] +
-                                                                                   xbin * Resolution[2] *
-                                                                                   Resolution[1]][coord]);
-                } // end coordinate loop
+                if((Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][0] > 0.5*float_max ||
+                   Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][1] > 0.5*float_max ||
+                   Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][2] > 0.5*float_max) &&
+                   xbin == 0)
+                {
+//                    std::cout<<"x: "<<xbin<<"; y: "<<ybin<<"; z: "<<zbin<<" !Flag!"<<std::endl;
+                    ThreeVector<unsigned long> Coord = {xbin, ybin, zbin};
+                    Emap[0].SetBinContent(xbin + 1, ybin + 1, zbin + 1, EdgeEx(Efield, Resolution, Unit, E0, Coord));
+                    Emap[1].SetBinContent(xbin + 1, ybin + 1, zbin + 1, 0);
+                    Emap[2].SetBinContent(xbin + 1, ybin + 1, zbin + 1, 0);
+                    std::cout<<"Maxwell...xbin: "<<xbin<<", ybin: "<<ybin<<", zbin: "<<zbin<<", Ex: "<<EdgeEx(Efield, Resolution, Unit, E0, Coord)<<std::endl;
+                }
+                else if(xbin ==0){
+                    Emap[0].SetBinContent(xbin + 1, ybin + 1, zbin + 1, -999);
+                    Emap[1].SetBinContent(xbin + 1, ybin + 1, zbin + 1, -999);
+                    Emap[2].SetBinContent(xbin + 1, ybin + 1, zbin + 1, -999);
+                }
+                else{
+                    if(xbin == 0){
+                        std::cout<<"Mesh-Interpolation...xbin: "<<xbin<<", ybin: "<<ybin<<", zbin: "<<zbin
+                                 <<", Ex: "<<Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][0]
+                                 <<", Ey: "<<Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][1]
+                                 <<", Ez: "<<Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][2]
+                                 <<std::endl;
+                    }
+                    // Loop over all coordinates dx,dy,dz
+                    for (unsigned coord = 0; coord < 3; coord++) {
+                        // Fill interpolated grid points into histograms. bin=0 is underflow, bin = nbin+1 is overflow
+                        Emap[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1, Efield[zbin + ybin * Resolution[2] +
+                                                                                       xbin * Resolution[2] *
+                                                                                       Resolution[1]][coord]);
+                    } // end coordinate loop
+                }
 //                std::cout<<"xbin: "<<xbin<<"; ybin: "<<ybin<<"; zbin: "<<zbin<<"---Ex: "<<Efield[zbin+ybin*Resolution[2]+xbin*Resolution[2]*Resolution[1]][0]<<"; Ey: "<<Efield[zbin+ybin*Resolution[2]+xbin*Resolution[2]*Resolution[1]][1]<<"; Ez: "<< Efield[zbin+ybin*Resolution[2]+xbin*Resolution[2]*Resolution[1]][2]<<std::endl;
             } // end zbin loop
         } // end ybin loop
