@@ -204,18 +204,18 @@ int main(int argc, char **argv) {
     /////////////////////////////////////
     /////////////////////////
     // needs to be improved if there is no correction map calculation!!!???
-//    // Set the name for Dmap
-//    if (CorrMapFlag) {
-//        ss_outfile << "RecoCorrection-N" << Nstep << "-S" << n_split << ".root";
-//    }
-//    if (!CorrMapFlag) {
-//        ss_outfile << "TrueDistortion-N" << Nstep << "-S" << n_split << ".root";
-//    }
-//
-//    ss_Eoutfile << "Emap-N" << Nstep << "-S" << n_split <<".root";
+    // Set the name for Dmap
+    if (CorrMapFlag) {
+        ss_outfile << "RecoCorrection-N" << Nstep << "-S" << n_split << ".root";
+    }
+    if (!CorrMapFlag) {
+        ss_outfile << "TrueDistortion-N" << Nstep << "-S" << n_split << ".root";
+    }
 
-    ss_outfile << "RecoCorr-Simu.root";
-    ss_Eoutfile << "Emap-Simu.root";
+    ss_Eoutfile << "Emap-N" << Nstep << "-S" << n_split <<".root";
+
+//    ss_outfile << "RecoCorr-Simu.root";
+//    ss_Eoutfile << "Emap-Simu.root";
 
 //    ss_outfile << "RecoCorrection-N2-S10.root";
 //    ss_Eoutfile << "EMap-N2-S10.root";
