@@ -16,3 +16,5 @@
 
 std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
 Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const char *root_name);
+
+float EdgeEx(std::vector<ThreeVector<float>> &Efield, ThreeVector<unsigned long> Resolution, ThreeVector<float> Unit, float E0, ThreeVector<unsigned long> Coord);

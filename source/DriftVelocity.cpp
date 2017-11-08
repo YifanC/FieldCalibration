@@ -65,7 +65,7 @@ float elecDriftVelHelper(float T, float E, int whichFit) {
 
 
 // v_drift(E) is function of E (monotonically increasing)
-// v_drigt (mm/us) ; E (kV/cm)
+// v_drift (mm/us) ; E (kV/cm)
 // This function serves as "inverse function" for v_drift(E)
 // It returns the magnitude of E field with given v_drift with precision XXXX
 float searchE(float v_drift, float cryoTemp, float E0) {
