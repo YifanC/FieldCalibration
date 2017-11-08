@@ -54,3 +54,24 @@ std::vector<Laser> SplitTrackSet(const Laser &LaserSet, unsigned int Downsample)
     }
     return Sets;
 }
+
+std::vector<Laser> IterationTrackSamples(const Laser &LaserSet) {
+    /* This function separates the input laser data set into 2 data subsamples for iterated correction.*/
+    std::vector<Laser> Sets;
+    Sets.resize(2);
+
+    unsigned int number = 0;
+
+    for (auto &Track : LaserSet.GetTrackSet()) {
+
+        if(number%2 == 0){
+            Sets[0].AppendTrack(Track);
+        }
+        if(number%2 == 1){
+            Sets[1].AppendTrack(Track);
+        }
+
+        number++;
+    }
+    return Sets;
+}
