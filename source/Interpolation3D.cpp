@@ -370,6 +370,7 @@ InterpolateMap(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<L
 
     // Initialize temporary location vector
     ThreeVector<float> Location;
+    
     // Define the bin size of TPC volume
     ThreeVector<float> Unit = {TPC.GetDetectorSize()[0] / static_cast<float>(TPC.GetDetectorResolution()[0] - 1),
                                TPC.GetDetectorSize()[1] / static_cast<float>(TPC.GetDetectorResolution()[1] - 1),

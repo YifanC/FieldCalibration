@@ -51,6 +51,12 @@ add_definitions(${ROOT_CXX_FLAGS})
 #
 find_package (Threads)
 
+find_package(OpenMP)
+if (OPENMP_FOUND)
+  message(STATUS "Using OpenMP")
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
 #----------------------------------------------------------------------------
 # Add sources and headers
 #

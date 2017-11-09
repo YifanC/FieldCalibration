@@ -44,6 +44,10 @@
 #include "TTreeReader.h"
 #include "TTreeReaderValue.h"
 
+#ifdef _OPENMP
+#include "omp.h"
+#endif
+
 // Own Files
 #include "include/LaserTrack.hpp"
 #include "include/ThreeVector.hpp"
@@ -90,6 +94,7 @@ int main(int argc, char **argv) {
 
     // specify the amount of downsampling
     unsigned int n_split = 1;
+    unsigned int n_threads = 1;
     // Specify the number of steps for correction
     unsigned int Nstep = 1;
 
@@ -97,16 +102,21 @@ int main(int argc, char **argv) {
     if (argc < 2) {
         std::cerr << "ERROR: Too few arguments, use ./LaserCal <options> <input file names>" << std::endl;
         std::cerr << "options:  -d INTEGER  : Number of downsampling of the input dataset, default 1." << std::endl;
+        std::cerr << "          -j INTEGER  : Number of threads to use, default 1" << std::endl;
+
         return -1;
     }
     // Lets handle all options
     int c;
-    while ((c = getopt(argc, argv, ":d:N:CDE")) != -1) {
-        switch (c) {
+    while((c = getopt(argc, argv, ":d:jN:CDE")) != -1){
+        switch(c){
             case 'd':
                 n_split = atoi(optarg);
                 break;
-            case 'N':
+            case 'j':
+                n_threads = atoi(optarg);
+            	break;
+	    case 'N':
                 Nstep = atoi(optarg);
                 break;
             case 'C':
@@ -121,6 +131,9 @@ int main(int argc, char **argv) {
                 // put in your case here. also add it to the while loop as an option or as required argument
         }
     }
+#ifdef _OPENMP
+    omp_set_num_threads(n_threads);
+#endif
 
 
 //    // Now handle input files
@@ -164,17 +177,20 @@ int main(int argc, char **argv) {
 
         if (LCS == 1) {
             InputFiles1.push_back(filename);
-        } else if (LCS == 2) {
+        }
+        else if(LCS==2){
             InputFiles2.push_back(filename);
-        } else {
+        }
+        else{
             std::cerr << "The laser system is not labeled correctly." << std::endl;
         }
     }
 
     if (Merge2side) {
         InputFiles1.insert(InputFiles1.end(), InputFiles2.begin(), InputFiles2.end());
-    } else {
-        if (InputFiles1.empty() || InputFiles2.empty()) {
+    }
+    else{
+        if(InputFiles1.empty() || InputFiles2.empty()){
             std::cerr << "Please provide the laser data from 2 sides." << std::endl;
         }
     }
@@ -231,7 +247,8 @@ int main(int argc, char **argv) {
 
         // Read data and store it to a Laser object
         std::cout << "Reading data..." << std::endl;
-//        Laser FullTracks = ReadRecoTracks(InputFiles);
+
+//      Laser FullTracks = ReadRecoTracks(InputFiles);
         Laser FullTracks1 = ReadRecoTracks(InputFiles1);
         Laser FullTracks2 = ReadRecoTracks(InputFiles2);
 
@@ -246,17 +263,13 @@ int main(int argc, char **argv) {
 
         // Now we loop over each individual set and compute the displacement vectors.
         // TODO: This could be parallelized
-//        for (unsigned int set = 0; set < n_split; set++) {
-        for (unsigned int set = 0; set < 1; set++) {
 
-            // The disadvantage is the LaserRecoOrigin will be discard after the calculation of this set
-            Laser LaserRecoOrigin1 = LaserSets1[set];
-            Laser LaserRecoOrigin2 = LaserSets2[set];
-
-            std::cout << "Processing subset " << set << " ... " << std::endl;
+#pragma omp parallel for
+        for (unsigned int set = 0; set < n_split; set++) {
+            std::cout << "Processing subset " << set << "/" << n_split << "... " << std::endl;
 
             // Calculate track displacement
-            std::cout << "Find track displacements... " << std::endl;
+            std::cout << " [" << set << "] Find track displacements... " << std::endl;
 
 //            for (int n = 0; n < Nstep; n++) {
 //
@@ -366,8 +379,9 @@ int main(int argc, char **argv) {
 //            }
 
             // Create delaunay mesh
-            std::cout << "Generate mesh..." << std::endl;
-            Delaunay MeshMap1;
+            std::cout << " [" << set << "] Generate mesh..." << std::endl;
+            
+	    Delaunay MeshMap1;
             Delaunay MeshMap2;
 
             std::cout << "Time after mesh " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
@@ -483,6 +497,34 @@ int main(int argc, char **argv) {
 
 } // end main
 
+// To check if the input root files contain the laser data from two laser system (two side)
+//bool Twolasersys(int argc, char** argv)
+//{
+//    if(argc != 3){
+//        std::cerr << "ERROR: Not right arguments. Please use ./FieldCal <name_LCS1.root> <name_LCS2.root>" << std::endl;
+//        return false; //0
+//    }
+//    if(argc == 3){
+//        int LCS1,LCS2;
+//        TChain* tree1 = new TChain("laser1");
+//        tree1->Add(argv[1]);
+//        tree1->SetBranchAddress("LCS1",&LCS1);
+//        TH1F* h1;
+//        tree1->Draw("LCS1>>h1","");
+//        LCS1 = h1->GetMean();
+//
+//        TChain* tree2 = new TChain("laser2");
+//        tree2->Add(argv[2]);
+//        tree2->SetBranchAddress("LCS2",&LCS2);
+//        TH1F* h2;
+//        tree2->Draw("LCS1>>h2","");
+//        LCS2 = h2->GetMean();
+//
+//        // A rough check here. Risk that one single input root file has mixed data from two laser system
+//        if((LCS1-1.5)*(LCS2-1.5)<0){ return true; }
+//        else{return false;}
+//    }
+//}
 
 Laser ReadRecoTracks(std::vector<std::string> InputFiles) {
     // Create Laser (collection of laser tracks) this will be the returned object
@@ -491,8 +533,10 @@ Laser ReadRecoTracks(std::vector<std::string> InputFiles) {
     // Initialize read variables, the pointers for more complex data structures 
     // are very important for Root. Rene Brun in hell (do you see what I did there?)
     int EventNumber;
+    
     std::vector<TVector3> TrackSamples;
-    std::vector<TVector3> *pTrackSamples = &TrackSamples;
+    std::vector<TVector3>* pTrackSamples = &TrackSamples;
+    
     TVector3 EntryPoint;
     TVector3 *pEntryPoint = &EntryPoint;
     TVector3 ExitPoint;
