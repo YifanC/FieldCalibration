@@ -266,6 +266,11 @@ int main(int argc, char **argv) {
 
 #pragma omp parallel for
         for (unsigned int set = 0; set < n_split; set++) {
+            
+            // The disadvantage is the LaserRecoOrigin will be discard after the calculation of this set
+            Laser LaserRecoOrigin1 = LaserSets1[set];
+            Laser LaserRecoOrigin2 = LaserSets2[set];
+
             std::cout << "Processing subset " << set << "/" << n_split << "... " << std::endl;
 
             // Calculate track displacement
