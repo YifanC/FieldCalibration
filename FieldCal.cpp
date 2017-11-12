@@ -44,9 +44,11 @@
 #include "TTreeReader.h"
 #include "TTreeReaderValue.h"
 
+/*
 #ifdef _OPENMP
 #include "omp.h"
 #endif
+*/
 
 // Own Files
 #include "include/LaserTrack.hpp"
@@ -131,10 +133,13 @@ int main(int argc, char **argv) {
                 // put in your case here. also add it to the while loop as an option or as required argument
         }
     }
+
+
+/*
 #ifdef _OPENMP
     omp_set_num_threads(n_threads);
 #endif
-
+*/
 
 //    // Now handle input files
 //    std::vector<std::string> InputFiles;
@@ -263,10 +268,11 @@ int main(int argc, char **argv) {
 
         // Now we loop over each individual set and compute the displacement vectors.
         // TODO: This could be parallelized
-
+/*
 #pragma omp parallel for
+ */
         for (unsigned int set = 0; set < n_split; set++) {
-            
+
             // The disadvantage is the LaserRecoOrigin will be discard after the calculation of this set
             Laser LaserRecoOrigin1 = LaserSets1[set];
             Laser LaserRecoOrigin2 = LaserSets2[set];
