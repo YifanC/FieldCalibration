@@ -316,7 +316,7 @@ void LaserTrack::CalcDisplacement(const DisplacementAlgo &Algo, int Nstep) {
             LinearStretchDisplAlgo();
             break;
         default :
-            ClosestPointDisplAlgo();
+            ClosestPointDisplAlgo(Nstep);
             break;
     }
 }

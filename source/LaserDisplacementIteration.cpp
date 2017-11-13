@@ -45,16 +45,12 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
 //            std::cout << "total track " << LaserSet1.GetTrackSet().size() << std::endl;
 
             for (unsigned long track = 0; track < LaserSet1.GetTrackSet().size(); track++) {
-//                std::cout << "Laser1:::Set--" << set << "--Nsetp--" << n << "--track--" << track << "--number--"
-//                          << LaserSets1[set].GetTrackSet()[track].GetNumberOfSamples() << "||"
-//                          << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 // reserve the space for the correction vector for each track
                 unsigned long NrSamples1 = LaserSet1.GetTrackSet()[track].GetNumberOfSamples();
                 std::vector<ThreeVector<float>> CorrPart1(NrSamples1, ThreeVector<float>(float_max, float_max, float_max));
-//                        std::vector<ThreeVector<float>> CorrPart1(LaserSets1[set].GetTrackSet()[track].GetNumberOfSamples(),ThreeVector<float>(0,0,0));
 
 // Loop over data points (samples) of each track
-                // CorrPart is filled to 0 Threevector when the interpolation is failed !!!!! This is also a problem
+                // TODO:CorrPart is filled to 0 Threevector when the interpolation is failed !!!!! This is also a problem
                 for (unsigned long sample = 0; sample < NrSamples1; sample++) {
                     CorrPart1[sample] = InterpolateCGAL(LaserSet2.GetTrackSet(), LaserSet2.GetTrackSet(), Mesh2,
                                                         LaserSet1.GetTrackSet()[track].GetSamplePosition(sample));
@@ -62,12 +58,8 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
 
                 LaserSet1.GetTrackSet()[track].AddCorrectionToRecoPart(CorrPart1);
             }
-//            std::cout << "F" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
             for (unsigned long track = 0; track < LaserSet2.GetTrackSet().size(); track++) {
-//                std::cout << "Laser2:::Set--" << set << "--Nsetp--" << Nstep << "--track--" << track
-//                          << "--number--" << LaserSets2[set].GetTrackSet()[track].GetNumberOfSamples() << "||"
-//                          << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 // reserve the space for the correction vector for each track
                 unsigned long NrSamples2 = LaserSet2.GetTrackSet()[track].GetNumberOfSamples();
                 std::vector<ThreeVector<float>> CorrPart2(NrSamples2, ThreeVector<float>(float_max, float_max, float_max));

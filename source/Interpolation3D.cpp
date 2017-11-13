@@ -198,15 +198,14 @@ InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<
     }
 
     // Initialize matrix for Location transformation into barycentric coordinate system
-    Matrix3x3 TransMatrix = {{0, 0, 0},
-                             {0, 0, 0},
-                             {0, 0, 0}};
+    Matrix3x3 TransMatrix = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 
     // Loop over matrix rows
     for (unsigned row = 0; row < 3; row++) {
         // Loop over matrix columns
         for (unsigned column = 0; column < 3; column++) {
             // Fill transformation matrix elements
+            // x1,2,3 - x4, y1,2,3 - y4, z1,2,3 - z4
             TransMatrix[row][column] =
                     LaserMeshSet[PointIndex[column].first].GetSamplePosition(PointIndex[column].second)[row] -
                     LaserMeshSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second)[row];
@@ -214,6 +213,7 @@ InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<
     }
 
     // Reuse Location and store its position relative to the last vertex of the cell it is contained in
+    // after is step Location is (r-r4)
     Location -= LaserMeshSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
 
     // If the transformation matrix can be successfully inverted
@@ -224,7 +224,8 @@ InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<
 
         // The sum of all barycentric coordinates has to be 1 by definition, use this to calculate the 4th coordinate
         BaryCoord.push_back(1 - BaryCoord[0] - BaryCoord[1] - BaryCoord[2]);
-    } else // if the matrix can't be inverted
+    }
+    else // if the matrix can't be inverted
     {
         // Set displacement zero and end function immediately!
 //        std::cout<<"The transition matrix for this D grid point is not invertable. "<<std::endl;
