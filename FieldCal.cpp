@@ -156,8 +156,11 @@ int main(int argc, char **argv) {
 
 
     // Now handle input files
-    std::vector<std::string> InputFiles1;
-    std::vector<std::string> InputFiles2;
+//    std::vector<std::string> InputFiles1;
+//    std::vector<std::string> InputFiles2;
+
+    std::vector<std::string> InputFiles;
+
     unsigned int n_files = 0;
     for (int i = optind; i < argc; i++) {
         std::string filename(argv[i]);
@@ -167,37 +170,43 @@ int main(int argc, char **argv) {
             throw std::runtime_error(std::string("file does not exist: ") + filename);
         }
 
-        TChain *tree = new TChain("lasers");
-        tree->Add(filename.c_str());
-        int side;
-        tree->SetBranchAddress("side", &side);
-//        TCanvas *c1;
-        tree->Draw("side>>hside", "");
-        TH1F *hside = (TH1F *) gDirectory->Get("hside");
-        int LCS = hside->GetMean();
-//        c1->Close();
-        delete tree;
+        InputFiles.push_back(filename);
 
-        std::cout << "LCS: " << LCS << std::endl;
+//        TChain *tree = new TChain("lasers");
+//        tree->Add(filename.c_str());
+//        int side;
+//        tree->SetBranchAddress("side", &side);
+////        TCanvas *c1;
+//        tree->Draw("side>>hside", "");
+//        TH1F *hside = (TH1F *) gDirectory->Get("hside");
+//        int LCS = hside->GetMean();
+////        c1->Close();
+//        delete tree;
 
-        if (LCS == 1) {
-            InputFiles1.push_back(filename);
-        }
-        else if(LCS==2){
-            InputFiles2.push_back(filename);
-        }
-        else{
-            std::cerr << "The laser system is not labeled correctly." << std::endl;
-        }
+//        std::cout << "LCS: " << LCS << std::endl;
+//
+//        if (LCS == 1) {
+//            InputFiles1.push_back(filename);
+//        }
+//        else if(LCS==2){
+//            InputFiles2.push_back(filename);
+//        }
+//        else{
+//            std::cerr << "The laser system is not labeled correctly." << std::endl;
+//        }
     }
 
-    if (Merge2side) {
-        InputFiles1.insert(InputFiles1.end(), InputFiles2.begin(), InputFiles2.end());
-    }
-    else{
-        if(InputFiles1.empty() || InputFiles2.empty()){
-            std::cerr << "Please provide the laser data from 2 sides." << std::endl;
-        }
+//    if (Merge2side) {
+//        InputFiles1.insert(InputFiles1.end(), InputFiles2.begin(), InputFiles2.end());
+//    }
+//    else{
+//        if(InputFiles1.empty() || InputFiles2.empty()){
+//            std::cerr << "Please provide the laser data from 2 sides." << std::endl;
+//        }
+//    }
+
+    if(InputFiles.empty()){
+        std::cerr << "Please provide the proper laser data." << std::endl;
     }
 
     // Choose detector dimensions, coordinate system offset and resolutions
@@ -253,14 +262,18 @@ int main(int argc, char **argv) {
         // Read data and store it to a Laser object
         std::cout << "Reading data..." << std::endl;
 
-//      Laser FullTracks = ReadRecoTracks(InputFiles);
-        Laser FullTracks1 = ReadRecoTracks(InputFiles1);
-        Laser FullTracks2 = ReadRecoTracks(InputFiles2);
+        Laser FullTracks = ReadRecoTracks(InputFiles);
+//        Laser FullTracks1 = ReadRecoTracks(InputFiles1);
+//        Laser FullTracks2 = ReadRecoTracks(InputFiles2);
+        Laser LaserSample1 = IterationTrackSamples(FullTracks)[0];
+        Laser LaserSample2 = IterationTrackSamples(FullTracks)[1];
 
         // Here we split the laser set in multiple laser sets...
 //        std::vector<Laser> LaserSets = SplitTrackSet(FullTracks, n_split);
-        std::vector<Laser> LaserSets1 = SplitTrackSet(FullTracks1, n_split);
-        std::vector<Laser> LaserSets2 = SplitTrackSet(FullTracks2, n_split);
+//        std::vector<Laser> LaserSets1 = SplitTrackSet(FullTracks1, n_split);
+//        std::vector<Laser> LaserSets2 = SplitTrackSet(FullTracks2, n_split);
+        std::vector<Laser> LaserSets1 = SplitTrackSet(LaserSample1, n_split);
+        std::vector<Laser> LaserSets2 = SplitTrackSet(LaserSample2, n_split);
 
 //        std::vector<Laser> LaserRecoOrigin1 = LaserSets1;
 //        std::vector<Laser> LaserRecoOrigin2 = LaserSets2;
