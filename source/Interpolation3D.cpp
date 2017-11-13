@@ -229,8 +229,9 @@ InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<
     {
         // Set displacement zero and end function immediately!
 //        std::cout<<"The transition matrix for this D grid point is not invertable. "<<std::endl;
-        if (Map) { InterpolatedDispl = {float_max, float_max, float_max}; }
-        else { InterpolatedDispl = {0, 0, 0}; }
+        InterpolatedDispl = {float_max, float_max, float_max};
+//        if (Map) { InterpolatedDispl = {float_max, float_max, float_max}; }
+//        else { InterpolatedDispl = {0, 0, 0}; }
 //        InterpolatedDispl = {0,0,0};
         return InterpolatedDispl;
     }
@@ -240,8 +241,9 @@ InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<
     if (BaryCoord[0] <= 0.0 || BaryCoord[1] <= 0.0 || BaryCoord[2] <= 0.0 || BaryCoord[3] <= 0.0) {
         // Set displacement zero and end function immediately!
 //        std::cout<<"There is negative barycentric coordinate at this D grid point! "<<std::endl;
-        if (Map) { InterpolatedDispl = {float_max, float_max, float_max}; }
-        else { InterpolatedDispl = {0, 0, 0}; }
+        InterpolatedDispl = {float_max, float_max, float_max};
+//        if (Map) { InterpolatedDispl = {float_max, float_max, float_max}; }
+//        else { InterpolatedDispl = {0, 0, 0}; }
 //        InterpolatedDispl = {0,0,0};
         return InterpolatedDispl;
     }

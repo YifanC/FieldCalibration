@@ -282,7 +282,6 @@ int main(int argc, char **argv) {
 
             // Calculate track displacement
             std::cout << " [" << set << "] Find track displacements... " << std::endl;
-
             std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, LaserSets1[set], LaserSets2[set], CorrMapFlag);
 
             std::cout << "Time after N-step correction" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
