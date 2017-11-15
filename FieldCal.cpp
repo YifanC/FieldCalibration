@@ -318,7 +318,7 @@ int main(int argc, char **argv) {
             std::cout<<"[after DEL] size of LaserCorrected1: "<<LaserWithDisp.first.GetNumberOfTracks()
                      <<"[after DEL] size of LaserCorrected2: "<<LaserWithDisp.second.GetNumberOfTracks()<<std::endl;
 
-            delete LaserRecoOrigin1, LaserRecoOrigin2, LaserWithDisp;
+            delete &LaserRecoOrigin1, &LaserRecoOrigin2, &LaserWithDisp;
 
             //TODO: Should we merge the two sample before mesh?
             // From this point on there's no more cross talk between LaserSet1 and LaserSet2 in downstream
