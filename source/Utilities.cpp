@@ -75,3 +75,20 @@ std::vector<Laser> IterationTrackSamples(const Laser &LaserSet) {
     }
     return Sets;
 }
+
+// Merge two "Laser"s into one "Laser"
+// the merged Laser will be independent to LaserA and LaserB
+Laser MergeLaser(const Laser &LaserA, const Laser &LaserB) {
+
+    // Initialize output of type Laser
+    // TODO: test option A and option B
+    //option A
+    Laser MergedLaser = LaserA;
+    //option B
+//    std::vector<LaserTrack> LaserVec = LaserA.GetTrackSet();
+//    Laser MergedLaser = Laser(LaserVec);
+
+    MergedLaser.Mergewith(LaserB);
+
+    return MergedLaser;
+}
