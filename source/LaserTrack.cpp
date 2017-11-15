@@ -354,30 +354,6 @@ void LaserTrack::CalcDisplacement(const DisplacementAlgo &Algo, int Nstep) {
     }
 }
 
-//// Add correction to the reco position (correction is the negative displacement).
-//// This is important for generating a displacement map in non-distorted detector coordinates.
-//void LaserTrack::AddCorrectionToRecoM() {
-//    // Loop over track points
-//    for (unsigned long sample = 0; sample < LaserReco.size(); sample++) {
-//        // "Add" DISTORTION to reconstructed track position
-//        // The sign should be minus here, since AddCorrectionToReco is only used for meshing on true coord
-//        // In that case, we calculate the distortion vectors
-//        // To drag the reco track back on true, we use minus sign for the direction of the vectors
-//        LaserReco[sample] -= LaserDisplacement[sample];
-//    }
-//}
-//
-//// Add correction to the reco position (correction is the negative displacement).
-//// This is important for generating a displacement map in non-distorted detector coordinates.
-//void LaserTrack::AddCorrectionToRecoP() {
-//    // Loop over track points
-//    for (unsigned long sample = 0; sample < LaserReco.size(); sample++) {
-//        // Add CORRECTION to reconstructed track position
-//        // drag to the reco to the true postion
-//        LaserReco[sample] += LaserDisplacement[sample];
-//    }
-//}
-
 // Add correction to the reco position (correction is the negative displacement).
 // This is important for generating a displacement map in non-distorted detector coordinates.
 void LaserTrack::AddCorrectionToReco() {

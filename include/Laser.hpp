@@ -33,7 +33,11 @@ public:
 
     void AppendTrack(const LaserTrack &InputTrack);
 
-    static Laser Merge(std::vector<Laser> &LaserVec);
+    void Mergewith(const Laser &LaserB);
+
+    Laser MergeLaser(const Laser &LaserA, const Laser &LaserB);
+
+//    static Laser Merge(std::vector<Laser> &LaserVec);
 
     LaserTrack GetTrack(const unsigned long int &);
 

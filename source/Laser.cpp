@@ -18,20 +18,46 @@ void Laser::AppendTrack(const LaserTrack &InputTrack) {
     LaserTrackSet.push_back(InputTrack);
 }
 
-// Merges a vector of Lasers into one Laser object
-Laser Laser::Merge(std::vector<Laser> &LaserVec) {
-    // Initialize output of type Laser
-    Laser MergedLaserSets;
+//// Merges a vector of Lasers into one Laser object
+//Laser Laser::Merge(std::vector<Laser> &LaserVec) {
+//    // Initialize output of type Laser
+//    Laser MergedLaserSets;
+//
+//    // Loop over all input vector entries
+//    for (unsigned long index = 0; index < LaserVec.size(); index++) {
+//        MergedLaserSets.LaserTrackSet.insert(MergedLaserSets.LaserTrackSet.end(),
+//                                             LaserVec.at(index).LaserTrackSet.begin(),
+//                                             LaserVec.at(index).LaserTrackSet.end());
+//    }
+//
+//    LaserVec.clear();
+//}
 
-    // Loop over all input vector entries
-    for (unsigned long index = 0; index < LaserVec.size(); index++) {
-        MergedLaserSets.LaserTrackSet.insert(MergedLaserSets.LaserTrackSet.end(),
-                                             LaserVec.at(index).LaserTrackSet.begin(),
-                                             LaserVec.at(index).LaserTrackSet.end());
+
+// Merge LaserB into current Laser and rewrite the current Laser
+void Laser::Mergewith(const Laser &LaserB) {
+    std::vector<LaserTrack> LaserVec = LaserB.GetTrackSet();
+    for (unsigned long n = 0; n < LaserVec.size(); n++){
+        LaserTrackSet.push_back(LaserVec[n]);
     }
-
-    LaserVec.clear();
 }
+
+// Merge two "Laser"s into one "Laser"
+Laser MergeLaser(const Laser &LaserA, const Laser &LaserB) {
+
+    // Initialize output of type Laser
+    // TODO: test option A and option B
+    //option A
+//    Laser MergedLaser = LaserA;
+    //option B
+    std::vector<LaserTrack> LaserVec = LaserA.GetTrackSet();
+    Laser MergedLaser = Laser(LaserVec);
+
+    MergedLaser.Mergewith(LaserB);
+
+    return MergedLaser;
+}
+
 
 LaserTrack Laser::GetTrack(const long unsigned int &TrackNumber) {
     LaserTrackSet.at(TrackNumber);
@@ -65,16 +91,8 @@ void Laser::CalcDisplacement(const LaserTrack::DisplacementAlgo &Algo, int Nstep
     }
 }
 
-//// Add displacement to the reco position. This is important for generating a displacement map in non-distorted detector coordinates
-//void Laser::AddCorrectionToReco(bool plus = true) {
-//    // Loop over all tracks, and calculate displacement
-//    for (auto &Track : LaserTrackSet) {
-//        if (plus) { Track.AddCorrectionToRecoP(); }
-//        if (!plus) { Track.AddCorrectionToRecoM(); }
-//    }
-//}
-
-// Add displacement to the reco position. This is important for generating a displacement map in non-distorted detector coordinates
+// Add displacement to the reco position.
+// This is important for generating a displacement map in non-distorted detector coordinates
 void Laser::AddCorrectionToReco() {
     // Loop over all tracks, and calculate displacement
     for (auto &Track : LaserTrackSet) {
@@ -82,7 +100,7 @@ void Laser::AddCorrectionToReco() {
     }
 }
 
-// Add displacement to the reco position. This is important for generating a displacement map in non-distorted detector coordinates
+// Link the calculated (by iteration) Laser track displacements to the corresponding laser track samples
 void Laser::SetDisplacement(Laser LaserReco, bool Corr = true) {
     // Loop over all tracks, and calculate displacement
     if (LaserTrackSet.size() == LaserReco.GetTrackSet().size()) {
