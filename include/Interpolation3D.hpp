@@ -54,7 +54,7 @@ InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<
 
 std::vector<ThreeVector<float>>
 InterpolateMap(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<LaserTrack> &LaserMeshSet,
-               const Delaunay &Mesh, const TPCVolumeHandler &TPC, bool CorrMapFlag = false);
+               const Delaunay &Mesh, const TPCVolumeHandler &TPC);
 
 void InterpolateTrack(LaserTrack &, const std::vector<LaserTrack> &, const Delaunay &);
 

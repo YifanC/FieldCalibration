@@ -367,7 +367,7 @@ EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::vector<ThreeVector<fl
 // Set CorrMapFlag to false as default in head file
 std::vector<ThreeVector<float>>
 InterpolateMap(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<LaserTrack> &LaserMeshSet,
-               const Delaunay &Mesh, const TPCVolumeHandler &TPC, bool CorrMapFlag) {
+               const Delaunay &Mesh, const TPCVolumeHandler &TPC) {
     // Initialize output data structure
     std::vector<ThreeVector<float>> DisplacementMap;
 
@@ -379,31 +379,26 @@ InterpolateMap(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<L
                                TPC.GetDetectorSize()[1] / static_cast<float>(TPC.GetDetectorResolution()[1] - 1),
                                TPC.GetDetectorSize()[2] / static_cast<float>(TPC.GetDetectorResolution()[2] - 1)};
 
-    // For the case of the reco coord base, Extend the range to cover the true TPC volume
-    unsigned Extension = 0;
-//    if (CorrMapFlag) {
-//        Extension = 2;
-//    }
-
     // Loop over all xbins of the TPC
-    for (unsigned xbin = 0 - Extension; xbin < TPC.GetDetectorResolution()[0] + Extension; xbin++) {
+    for (unsigned xbin = 0; xbin < TPC.GetDetectorResolution()[0]; xbin++) {
         std::cout << "Processing plane " << xbin << " of " << TPC.GetDetectorResolution()[0] << std::endl;
         // Calculate Grid point x-coordinate
         Location[0] = TPC.GetDetectorOffset()[0] + Unit[0] * xbin;
 
         // Loop over all ybins of the TPC
-        for (unsigned ybin = 0 - Extension; ybin < TPC.GetDetectorResolution()[1] + Extension; ybin++) {
+        for (unsigned ybin = 0; ybin < TPC.GetDetectorResolution()[1]; ybin++) {
             // Calculate Grid point y-coordinate
             Location[1] = TPC.GetDetectorOffset()[1] + Unit[1] * ybin;
 
             // Loop over all zbins of the TPC
-            for (unsigned zbin = 0 - Extension; zbin < TPC.GetDetectorResolution()[2] + Extension; zbin++) {
+            for (unsigned zbin = 0; zbin < TPC.GetDetectorResolution()[2]; zbin++) {
                 // Calculate Grid point y-coordinate
                 Location[2] = TPC.GetDetectorOffset()[2] + Unit[2] * zbin;
 
                 // Fill displacement map
                 // The Map trigger is turned on for interpolation for regular grid. This will set the unknown point to float_max
                 DisplacementMap.push_back(InterpolateCGAL(LaserTrackSet, LaserMeshSet, Mesh, Location, true));
+
             } // end zbin loop
         } // end ybin loop
     } // end ybin loop
