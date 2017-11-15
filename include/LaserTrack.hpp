@@ -56,6 +56,8 @@ public:
     LaserTrack(const ThreeVector<float> &InEntryPoint, const ThreeVector<float> &InExitPoint,
                const std::vector<ThreeVector<float>> &RecoTrack);
 
+    LaserTrack(const std::vector<ThreeVector<float>> &RecoTrack, const std::vector<ThreeVector<float>> &LaserDisp);
+
     LaserTrack(std::array<float, 2> &, ThreeVector<float> &, const TPCVolumeHandler &);
 
     LaserTrack(const unsigned int, std::array<float, 2> &, ThreeVector<float> &, const TPCVolumeHandler &);

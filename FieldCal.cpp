@@ -67,6 +67,8 @@
 //bool Twolasersys(int argc, char** argv);
 Laser ReadRecoTracks(std::vector<std::string>);
 
+LaserTrack Anode(TPCVolumeHandler &TPCVolume);
+
 void WriteRootFile(std::vector<ThreeVector<float>> &, TPCVolumeHandler &, std::string, bool CorrMapFlag);
 
 void WriteTextFile(std::vector<ThreeVector<float>> &);
@@ -286,6 +288,14 @@ int main(int argc, char **argv) {
 
             std::cout << "Time after N-step correction" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
+            //Add anode information (no distortion) into Laser track sets
+            LaserRecoOrigin1.AppendTrack(Anode(Detector));
+            LaserRecoOrigin2.AppendTrack(Anode(Detector));
+            LaserWithDisp.first.AppendTrack(Anode(Detector));
+            LaserWithDisp.second.AppendTrack(Anode(Detector));
+
+            //TODO: Should we merge the two sample before mesh?
+            // From this point on there's no more cross talk between LaserSet1 and LaserSet2 in downstream
             // Create delaunay mesh
             std::cout << " [" << set << "] Generate mesh..." << std::endl;
             
@@ -368,6 +378,8 @@ int main(int argc, char **argv) {
             }
         }
 
+        std::cout << "Size of DisplMapHolder (Nr. of Maps to be averaged)" << DisplMapsHolder.size() << std::endl;
+
         // Fill displacement map into TH3 histograms and write them to file
         std::cout << "Write to File ..." << std::endl;
         WriteRootFile(DisplacementMap, Detector, ss_outfile.str(), CorrMapFlag);
@@ -402,6 +414,30 @@ int main(int argc, char **argv) {
 
 
 } // end main
+
+// Acknowledge the zero distortion at anode into mesh by forming the information into "LaserTrack"
+LaserTrack Anode(TPCVolumeHandler &TPCVolume){
+
+    ThreeVector<unsigned long> Resolution = TPCVolume.GetDetectorResolution();
+    int AnodeSize = Resolution[1]*Resolution[2];
+    ThreeVector<float> Unit = {TPCVolume.GetDetectorSize()[0] / (Resolution[0] - 1),
+                               TPCVolume.GetDetectorSize()[1] / (Resolution[1] - 1),
+                               TPCVolume.GetDetectorSize()[2] / (Resolution[2] - 1)};
+
+    std::vector<ThreeVector<float>> AnodePoints;
+    std::vector<ThreeVector<float>> AnodeDisp(AnodeSize,{0,0,0});
+
+    for (unsigned ybin = 0; ybin < Resolution[1]; ybin++) {
+        for (unsigned zbin = 0; zbin < Resolution[2]; zbin++) {
+
+            //Push back the location (x,y,z coord) of Anode Points. Anode sits at x=0
+            AnodePoints.push_back({0, ybin * Unit[1] + TPCVolume.GetDetectorOffset()[1], zbin * Unit[2]});
+
+        }
+    }
+
+    return LaserTrack(AnodePoints,AnodeDisp);
+}
 
 Laser ReadRecoTracks(std::vector<std::string> InputFiles) {
     // Create Laser (collection of laser tracks) this will be the returned object
