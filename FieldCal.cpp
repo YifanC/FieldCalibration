@@ -288,11 +288,11 @@ int main(int argc, char **argv) {
 
             std::cout << "Time after N-step correction" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
-            //Add anode information (no distortion) into Laser track sets
-            LaserRecoOrigin1.AppendTrack(Anode(Detector));
-            LaserRecoOrigin2.AppendTrack(Anode(Detector));
-            LaserWithDisp.first.AppendTrack(Anode(Detector));
-            LaserWithDisp.second.AppendTrack(Anode(Detector));
+//            //Add anode information (no distortion) into Laser track sets
+//            LaserRecoOrigin1.AppendTrack(Anode(Detector));
+//            LaserRecoOrigin2.AppendTrack(Anode(Detector));
+//            LaserWithDisp.first.AppendTrack(Anode(Detector));
+//            LaserWithDisp.second.AppendTrack(Anode(Detector));
 
             //Merge 2 Laser samples
 //            LaserRecoOrigin1.Mergewith(LaserRecoOrigin2);
@@ -318,7 +318,6 @@ int main(int argc, char **argv) {
             std::cout<<"[after DEL] size of LaserCorrected1: "<<LaserWithDisp.first.GetNumberOfTracks()
                      <<"[after DEL] size of LaserCorrected2: "<<LaserWithDisp.second.GetNumberOfTracks()<<std::endl;
 
-            delete &LaserRecoOrigin1, &LaserRecoOrigin2, &LaserWithDisp;
 
             //TODO: Should we merge the two sample before mesh?
             // From this point on there's no more cross talk between LaserSet1 and LaserSet2 in downstream
@@ -337,13 +336,18 @@ int main(int argc, char **argv) {
 //                MeshMap2 = TrackMesher(LaserRecoOrigin2[set].GetTrackSet());
 //                MeshMap1 = TrackMesher(LaserRecoOrigin1.GetTrackSet());
 //                MeshMap2 = TrackMesher(LaserRecoOrigin2.GetTrackSet());
-                MeshMap = TrackMesher(LaserRecoOrigin2.GetTrackSet());
+                MeshMap = TrackMesher(LaserRecoOrigin.GetTrackSet());
 
                 // Interpolate Displacement Map (regularly spaced grid)
                 std::cout << "Start interpolation..." << std::endl;
                 // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
 
                 // The correction map is based on reco space coord
+//                DisplMapsHolder.push_back(
+//                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1, Detector));
+//                DisplMapsHolder.push_back(
+//                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserRecoOrigin2.GetTrackSet(), MeshMap2, Detector));
+
                 DisplMapsHolder.push_back(
                         InterpolateMap(LaserCorrected.GetTrackSet(), LaserRecoOrigin.GetTrackSet(), MeshMap, Detector));
 
@@ -362,6 +366,11 @@ int main(int argc, char **argv) {
                 // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
 
                 // The distortion map is based on true space coord
+//                DisplMapsHolder.push_back(
+//                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(), MeshMap1, Detector));
+//                DisplMapsHolder.push_back(
+//                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserWithDisp.second.GetTrackSet(), MeshMap2, Detector));
+
                 DisplMapsHolder.push_back(
                         InterpolateMap(LaserCorrected.GetTrackSet(), LaserCorrected.GetTrackSet(), MeshMap, Detector));
 
