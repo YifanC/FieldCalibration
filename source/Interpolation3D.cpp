@@ -238,7 +238,11 @@ InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<
 
     // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
     // So if one of the coordinates is smaller than zero
-    if (BaryCoord[0] <= 0.0 || BaryCoord[1] <= 0.0 || BaryCoord[2] <= 0.0 || BaryCoord[3] <= 0.0) {
+    float eps = 1E4;
+//    if(BaryCoord[0] <= 0.0 || BaryCoord[1] <= 0.0 || BaryCoord[2] <= 0.0 || BaryCoord[3] <= 0.0)
+    if (BaryCoord[0] < 0.0 - eps || BaryCoord[0] > 1.0 + eps || BaryCoord[1] < 0.0 - eps || BaryCoord[1] > 1.0 + eps ||
+        BaryCoord[2] < 0.0 - eps || BaryCoord[2] > 1.0 + eps || BaryCoord[3] < 0.0 - eps || BaryCoord[3] > 1.0 + eps) {
+//    if (BaryCoord[0] <= 0.0 || BaryCoord[1] <= 0.0 || BaryCoord[2] <= 0.0 || BaryCoord[3] <= 0.0) {
         // Set displacement zero and end function immediately!
 //        std::cout<<"There is negative barycentric coordinate at this D grid point! "<<std::endl;
         InterpolatedDispl = {float_max, float_max, float_max};
