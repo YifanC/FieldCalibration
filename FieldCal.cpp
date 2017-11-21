@@ -300,24 +300,22 @@ int main(int argc, char **argv) {
 //            Laser LaserRecoOrigin = LaserRecoOrigin1;
 //            Laser LaserCorrected = LaserWithDisp.first;
 
-            std::cout<<"[before DEL] size of LaserRecoOrigin1: "<<LaserRecoOrigin1.GetNumberOfTracks()
-                     <<"[before DEL] size of LaserRecoOrigin2: "<<LaserRecoOrigin2.GetNumberOfTracks()<<std::endl;
+            std::cout<<"[before Merge] size of LaserRecoOrigin1: "<<LaserRecoOrigin1.GetNumberOfTracks()
+                     <<"[before Merge] size of LaserRecoOrigin2: "<<LaserRecoOrigin2.GetNumberOfTracks()<<std::endl;
 
-            std::cout<<"[before DEL] size of LaserCorrected1: "<<LaserWithDisp.first.GetNumberOfTracks()
-                     <<"[before DEL] size of LaserCorrected2: "<<LaserWithDisp.second.GetNumberOfTracks()<<std::endl;
+            std::cout<<"[before Merge] size of LaserCorrected1: "<<LaserWithDisp.first.GetNumberOfTracks()
+                     <<"[before Merge] size of LaserCorrected2: "<<LaserWithDisp.second.GetNumberOfTracks()<<std::endl;
 
             Laser LaserRecoOrigin = MergeLaser(LaserRecoOrigin1, LaserRecoOrigin2);
             Laser LaserCorrected = MergeLaser(LaserWithDisp.first, LaserWithDisp.second);
 
-            std::cout<<"[after DEL] size of LaserRecoOrigin: "<<LaserRecoOrigin.GetNumberOfTracks()
-                     <<"[after DEL] size of LaserCorrected: "<<LaserCorrected.GetNumberOfTracks()<<std::endl;
+            std::cout<<"[after Merge] size of LaserRecoOrigin: "<<LaserRecoOrigin.GetNumberOfTracks()
+                     <<"[after Merge] size of LaserCorrected: "<<LaserCorrected.GetNumberOfTracks()<<std::endl;
 
-            std::cout<<"[after DEL] size of LaserRecoOrigin1: "<<LaserRecoOrigin1.GetNumberOfTracks()
-                     <<"[after DEL] size of LaserRecoOrigin2: "<<LaserRecoOrigin2.GetNumberOfTracks()<<std::endl;
 
-            std::cout<<"[after DEL] size of LaserCorrected1: "<<LaserWithDisp.first.GetNumberOfTracks()
-                     <<"[after DEL] size of LaserCorrected2: "<<LaserWithDisp.second.GetNumberOfTracks()<<std::endl;
-
+            //Add anode information (no distortion) into Laser track sets
+            LaserRecoOrigin.AppendTrack(Anode(Detector));
+            LaserCorrected.AppendTrack(Anode(Detector));
 
             //TODO: Should we merge the two sample before mesh?
             // From this point on there's no more cross talk between LaserSet1 and LaserSet2 in downstream
@@ -477,13 +475,14 @@ LaserTrack Anode(TPCVolumeHandler &TPCVolume){
                                TPCVolume.GetDetectorSize()[2] / (Resolution[2] - 1)};
 
     std::vector<ThreeVector<float>> AnodePoints;
-    std::vector<ThreeVector<float>> AnodeDisp(AnodeSize,{0,0,0});
+    std::vector<ThreeVector<float>> AnodeDisp(AnodeSize,ThreeVector<float>(0.,0.,0.));
 
     for (unsigned ybin = 0; ybin < Resolution[1]; ybin++) {
         for (unsigned zbin = 0; zbin < Resolution[2]; zbin++) {
 
             //Push back the location (x,y,z coord) of Anode Points. Anode sits at x=0
-            AnodePoints.push_back({0, ybin * Unit[1] + TPCVolume.GetDetectorOffset()[1], zbin * Unit[2]});
+            ThreeVector<float> grid = {0., ybin * Unit[1] + TPCVolume.GetDetectorOffset()[1], zbin * Unit[2]};
+            AnodePoints.push_back(grid);
 
         }
     }
@@ -616,6 +615,13 @@ void WriteRootFile(std::vector<ThreeVector<float>> &InterpolationData, TPCVolume
                     // Remember, the range of the hist bin is (1, nbins), while when we fill the vector, it starts from 0. (0,nbins-1)
                     // RecoDisplacement[coord].SetBinContent(xbin+1,ybin+1,zbin+1, InterpolationData[zbin+ybin*TPCVolume.GetDetectorResolution()[2]+xbin*TPCVolume.GetDetectorResolution()[1]*TPCVolume.GetDetectorResolution()[2]][coord]);
                 } // end coordinate loop
+
+                if(xbin ==0){
+                    std::cout<<"x: "<<xbin<<"; y: "<<ybin<<"; z: "<<zbin
+                             <<"; Dx: "<<InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))][0]
+                             <<"; Dy: "<<InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))][1]
+                             <<"; Dz: "<<InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))][2]<<std::endl;
+                }
             } // end zbin loop
         } // end ybin loop
     } // end zbin loop
