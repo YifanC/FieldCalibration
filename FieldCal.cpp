@@ -313,9 +313,9 @@ int main(int argc, char **argv) {
                      <<"[after Merge] size of LaserCorrected: "<<LaserCorrected.GetNumberOfTracks()<<std::endl;
 
 
-            //Add anode information (no distortion) into Laser track sets
-            LaserRecoOrigin.AppendTrack(Anode(Detector));
-            LaserCorrected.AppendTrack(Anode(Detector));
+//            //Add anode information (no distortion) into Laser track sets
+//            LaserRecoOrigin.AppendTrack(Anode(Detector));
+//            LaserCorrected.AppendTrack(Anode(Detector));
 
             //TODO: Should we merge the two sample before mesh?
             // From this point on there's no more cross talk between LaserSet1 and LaserSet2 in downstream
