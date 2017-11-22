@@ -238,8 +238,10 @@ InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<
 
     // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
     // So if one of the coordinates is smaller than zero
-    float eps = 1E4;
+    float eps = 0.0;
 //    if(BaryCoord[0] <= 0.0 || BaryCoord[1] <= 0.0 || BaryCoord[2] <= 0.0 || BaryCoord[3] <= 0.0)
+//    if (BaryCoord[0] < 0.0 || BaryCoord[0] > 1.0 || BaryCoord[1] < 0.0 || BaryCoord[1] > 1.0 ||
+//        BaryCoord[2] < 0.0 || BaryCoord[2] > 1.0 || BaryCoord[3] < 0.0 || BaryCoord[3] > 1.0 ) {
     if (BaryCoord[0] < 0.0 - eps || BaryCoord[0] > 1.0 + eps || BaryCoord[1] < 0.0 - eps || BaryCoord[1] > 1.0 + eps ||
         BaryCoord[2] < 0.0 - eps || BaryCoord[2] > 1.0 + eps || BaryCoord[3] < 0.0 - eps || BaryCoord[3] > 1.0 + eps) {
 //    if (BaryCoord[0] <= 0.0 || BaryCoord[1] <= 0.0 || BaryCoord[2] <= 0.0 || BaryCoord[3] <= 0.0) {
@@ -337,7 +339,8 @@ EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::vector<ThreeVector<fl
 
     // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
     // So if one of the coordinates is negative, terminate the function
-    float eps = 1E4;
+//    float eps = 1E4;
+    float eps = 0.0;
 //    if(BaryCoord[0] <= 0.0 || BaryCoord[1] <= 0.0 || BaryCoord[2] <= 0.0 || BaryCoord[3] <= 0.0)
     if (BaryCoord[0] < 0.0 - eps || BaryCoord[0] > 1.0 + eps || BaryCoord[1] < 0.0 - eps || BaryCoord[1] > 1.0 + eps ||
         BaryCoord[2] < 0.0 - eps || BaryCoord[2] > 1.0 + eps || BaryCoord[3] < 0.0 - eps || BaryCoord[3] > 1.0 + eps) {
