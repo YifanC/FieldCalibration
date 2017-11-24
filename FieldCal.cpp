@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
     }
     // Lets handle all options
     int c;
-    while((c = getopt(argc, argv, ":d:jN:CDE")) != -1){
+    while((c = getopt(argc, argv, ":d:j:N:iCDE")) != -1){
         switch(c){
             case 'd':
                 n_split = atoi(optarg);

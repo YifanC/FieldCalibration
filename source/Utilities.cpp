@@ -3,11 +3,6 @@
 //
 
 #include "../include/Utilities.hpp"
-#include "../include/Laser.hpp"
-#include "TROOT.h"
-#include "TChain.h"
-#include <fstream>
-#include <iostream>
 
 std::vector<Laser> ReachedExitPoint(const Laser &LaserSet, float ExitBoundary) {
     /*
@@ -80,86 +75,6 @@ std::vector<Laser> InterlacedIteration(const Laser &LaserSet) {
     }
     return Sets;
 }
-
-Laser ReadRecoTracks(std::vector<std::string> InputFiles) {
-    // Create Laser (collection of laser tracks) this will be the returned object
-    Laser TrackSelection;
-
-    // Initialize read variables, the pointers for more complex data structures
-    // are very important for Root. Rene Brun in hell (do you see what I did there?)
-    int EventNumber;
-
-    std::vector<TVector3> TrackSamples;
-    std::vector<TVector3>* pTrackSamples = &TrackSamples;
-
-    TVector3 EntryPoint;
-    TVector3 *pEntryPoint = &EntryPoint;
-    TVector3 ExitPoint;
-    TVector3 *pExitPoint = &ExitPoint;
-
-    // Open TChains to store all trees
-    TChain *LaserInfoTree = new TChain("lasers");
-    TChain *RecoTrackTree = new TChain("tracks");
-
-    // Loop through all input files and add them to the TChain
-    for (auto const &InFile : InputFiles) {
-        // Open input file and add to TChains
-        LaserInfoTree->Add(InFile.c_str());
-        RecoTrackTree->Add(InFile.c_str());
-    }
-
-    // Assign branch addresses
-    LaserInfoTree->SetBranchAddress("entry", &pEntryPoint);
-    LaserInfoTree->SetBranchAddress("exit", &pExitPoint);
-    RecoTrackTree->SetBranchAddress("track", &pTrackSamples);
-    RecoTrackTree->SetBranchAddress("event", &EventNumber);
-
-    // Only start read out when both trees have the same amount of entries
-    if (LaserInfoTree->GetEntries() == RecoTrackTree->GetEntries()) {
-        // Loop over all tree entries
-        for (Size_t tree_index = 0; tree_index < RecoTrackTree->GetEntries(); tree_index++) {
-            // Get tree entries of both trees
-            LaserInfoTree->GetEntry(tree_index);
-            RecoTrackTree->GetEntry(tree_index);
-
-            // Sorting wouldn't change the track physically
-            // For closestpoint method, it doesn't matter, while to derivative method yes
-            // But for the moment, when reconstruction has a big problem, it is not encouraged to use derivative method
-
-            // This here sorts the tracks by their distance to the EntryPoint. The algorithm uses a lambda
-            // It will compare the distance to the EntryPoint of two vector entries A & B
-            std::sort(TrackSamples.begin(), TrackSamples.end(), [&EntryPoint](TVector3 A, TVector3 B) {
-                          A -= EntryPoint;
-                          B -= EntryPoint;
-                          // Here only the squared distance was used to avoid costly sqrt operations
-                          return A.Mag2() > B.Mag2();
-                      }
-            );
-
-            // This step will erase all double entries. First std::unique shifts every double to the end
-            // of the vector and gives back the new end point of the data set. After that we erase the HistRange
-            // between this new end and the real end of the vector
-            TrackSamples.erase(std::unique(TrackSamples.begin(), TrackSamples.end()), TrackSamples.end());
-
-            // Add new track to Laser TrackSelection
-            TrackSelection.AppendTrack(LaserTrack(EntryPoint, ExitPoint, TrackSamples));
-        }
-    } else // If the trees don't have the same amount of entries, through error (I know not propper error handling)
-    {
-        std::cerr << "ERROR: Two TTrees don't have the same amount of entries!" << std::endl;
-    }
-
-//     delete pEntryPoint;
-//     delete pExitPoint;
-//     delete pTrackSamples;
-
-    gDirectory->GetList()->Delete();
-
-    delete LaserInfoTree;
-    delete RecoTrackTree;
-
-    return TrackSelection;
-} // end ReadRecoTracks
 
 
 // Merge two "Laser"s into one "Laser"
