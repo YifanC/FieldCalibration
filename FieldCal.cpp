@@ -444,55 +444,34 @@ void WriteRootFile(std::vector<ThreeVector<float>> &InterpolationData, TPCVolume
                                TPCVolume.GetDetectorSize()[1] / (Resolution[1] - 1),
                                TPCVolume.GetDetectorSize()[2] / (Resolution[2] - 1)};
 
-    // For Reco coord based
-    unsigned Extension = 0;
-
     // Initialize all TH3F
     std::vector<TH3F> RecoDisplacement;
-    //2 in "2*Extension" stands for extension of both sides
-    RecoDisplacement.push_back(TH3F("Reco_Displacement_X", "Reco Displacement X", Resolution[0] + 2 * Extension,
-                                    MinimumCoord[0] - Unit[0] * (Extension + 0.5),
-                                    MaximumCoord[0] + Unit[0] * (Extension + 0.5), Resolution[1] + 2 * Extension,
-                                    MinimumCoord[1] - Unit[1] * (Extension + 0.5),
-                                    MaximumCoord[1] + Unit[1] * (Extension + 0.5), Resolution[2] + 2 * Extension,
-                                    MinimumCoord[2] - Unit[2] * (Extension + 0.5),
-                                    MaximumCoord[2] + Unit[2] * (Extension + 0.5)));
-    RecoDisplacement.push_back(TH3F("Reco_Displacement_Y", "Reco Displacement Y", Resolution[0] + 2 * Extension,
-                                    MinimumCoord[0] - Unit[0] * (Extension + 0.5),
-                                    MaximumCoord[0] + Unit[0] * (Extension + 0.5), Resolution[1] + 2 * Extension,
-                                    MinimumCoord[1] - Unit[1] * (Extension + 0.5),
-                                    MaximumCoord[1] + Unit[1] * (Extension + 0.5), Resolution[2] + 2 * Extension,
-                                    MinimumCoord[2] - Unit[2] * (Extension + 0.5),
-                                    MaximumCoord[2] + Unit[2] * (Extension + 0.5)));
-    RecoDisplacement.push_back(TH3F("Reco_Displacement_Z", "Reco Displacement Z", Resolution[0] + 2 * Extension,
-                                    MinimumCoord[0] - Unit[0] * (Extension + 0.5),
-                                    MaximumCoord[0] + Unit[0] * (Extension + 0.5), Resolution[1] + 2 * Extension,
-                                    MinimumCoord[1] - Unit[1] * (Extension + 0.5),
-                                    MaximumCoord[1] + Unit[1] * (Extension + 0.5), Resolution[2] + 2 * Extension,
-                                    MinimumCoord[2] - Unit[2] * (Extension + 0.5),
-                                    MaximumCoord[2] + Unit[2] * (Extension + 0.5)));
-
-
+    RecoDisplacement.push_back(TH3F("Reco_Displacement_X", "Reco Displacement X",
+                                    Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
+                                    Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
+                                    Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
+    RecoDisplacement.push_back(TH3F("Reco_Displacement_Y", "Reco Displacement Y",
+                                    Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
+                                    Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
+                                    Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
+    RecoDisplacement.push_back(TH3F("Reco_Displacement_Z", "Reco Displacement Z",
+                                    Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
+                                    Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
+                                    Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
 
     // Loop over all xbins
-    for (unsigned xbin = 0; xbin < Resolution[0] + 2 * Extension; xbin++) {
+    for (unsigned xbin = 0; xbin < Resolution[0] + 2; xbin++) {
         // Loop over all ybins
-        for (unsigned ybin = 0; ybin < Resolution[1] + 2 * Extension; ybin++) {
+        for (unsigned ybin = 0; ybin < Resolution[1] + 2; ybin++) {
             // Loop over all zbins
-            for (unsigned zbin = 0; zbin < Resolution[2] + 2 * Extension; zbin++) {
+            for (unsigned zbin = 0; zbin < Resolution[2] + 2; zbin++) {
                 // Loop over all coordinates
 
                 for (unsigned coord = 0; coord < 3; coord++) {
                     // Fill interpolated grid points into histograms
-                    // bin=0 is underflow, bin = nbin+1 is overflow
-                    RecoDisplacement[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1, InterpolationData[zbin +
-                                                                                                          (Resolution[2] *
-                                                                                                           (ybin +
-                                                                                                            Resolution[1] *
-                                                                                                            xbin))][coord]);
-                    // It's equivalent to the following expression
+                    RecoDisplacement[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
+                                                          InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))][coord]);
                     // Remember, the range of the hist bin is (1, nbins), while when we fill the vector, it starts from 0. (0,nbins-1)
-                    // RecoDisplacement[coord].SetBinContent(xbin+1,ybin+1,zbin+1, InterpolationData[zbin+ybin*TPCVolume.GetDetectorResolution()[2]+xbin*TPCVolume.GetDetectorResolution()[1]*TPCVolume.GetDetectorResolution()[2]][coord]);
                 } // end coordinate loop
             } // end zbin loop
         } // end ybin loop
@@ -555,18 +534,18 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
 
     // Initialize all TH3F
     std::vector<TH3F> Emap;
-    Emap.push_back(TH3F("Emap_X", "E field map X", Resolution[0], MinimumCoord[0] - Unit[0] * 0.5,
-                        MaximumCoord[0] + Unit[0] * 0.5, Resolution[1], MinimumCoord[1] - Unit[1] * 0.5,
-                        MaximumCoord[1] + Unit[1] * 0.5, Resolution[2], MinimumCoord[2] - Unit[2] * 0.5,
-                        MaximumCoord[2] + Unit[2] * 0.5));
-    Emap.push_back(TH3F("Emap_Y", "E field map Y", Resolution[0], MinimumCoord[0] - Unit[0] * 0.5,
-                        MaximumCoord[0] + Unit[0] * 0.5, Resolution[1], MinimumCoord[1] - Unit[1] * 0.5,
-                        MaximumCoord[1] + Unit[1] * 0.5, Resolution[2], MinimumCoord[2] - Unit[2] * 0.5,
-                        MaximumCoord[2] + Unit[2] * 0.5));
-    Emap.push_back(TH3F("Emap_Z", "E field map Z", Resolution[0], MinimumCoord[0] - Unit[0] * 0.5,
-                        MaximumCoord[0] + Unit[0] * 0.5, Resolution[1], MinimumCoord[1] - Unit[1] * 0.5,
-                        MaximumCoord[1] + Unit[1] * 0.5, Resolution[2], MinimumCoord[2] - Unit[2] * 0.5,
-                        MaximumCoord[2] + Unit[2] * 0.5));
+    Emap.push_back(TH3F("Emap_X", "E field map X",
+                        Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
+                        Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
+                        Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
+    Emap.push_back(TH3F("Emap_Y", "E field map Y",
+                        Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
+                        Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
+                        Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
+    Emap.push_back(TH3F("Emap_Z", "E field map Z",
+                        Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
+                        Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
+                        Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
 
 
     // the loop should be consistent to the one in the EInterpolateMap()
