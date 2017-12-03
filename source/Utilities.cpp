@@ -75,3 +75,16 @@ std::vector<Laser> InterlacedIterTrackSamples(const Laser &LaserSet) {
     }
     return Sets;
 }
+
+// Merge two "Laser" objects into one "Laser" object
+// the merged Laser will be independent to LaserA and LaserB
+Laser MergeLaser(const Laser &LaserA, const Laser &LaserB) {
+
+    // Initialize output of type Laser
+    Laser MergedLaser;
+
+    MergedLaser.Mergewith(LaserA);
+    MergedLaser.Mergewith(LaserB);
+
+    return MergedLaser;
+}

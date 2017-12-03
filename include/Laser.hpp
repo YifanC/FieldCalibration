@@ -35,6 +35,8 @@ public:
 
     static Laser Merge(std::vector<Laser> &LaserVec);
 
+    void Mergewith(const Laser &LaserB);
+
     LaserTrack GetTrack(const unsigned long int &);
 
     LaserTrack GetLastTrack();

@@ -33,6 +33,15 @@ Laser Laser::Merge(std::vector<Laser> &LaserVec) {
     LaserVec.clear();
 }
 
+// Merge LaserB into current Laser and rewrite the current Laser
+void Laser::Mergewith(const Laser &LaserB) {
+    std::vector<LaserTrack> LaserVec = LaserB.GetTrackSet();
+    for (unsigned long n = 0; n < LaserVec.size(); n++){
+        LaserTrackSet.push_back(LaserVec[n]);
+    }
+}
+
+
 LaserTrack Laser::GetTrack(const long unsigned int &TrackNumber) {
     LaserTrackSet.at(TrackNumber);
 }
