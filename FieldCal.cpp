@@ -82,7 +82,7 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
 bool CorrMapFlag = false; // Calculate Reco (coord) correction vectors for true; Calculate True (coord) distortion vectors for false
 bool DoCorr = false; // Calculate Reco (coord) correction map for true; Skip calculation of True (coord) correction map for false
 bool DoEmap = false; // Calculate electric map for true; Skip calculation of electric map for false
-bool Merge2side = false;
+bool TwoSideIter = true;
 
 // Main function
 int main(int argc, char **argv) {
@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
     }
     // Lets handle all options
     int c;
-    while((c = getopt(argc, argv, ":d:jN:CDE")) != -1){
+    while((c = getopt(argc, argv, ":d:j:N:iCDE")) != -1){
         switch(c){
             case 'd':
                 n_split = atoi(optarg);
@@ -114,8 +114,11 @@ int main(int argc, char **argv) {
             case 'j':
                 n_threads = atoi(optarg);
             	break;
-	    case 'N':
+	        case 'N':
                 Nstep = atoi(optarg);
+                break;
+            case 'i':
+                TwoSideIter = false;
                 break;
             case 'C':
                 CorrMapFlag = true;
@@ -137,9 +140,13 @@ int main(int argc, char **argv) {
 #endif
 */
 
-    // Now handle input files
+    // Define input files for 2-side iteration
     std::vector<std::string> InputFiles1;
     std::vector<std::string> InputFiles2;
+
+    // Define input file for interlaced iteration
+    std::vector<std::string> InputFiles;
+
     unsigned int n_files = 0;
     for (int i = optind; i < argc; i++) {
         std::string filename(argv[i]);
@@ -149,36 +156,33 @@ int main(int argc, char **argv) {
             throw std::runtime_error(std::string("file does not exist: ") + filename);
         }
 
-        TChain *tree = new TChain("lasers");
-        tree->Add(filename.c_str());
-        int side;
-        tree->SetBranchAddress("side", &side);
-//        TCanvas *c1;
-        tree->Draw("side>>hside", "");
-        TH1F *hside = (TH1F *) gDirectory->Get("hside");
-        int LCS = hside->GetMean();
-//        c1->Close();
-        delete tree;
+        if(TwoSideIter){
+            TChain *tree = new TChain("lasers");
+            tree->Add(filename.c_str());
+            int side;
+            tree->SetBranchAddress("side", &side);
+            tree->Draw("side>>hside", "");
+            TH1F *hside = (TH1F *) gDirectory->Get("hside");
+            int LCS = hside->GetMean();
+            delete tree;
 
-        std::cout << "LCS: " << LCS << std::endl;
-
-        if (LCS == 1) {
-            InputFiles1.push_back(filename);
-        }
-        else if(LCS==2){
-            InputFiles2.push_back(filename);
+            if (LCS == 1) {InputFiles1.push_back(filename); }
+            else if(LCS==2){InputFiles2.push_back(filename); }
+            else{ std::cerr << "The laser system is not labeled correctly." << std::endl; }
         }
         else{
-            std::cerr << "The laser system is not labeled correctly." << std::endl;
+            InputFiles.push_back(filename);
         }
     }
 
-    if (Merge2side) {
-        InputFiles1.insert(InputFiles1.end(), InputFiles2.begin(), InputFiles2.end());
+    if (TwoSideIter) {
+        if(InputFiles1.empty() || InputFiles2.empty()){
+            std::cerr << "Please provide the laser input data from 2 sides." << std::endl;
+        }
     }
     else{
-        if(InputFiles1.empty() || InputFiles2.empty()){
-            std::cerr << "Please provide the laser data from 2 sides." << std::endl;
+        if(InputFiles.empty()){
+            std::cerr << "Please provide laser input data." << std::endl;
         }
     }
 
@@ -228,12 +232,29 @@ int main(int argc, char **argv) {
         // Read data and store it to a Laser object
         std::cout << "Reading data..." << std::endl;
 
-        Laser FullTracks1 = ReadRecoTracks(InputFiles1);
-        Laser FullTracks2 = ReadRecoTracks(InputFiles2);
+        std::vector<Laser> LaserSets1;
+        std::vector<Laser> LaserSets2;
 
-        // Here we split the laser set in multiple laser sets...
-        std::vector<Laser> LaserSets1 = SplitTrackSet(FullTracks1, n_split);
-        std::vector<Laser> LaserSets2 = SplitTrackSet(FullTracks2, n_split);
+        if(TwoSideIter){
+            // Read the laser data from file to 'Laser'. The laser data from 2 sides are sperated
+            Laser FullTracks1 = ReadRecoTracks(InputFiles1);
+            Laser FullTracks2 = ReadRecoTracks(InputFiles2);
+            // Split laser iteration samples into subsamples
+            LaserSets1 = SplitTrackSet(FullTracks1, n_split);
+            LaserSets2 = SplitTrackSet(FullTracks2, n_split);
+        }
+
+        else{
+            // Read the laser data from file to 'Laser'.
+            Laser FullTracks = ReadRecoTracks(InputFiles);
+            // Seperate laser iteration sample
+            Laser LaserSample1 = InterlacedIterTrackSamples(FullTracks)[0];
+            Laser LaserSample2 = InterlacedIterTrackSamples(FullTracks)[1];
+            // Split laser iteration samples into subsamples
+            LaserSets1 = SplitTrackSet(LaserSample1, n_split);
+            LaserSets2 = SplitTrackSet(LaserSample2, n_split);
+        }
+
 
         // Now we loop over each individual set and compute the displacement vectors.
         // TODO: This could be parallelized

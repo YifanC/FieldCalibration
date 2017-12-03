@@ -13,4 +13,4 @@ std::vector<Laser> ReachedExitPoint(const Laser&, float);
 
 std::vector<Laser> SplitTrackSet(const Laser&, unsigned int);
 
-std::vector<Laser> IterationTrackSamples(const Laser &LaserSet);
+std::vector<Laser> InterlacedIterTrackSamples(const Laser &LaserSet);
