@@ -294,14 +294,14 @@ int main(int argc, char **argv) {
 //                MeshMap1 = TrackMesher(LaserRecoOrigin1.GetTrackSet());
 //                MeshMap2 = TrackMesher(LaserRecoOrigin2.GetTrackSet());
 
-                // Interpolate Displacement Map (regularly spaced grid)
-                std::cout << "Start interpolation..." << std::endl;
-                // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
-                DisplMapsHolder.push_back(
-                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserRecoOrigin.GetTrackSet(), MeshMap,
-                                       Detector, CorrMapFlag));
+//                // Interpolate Displacement Map (regularly spaced grid)
+//                std::cout << "Start interpolation..." << std::endl;
+//                // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
 //                DisplMapsHolder.push_back(
-//                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserRecoOrigin.GetTrackSet(), MeshMap, Detector));
+//                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserRecoOrigin.GetTrackSet(), MeshMap,
+//                                       Detector, CorrMapFlag));
+////                DisplMapsHolder.push_back(
+////                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserRecoOrigin.GetTrackSet(), MeshMap, Detector));
             }
 
             // The distortion map is built on the mesh of true position which is moved LaserSets
@@ -313,44 +313,55 @@ int main(int argc, char **argv) {
 //                MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
 //                MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
 
-                // Interpolate Displacement Map (regularly spaced grid)
-                std::cout << "Start interpolation..." << std::endl;
-                // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
+//                // Interpolate Displacement Map (regularly spaced grid)
+//                std::cout << "Start interpolation..." << std::endl;
+//                // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
 
-                DisplMapsHolder.push_back(
-                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserCorrected.GetTrackSet(), MeshMap, Detector,
-                                       CorrMapFlag));
+//                DisplMapsHolder.push_back(
+//                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserCorrected.GetTrackSet(), MeshMap, Detector,
+//                                       CorrMapFlag));
 //                DisplMapsHolder.push_back(
 //                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserCorrected.GetTrackSet(), MeshMap, Detector));
             }
 
-//            // Interpolate Displacement Map (regularly spaced grid)
-//            std::cout << "Start interpolation..." << std::endl;
-//            // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
-//
-//            // The correction map is based on reco space coord
-//            if (CorrMapFlag) {
+            // Interpolate Displacement Map (regularly spaced grid)
+            std::cout << "Start interpolation..." << std::endl;
+            // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
+
+            // The correction map is based on reco space coord
+            if (CorrMapFlag) {
+
+                DisplMapsHolder.push_back(
+                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserRecoOrigin.GetTrackSet(), MeshMap,
+                                       Detector, CorrMapFlag));
+
 //                DisplMapsHolder.push_back(
 //                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1,
 //                                       Detector, CorrMapFlag));
 //                DisplMapsHolder.push_back(
 //                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserRecoOrigin2.GetTrackSet(), MeshMap2,
 //                                       Detector, CorrMapFlag));
-//            }
-//
-//            // The distortion map is based on true space coord
-//            else {
+            }
+
+            // The distortion map is based on true space coord
+            else {
+                DisplMapsHolder.push_back(
+                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserCorrected.GetTrackSet(), MeshMap, Detector,
+                                       CorrMapFlag));
+
 //                DisplMapsHolder.push_back(
 //                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(), MeshMap1, Detector,
 //                                       CorrMapFlag));
 //                DisplMapsHolder.push_back(
 //                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserWithDisp.second.GetTrackSet(), MeshMap2, Detector,
 //                                       CorrMapFlag));
-//            }
+            }
         }
         // Now we go on to create an unified displacement map
         std::vector<ThreeVector<float>> DisplacementMap(DisplMapsHolder.front().size(), ThreeVector<float>(0., 0., 0.));
         std::vector<float> Nvalid(DisplMapsHolder.front().size(), 0.);
+
+        std::cout<<"size of DisplMapHolder after merge: "<<DisplMapsHolder.size()<<std::endl;
 
         for (auto &SubMap: DisplMapsHolder) {
             for (unsigned int idx = 0; idx < DisplacementMap.size(); idx++) {
