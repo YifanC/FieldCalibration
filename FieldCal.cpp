@@ -225,6 +225,7 @@ int main(int argc, char **argv) {
 
     if (DoCorr) {
         std::vector<std::vector<ThreeVector<float>>> DisplMapsHolder;
+        std::vector<std::vector<ThreeVector<float>>> DisplMapsHolder2;
 
         float float_max = std::numeric_limits<float>::max();
         ThreeVector<float> Empty = {float_max, float_max, float_max};
@@ -261,7 +262,8 @@ int main(int argc, char **argv) {
 /*
 #pragma omp parallel for
  */
-        for (unsigned int set = 0; set < n_split; set++) {
+//        for (unsigned int set = 0; set < n_split; set++) {
+        for (unsigned int set = 0; set < 2; set++) {
 
             // The disadvantage is the LaserRecoOrigin will be discard after the calculation of this set
             Laser LaserRecoOrigin1 = LaserSets1[set];
@@ -280,10 +282,18 @@ int main(int argc, char **argv) {
             Laser LaserRecoOrigin = MergeLaser(LaserRecoOrigin1, LaserRecoOrigin2);
             Laser LaserCorrected = MergeLaser(LaserWithDisp.first, LaserWithDisp.second);
 
+            std::cout<<"LaserRecoOrigin1.size: "<<LaserRecoOrigin1.GetNumberOfTracks()<<std::endl;
+            std::cout<<"LaserRecoOrigin2.size: "<<LaserRecoOrigin2.GetNumberOfTracks()<<std::endl;
+            std::cout<<"LaserRecoOrigin.size: "<<LaserRecoOrigin.GetNumberOfTracks()<<std::endl;
+
+            std::cout<<"LaserWithDisp.first.size: "<<LaserWithDisp.first.GetNumberOfTracks()<<std::endl;
+            std::cout<<"LaserWithDisp.second.size: "<<LaserWithDisp.second.GetNumberOfTracks()<<std::endl;
+            std::cout<<"LaserCorrected.size: "<<LaserCorrected.GetNumberOfTracks()<<std::endl;
+
             Delaunay MeshMap;
             
-//	        Delaunay MeshMap1;
-//            Delaunay MeshMap2;
+	        Delaunay MeshMap1;
+            Delaunay MeshMap2;
 
             // The correction map is built on the mesh of reconstructed position which is the origin LaserSets
             if (CorrMapFlag) {
@@ -291,8 +301,10 @@ int main(int argc, char **argv) {
                 MeshMap = TrackMesher(LaserRecoOrigin.GetTrackSet());
                 std::cout << "Time after mesh " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
-//                MeshMap1 = TrackMesher(LaserRecoOrigin1.GetTrackSet());
-//                MeshMap2 = TrackMesher(LaserRecoOrigin2.GetTrackSet());
+
+
+                MeshMap1 = TrackMesher(LaserRecoOrigin1.GetTrackSet());
+                MeshMap2 = TrackMesher(LaserRecoOrigin2.GetTrackSet());
 
 //                // Interpolate Displacement Map (regularly spaced grid)
 //                std::cout << "Start interpolation..." << std::endl;
@@ -310,8 +322,8 @@ int main(int argc, char **argv) {
                 MeshMap = TrackMesher(LaserCorrected.GetTrackSet());
                 std::cout << "Time after mesh " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
-//                MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
-//                MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
+                MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
+                MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
 
 //                // Interpolate Displacement Map (regularly spaced grid)
 //                std::cout << "Start interpolation..." << std::endl;
@@ -335,12 +347,12 @@ int main(int argc, char **argv) {
                         InterpolateMap(LaserCorrected.GetTrackSet(), LaserRecoOrigin.GetTrackSet(), MeshMap,
                                        Detector, CorrMapFlag));
 
-//                DisplMapsHolder.push_back(
-//                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1,
-//                                       Detector, CorrMapFlag));
-//                DisplMapsHolder.push_back(
-//                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserRecoOrigin2.GetTrackSet(), MeshMap2,
-//                                       Detector, CorrMapFlag));
+                DisplMapsHolder2.push_back(
+                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1,
+                                       Detector, CorrMapFlag));
+                DisplMapsHolder2.push_back(
+                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserRecoOrigin2.GetTrackSet(), MeshMap2,
+                                       Detector, CorrMapFlag));
             }
 
             // The distortion map is based on true space coord
@@ -349,13 +361,31 @@ int main(int argc, char **argv) {
                         InterpolateMap(LaserCorrected.GetTrackSet(), LaserCorrected.GetTrackSet(), MeshMap, Detector,
                                        CorrMapFlag));
 
-//                DisplMapsHolder.push_back(
-//                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(), MeshMap1, Detector,
-//                                       CorrMapFlag));
-//                DisplMapsHolder.push_back(
-//                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserWithDisp.second.GetTrackSet(), MeshMap2, Detector,
-//                                       CorrMapFlag));
+                DisplMapsHolder2.push_back(
+                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(), MeshMap1, Detector,
+                                       CorrMapFlag));
+                DisplMapsHolder2.push_back(
+                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserWithDisp.second.GetTrackSet(), MeshMap2, Detector,
+                                       CorrMapFlag));
             }
+
+            for (unsigned int n = 0; n < DisplMapsHolder.back().size(); n++) {
+//                float Delta_X = DisplMapsHolder.back()[n][0] - (DisplMapsHolder2.back()[n][0]+ (*(DisplMapsHolder2.rbegin()+1))[n][0])*0.5;
+//                float Delta_Y = DisplMapsHolder.back()[n][1] - (DisplMapsHolder2.back()[n][1]+ (*(DisplMapsHolder2.rbegin()+1))[n][1])*0.5;
+//                float Delta_Z = DisplMapsHolder.back()[n][2] - (DisplMapsHolder2.back()[n][2]+ (*(DisplMapsHolder2.rbegin()+1))[n][2])*0.5;
+//
+//                std::cout<< "Delta X: "<<Delta_X<<"; Delta Y: "<<Delta_Y<<"; Delta Z: "<<Delta_Z<<std::endl;
+
+                if(isinf(DisplMapsHolder.back()[n][0]*DisplMapsHolder.back()[n][1]*DisplMapsHolder.back()[n][2])
+                   ||(DisplMapsHolder.back()[n][0]*DisplMapsHolder.back()[n][1]*DisplMapsHolder.back()[n][2])>1E6)
+                {continue;}
+
+                std::cout<< "Merge: Delta X: "<<DisplMapsHolder.back()[n][0]<<"; Delta Y: "<<DisplMapsHolder.back()[n][1]<<"; Delta Z: "<<DisplMapsHolder.back()[n][1]<<std::endl;
+                std::cout<< "NoMerge1: Delta X: "<<DisplMapsHolder2.back()[n][0]<<"; Delta Y: "<<DisplMapsHolder2.back()[n][1]<<"; Delta Z: "<<DisplMapsHolder2.back()[n][2]<<std::endl;
+                std::cout<< "NoMerge2: Delta X: "<<(*(DisplMapsHolder2.rbegin()+1))[n][0]<<"; Delta Y: "<<(*(DisplMapsHolder2.rbegin()+1))[n][1]<<"; Delta Z: "<<(*(DisplMapsHolder2.rbegin()+1))[n][2]<<std::endl;
+                std::cout<<"-----------------"<<std::endl;
+            }
+
         }
         // Now we go on to create an unified displacement map
         std::vector<ThreeVector<float>> DisplacementMap(DisplMapsHolder.front().size(), ThreeVector<float>(0., 0., 0.));
