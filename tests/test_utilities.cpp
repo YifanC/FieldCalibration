@@ -162,52 +162,52 @@ TEST(TestDownsampler, HigherOrder) {
     ASSERT_EQ(LaserSets[2].GetFirstTrack().GetNumberOfSamples(), 2);
 }
 
-TEST(TestDownsampler, TwoTracks) {
-
-    TVector3 entry(1.,1.,1.);
-    TVector3 exit(0.,0.,0.);
-
-    std::vector<TVector3> RecobLaserTrack1;
-    std::vector<TVector3> RecobLaserTrack2;
-
-    // fill the dummy vector in the right order. Tracks are assumed to be filled ordered,
-    // starting at the entry point and ending closest to the exit point.
-    for (int i=1; i < 11; i++){
-        const float pt = i;
-        RecobLaserTrack1.push_back(TVector3(pt,pt,pt));
-        RecobLaserTrack2.push_back(TVector3(-pt,-pt,-pt));
-    }
-
-    // Make a laser track out of entry, exit and track points. Then add it to the Laser collection
-    LaserTrack Track1 = LaserTrack(entry, exit, RecobLaserTrack1);
-    LaserTrack Track2 = LaserTrack(entry, exit, RecobLaserTrack2);
-    std::vector<LaserTrack> PewPew{ Track1, Track2 };
-    Laser Las(PewPew);
-
-    std::vector<Laser> LaserSets = SplitTrackSet(Las, 2);
-
-    ASSERT_EQ(LaserSets.size(), 2);
-
-    auto first_set = LaserSets[0];
-    auto second_set = LaserSets[1];
-
-    ASSERT_EQ( first_set.GetNumberOfTracks(), 2);
-    ASSERT_EQ(second_set.GetNumberOfTracks(), 2);
-
-    auto reco_set0_track0 = first_set.GetTrack(0);
-    auto reco_set0_track1 = first_set.GetTrack(1);
-
-    auto reco_set1_track0 = second_set.GetTrack(0);
-    auto reco_set1_track1 = second_set.GetTrack(1);
-
-
-    ASSERT_TRUE(reco_set0_track0.GetReco().front() == ThreeVector<float>(1., 1., 1.));
-    ASSERT_TRUE(reco_set1_track0.GetReco().front() == ThreeVector<float>(2., 2., 2.));
-
-    ASSERT_TRUE(reco_set0_track1.GetReco().front() == ThreeVector<float>(-1., -1., -1.));
-    ASSERT_TRUE(reco_set1_track1.GetReco().front() == ThreeVector<float>(-2., -2., -2.));
-
-}
+//TEST(TestDownsampler, TwoTracks) {
+//
+//    TVector3 entry(1.,1.,1.);
+//    TVector3 exit(0.,0.,0.);
+//
+//    std::vector<TVector3> RecobLaserTrack1;
+//    std::vector<TVector3> RecobLaserTrack2;
+//
+//    // fill the dummy vector in the right order. Tracks are assumed to be filled ordered,
+//    // starting at the entry point and ending closest to the exit point.
+//    for (int i=1; i < 11; i++){
+//        const float pt = i;
+//        RecobLaserTrack1.push_back(TVector3(pt,pt,pt));
+//        RecobLaserTrack2.push_back(TVector3(-pt,-pt,-pt));
+//    }
+//
+//    // Make a laser track out of entry, exit and track points. Then add it to the Laser collection
+//    LaserTrack Track1 = LaserTrack(entry, exit, RecobLaserTrack1);
+//    LaserTrack Track2 = LaserTrack(entry, exit, RecobLaserTrack2);
+//    std::vector<LaserTrack> PewPew{ Track1, Track2 };
+//    Laser Las(PewPew);
+//
+//    std::vector<Laser> LaserSets = SplitTrackSet(Las, 2);
+//
+//    ASSERT_EQ(LaserSets.size(), 2);
+//
+//    auto first_set = LaserSets[0];
+//    auto second_set = LaserSets[1];
+//
+//    ASSERT_EQ( first_set.GetNumberOfTracks(), 2);
+//    ASSERT_EQ(second_set.GetNumberOfTracks(), 2);
+//
+//    auto reco_set0_track0 = first_set.GetTrack(0);
+//    auto reco_set0_track1 = first_set.GetTrack(1);
+//
+//    auto reco_set1_track0 = second_set.GetTrack(0);
+//    auto reco_set1_track1 = second_set.GetTrack(1);
+//
+//
+//    ASSERT_TRUE(reco_set0_track0.GetReco().front() == ThreeVector<float>(1., 1., 1.));
+//    ASSERT_TRUE(reco_set1_track0.GetReco().front() == ThreeVector<float>(2., 2., 2.));
+//
+//    ASSERT_TRUE(reco_set0_track1.GetReco().front() == ThreeVector<float>(-1., -1., -1.));
+//    ASSERT_TRUE(reco_set1_track1.GetReco().front() == ThreeVector<float>(-2., -2., -2.));
+//
+//}
 
 TEST(Interpolation, BaryCentric) {
 
