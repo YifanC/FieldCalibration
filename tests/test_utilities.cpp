@@ -283,6 +283,7 @@ std::vector<float> BaryCoord;
     else // if the matrix can't be inverted
     {
         //SAY SOMETHING IS WRONG!
+        InterpolatedDispl = {-99.,-99.,-99.};
 
 
 //        // Set displacement zero and end function immediately!
@@ -297,6 +298,7 @@ std::vector<float> BaryCoord;
     // So if one of the coordinates is smaller than zero
     if (BaryCoord[0] <= 0.0 || BaryCoord[1] <= 0.0 || BaryCoord[2] <= 0.0 || BaryCoord[3] <= 0.0) {
         // SAY SOMETHING IS WRONG!
+        InterpolatedDispl = {-999.,-999.,-999.};
 
 //        // Set displacement zero and end function immediately!
 //        //        std::cout<<"There is negative barycentric coordinate at this D grid point! "<<std::endl;
