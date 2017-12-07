@@ -5,6 +5,7 @@
 #include <TVector3.h>
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include "../include/Utilities.hpp"
 
 // Tests factorial of 0.
@@ -314,7 +315,11 @@ std::vector<float> BaryCoord;
         InterpolatedDispl += DisplVector[vertex_no] * BaryCoord[vertex_no];
     }
 
-    ASSERT_TRUE(InterpolatedDispl == ThreeVector<float>(1., 1., 1.));
+//    ASSERT_TRUE(InterpolatedDispl == ThreeVector<float>(1., 1., 1.));
+
+    ASSERT_NEAR(InterpolatedDispl[0],1.,1E3);
+    ASSERT_NEAR(InterpolatedDispl[1],1.,1E3);
+    ASSERT_NEAR(InterpolatedDispl[2],1.,1E3);
 
 
 
