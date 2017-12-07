@@ -229,9 +229,9 @@ TEST(Interpolation, BaryCentric) {
     DisplVector[3] = {1.0, 1.0, 1.0};
 
 
-    ThreeVector<float> Location = {0.5, 0.5, 0.5};
+    ThreeVector<float> Location = {0., 0., 0.};
 
-    ASSERT_TRUE(Location == ThreeVector<float>(0.5, 0.5, 0.5));
+//    ASSERT_TRUE(Location == ThreeVector<float>(0.5, 0.5, 0.5));
 
 // Create a array which contains the info of all 4 vertices of a cell
 std::array<std::pair<unsigned long, unsigned long>, 4> PointIndex;
@@ -295,6 +295,11 @@ std::vector<float> BaryCoord;
 //        //        InterpolatedDispl = {0,0,0};
 //        return InterpolatedDispl;
     }
+
+    ASSERT_NEAR(BaryCoord[0],1.,1E-3);
+    ASSERT_NEAR(BaryCoord[1],0.,1E-3);
+    ASSERT_NEAR(BaryCoord[2],0.,1E-3);
+    ASSERT_NEAR(BaryCoord[3],0.,1E-3);
 
     // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
     // So if one of the coordinates is smaller than zero
