@@ -260,13 +260,18 @@ std::vector<float> BaryCoord;
     for (unsigned row = 0; row < 3; row++) {
         // Loop over matrix columns
         for (unsigned column = 0; column < 3; column++) {
-        // Fill transformation matrix elements
-        TransMatrix[row][column] = Vertex[column][row] - Vertex[4][row];
+            // Fill transformation matrix elements
+            TransMatrix[row][column] = Vertex[column][row] - Vertex[3][row];
+//            ASSERT_EQ(TransMatrix[row][column],)
 
 //            LaserMeshSet[PointIndex[column].first].GetSamplePosition(PointIndex[column].second)[row] -
 //            LaserMeshSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second)[row];
         }
     }
+
+//    ASSERT_EQ(TransMatrix[0][0],)
+
+
 
 //    ThreeVector<float> RR4 = Location - Vertex[3];
 
@@ -282,9 +287,9 @@ std::vector<float> BaryCoord;
         ThreeVector<float> BC = TransMatrix * Location;
         BaryCoord = BC.GetStdVector();
 
-//        ASSERT_NEAR(BC[0],1.,1E-3);
-//        ASSERT_NEAR(BC[1],0.,1E-3);
-//        ASSERT_NEAR(BC[2],0.,1E-3);
+        ASSERT_NEAR(BC[0],1.,1E-3);
+        ASSERT_NEAR(BC[1],0.,1E-3);
+        ASSERT_NEAR(BC[2],0.,1E-3);
 
         // The sum of all barycentric coordinates has to be 1 by definition, use this to calculate the 4th coordinate
         BaryCoord.push_back(1 - BaryCoord[0] - BaryCoord[1] - BaryCoord[2]);
