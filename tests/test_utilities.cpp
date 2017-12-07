@@ -273,15 +273,18 @@ std::vector<float> BaryCoord;
     //// Reuse Location and store its position relative to the last vertex of the cell it is contained in
     //Location -= LaserMeshSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
     Location -= Vertex[3];
+
+    ASSERT_TRUE(Location == ThreeVector<float>(0., 0., -1.));
+
     // If the transformation matrix can be successfully inverted
     if (TransMatrix.Invert()) {
         // Use inverted matrix to fill the first three coordinates
         ThreeVector<float> BC = TransMatrix * Location;
         BaryCoord = BC.GetStdVector();
 
-        ASSERT_NEAR(BC[0],1.,1E-3);
-        ASSERT_NEAR(BC[1],0.,1E-3);
-        ASSERT_NEAR(BC[2],0.,1E-3);
+//        ASSERT_NEAR(BC[0],1.,1E-3);
+//        ASSERT_NEAR(BC[1],0.,1E-3);
+//        ASSERT_NEAR(BC[2],0.,1E-3);
 
         // The sum of all barycentric coordinates has to be 1 by definition, use this to calculate the 4th coordinate
         BaryCoord.push_back(1 - BaryCoord[0] - BaryCoord[1] - BaryCoord[2]);
