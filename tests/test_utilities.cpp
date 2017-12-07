@@ -229,7 +229,7 @@ TEST(Interpolation, BaryCentric) {
     DisplVector[3] = {1.0, 1.0, 1.0};
 
 
-    ThreeVector<float> Location = {0.0, 0.0, 0.0};
+    ThreeVector<float> Location = {0.5, 0.5, 0.5};
 
 // Create a array which contains the info of all 4 vertices of a cell
 std::array<std::pair<unsigned long, unsigned long>, 4> PointIndex;
