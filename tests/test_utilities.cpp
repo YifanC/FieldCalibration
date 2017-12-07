@@ -231,6 +231,8 @@ TEST(Interpolation, BaryCentric) {
 
     ThreeVector<float> Location = {0.5, 0.5, 0.5};
 
+    ASSERT_TRUE(Location == ThreeVector<float>(1., 1., 1.));
+
 // Create a array which contains the info of all 4 vertices of a cell
 std::array<std::pair<unsigned long, unsigned long>, 4> PointIndex;
 
@@ -320,8 +322,8 @@ std::vector<float> BaryCoord;
 //    ASSERT_TRUE(InterpolatedDispl == ThreeVector<float>(1., 1., 1.));
 
 //    ASSERT_NEAR(InterpolatedDispl[0],1.,1E-3);
-    ASSERT_NEAR(InterpolatedDispl[1],1.,1E-3);
-    ASSERT_NEAR(InterpolatedDispl[2],1.,1E-3);
+//    ASSERT_NEAR(InterpolatedDispl[1],1.,1E-3);
+//    ASSERT_NEAR(InterpolatedDispl[2],1.,1E-3);
 
 
 
