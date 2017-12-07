@@ -279,6 +279,10 @@ std::vector<float> BaryCoord;
         ThreeVector<float> BC = TransMatrix * Location;
         BaryCoord = BC.GetStdVector();
 
+        ASSERT_NEAR(BC[0],1.,1E-3);
+        ASSERT_NEAR(BC[1],0.,1E-3);
+        ASSERT_NEAR(BC[2],0.,1E-3);
+
         // The sum of all barycentric coordinates has to be 1 by definition, use this to calculate the 4th coordinate
         BaryCoord.push_back(1 - BaryCoord[0] - BaryCoord[1] - BaryCoord[2]);
     }
@@ -296,10 +300,12 @@ std::vector<float> BaryCoord;
 //        return InterpolatedDispl;
     }
 
+
+
 //    ASSERT_NEAR(BaryCoord[0],1.,1E-3);
-    ASSERT_NEAR(BaryCoord[1],0.,1E-3);
-    ASSERT_NEAR(BaryCoord[2],0.,1E-3);
-    ASSERT_NEAR(BaryCoord[3],0.,1E-3);
+//    ASSERT_NEAR(BaryCoord[1],0.,1E-3);
+//    ASSERT_NEAR(BaryCoord[2],0.,1E-3);
+//    ASSERT_NEAR(BaryCoord[3],0.,1E-3);
 
     // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
     // So if one of the coordinates is smaller than zero
