@@ -333,7 +333,7 @@ std::vector<float> BaryCoord;
 
     // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
     // So if one of the coordinates is smaller than zero
-    if (BaryCoord[0] <= 0.0 || BaryCoord[1] <= 0.0 || BaryCoord[2] <= 0.0 || BaryCoord[3] <= 0.0) {
+    if (BaryCoord[0] < 0.0 || BaryCoord[1] < 0.0 || BaryCoord[2] < 0.0 || BaryCoord[3] < 0.0) {
         // SAY SOMETHING IS WRONG!
         InterpolatedDispl = {-999.,-999.,-999.};
 
