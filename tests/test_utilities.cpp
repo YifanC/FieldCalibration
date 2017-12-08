@@ -305,10 +305,10 @@ std::vector<float> BaryCoord;
         // The sum of all barycentric coordinates has to be 1 by definition, use this to calculate the 4th coordinate
         BaryCoord.push_back(1 - BaryCoord[0] - BaryCoord[1] - BaryCoord[2]);
 
-//        ASSERT_EQ(BC[0],1.);
-//        ASSERT_EQ(BC[1],0.);
-//        ASSERT_EQ(BC[2],0.);
-//        ASSERT_EQ(BC[3],0.);
+        ASSERT_EQ(BC[0],0.1);
+        ASSERT_EQ(BC[1],-0.9);
+        ASSERT_EQ(BC[2],0.7);
+        ASSERT_EQ(BC[3],1.1);
     }
     else // if the matrix can't be inverted
     {
