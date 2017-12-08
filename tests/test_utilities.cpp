@@ -288,7 +288,7 @@ std::vector<float> BaryCoord;
     //Location -= LaserMeshSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
     Location -= Vertex[3];
 
-//    ASSERT_TRUE(Location == ThreeVector<float>(-0.5, -0.5, -0.5));
+    ASSERT_TRUE(Location == ThreeVector<float>(-0.5, -0.5, -0.5));
 
     // If the transformation matrix can be successfully inverted
     if (TransMatrix.Invert()) {
@@ -315,13 +315,6 @@ std::vector<float> BaryCoord;
         //SAY SOMETHING IS WRONG!
         InterpolatedDispl = {-99.,-99.,-99.};
 
-
-//        // Set displacement zero and end function immediately!
-//        //        std::cout<<"The transition matrix for this D grid point is not invertable. "<<std::endl;
-//        if (Map) { InterpolatedDispl = {float_max, float_max, float_max}; }
-//        else { InterpolatedDispl = {0, 0, 0}; }
-//        //        InterpolatedDispl = {0,0,0};
-//        return InterpolatedDispl;
     }
 
 
@@ -334,15 +327,8 @@ std::vector<float> BaryCoord;
     // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
     // So if one of the coordinates is smaller than zero
     if (BaryCoord[0] < 0.0 || BaryCoord[1] < 0.0 || BaryCoord[2] < 0.0 || BaryCoord[3] < 0.0) {
-        // SAY SOMETHING IS WRONG!
         InterpolatedDispl = {-999.,-999.,-999.};
 
-//        // Set displacement zero and end function immediately!
-//        //        std::cout<<"There is negative barycentric coordinate at this D grid point! "<<std::endl;
-//        if (Map) { InterpolatedDispl = {float_max, float_max, float_max}; }
-//        else { InterpolatedDispl = {0, 0, 0}; }
-//            //        InterpolatedDispl = {0,0,0};
-//        return InterpolatedDispl;
     }
 
     // If the function is still alive, loop over all barycentric coordinates
@@ -366,49 +352,6 @@ std::vector<float> BaryCoord;
 
 
 
-//    ASSERT_EQ(first_track.GetNumberOfSamples(), 3);
-//
-//// Return interpolated displacement
-//return InterpolatedDispl;
-//
-//TVector3 entry(1.,1.,1.);
-//TVector3 exit(0.,0.,0.);
-//
-//std::vector<TVector3> RecobLaserTrack;
-//
-//// fill the dummy vector in the right order. Tracks are assumed to be filled ordered,
-//// starting at the entry point and ending closest to the exit point.
-//for (int i=1; i < 11; i++){
-//const float pt = i;
-//RecobLaserTrack.push_back(TVector3(pt,pt,pt));
-//}
-//
-//// Make a laser track out of entry, exit and track points. Then add it to the Laser collection
-//LaserTrack Track1 = LaserTrack(entry, exit, RecobLaserTrack);
-//std::vector<LaserTrack> PewPew{ Track1 };
-//Laser Las(PewPew);
-//
-//std::vector<Laser> LaserSets = SplitTrackSet(Las, 4);
-//
-//ASSERT_EQ(LaserSets.size(), 4);
-//
-//auto first_set = LaserSets[0];
-//auto first_track = first_set.GetFirstTrack();
-//
-//ASSERT_TRUE(first_track.GetReco().front() == ThreeVector<float>(1., 1., 1.));
-//ASSERT_TRUE(first_track.GetReco()[1] == ThreeVector<float>(5., 5., 5.));
-//ASSERT_TRUE(first_track.GetReco().back() == ThreeVector<float>(9., 9., 9.));
-//ASSERT_EQ(first_track.GetNumberOfSamples(), 3);
-//
-//auto second_set = LaserSets.back();
-//auto second_track = second_set.GetFirstTrack();
-//
-//ASSERT_TRUE(second_track.GetReco().front() == ThreeVector<float>(4., 4., 4.));
-//ASSERT_TRUE(second_track.GetReco().back() == ThreeVector<float>(8., 8., 8.));
-//ASSERT_EQ(second_track.GetNumberOfSamples(), 2);
-//
-//ASSERT_EQ(LaserSets[1].GetFirstTrack().GetNumberOfSamples(), 3);
-//ASSERT_EQ(LaserSets[2].GetFirstTrack().GetNumberOfSamples(), 2);
 }
 
 
