@@ -269,7 +269,16 @@ std::vector<float> BaryCoord;
         }
     }
 
-//    ASSERT_EQ(TransMatrix[0][0],)
+    ASSERT_EQ(TransMatrix[0][0],0.);
+    ASSERT_EQ(TransMatrix[0][1],1.);
+    ASSERT_EQ(TransMatrix[0][2],0.);
+    ASSERT_EQ(TransMatrix[1][0],0.);
+    ASSERT_EQ(TransMatrix[1][1],0.);
+    ASSERT_EQ(TransMatrix[1][2],1.);
+    ASSERT_EQ(TransMatrix[2][0],-1.);
+    ASSERT_EQ(TransMatrix[2][1],-1.);
+    ASSERT_EQ(TransMatrix[2][2],-1.);
+
 
 
 
@@ -287,12 +296,19 @@ std::vector<float> BaryCoord;
         ThreeVector<float> BC = TransMatrix * Location;
         BaryCoord = BC.GetStdVector();
 
-        ASSERT_NEAR(BC[0],1.,1E-3);
-        ASSERT_NEAR(BC[1],0.,1E-3);
-        ASSERT_NEAR(BC[2],0.,1E-3);
+//        ASSERT_NEAR(BC[0],1.,1E-3);
+//        ASSERT_NEAR(BC[1],0.,1E-3);
+//        ASSERT_NEAR(BC[2],0.,1E-3);
+
+
 
         // The sum of all barycentric coordinates has to be 1 by definition, use this to calculate the 4th coordinate
         BaryCoord.push_back(1 - BaryCoord[0] - BaryCoord[1] - BaryCoord[2]);
+
+        ASSERT_EQ(BC[0],1.);
+        ASSERT_EQ(BC[1],0.);
+        ASSERT_EQ(BC[2],0.);
+        ASSERT_EQ(BC[3],0.);
     }
     else // if the matrix can't be inverted
     {
