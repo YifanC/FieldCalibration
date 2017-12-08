@@ -572,8 +572,6 @@ void LaserInterpThread(Laser &LaserTrackSet, const Laser &InterpolationLaser, co
 void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TPCVolume,
                    ThreeVector<unsigned long> Resolution, float E0, std::string OutputFilename) {
     // Store TPC properties which are important for the TH3 generation
-//    ThreeVector<unsigned long> Resolution = {21,21,81};
-//    ThreeVector<unsigned long> Resolution = TPCVolume.GetDetectorResolution();
     float float_max = std::numeric_limits<float>::max();
     ThreeVector<float> MinimumCoord = TPCVolume.GetMapMinimum();
     ThreeVector<float> MaximumCoord = TPCVolume.GetMapMaximum();
@@ -634,7 +632,6 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
                                                                                        Resolution[1]][coord]);
                     } // end coordinate loop
                 }
-//                std::cout<<"xbin: "<<xbin<<"; ybin: "<<ybin<<"; zbin: "<<zbin<<"---Ex: "<<Efield[zbin+ybin*Resolution[2]+xbin*Resolution[2]*Resolution[1]][0]<<"; Ey: "<<Efield[zbin+ybin*Resolution[2]+xbin*Resolution[2]*Resolution[1]][1]<<"; Ez: "<< Efield[zbin+ybin*Resolution[2]+xbin*Resolution[2]*Resolution[1]][2]<<std::endl;
             } // end zbin loop
         } // end ybin loop
     } // end zbin loop
