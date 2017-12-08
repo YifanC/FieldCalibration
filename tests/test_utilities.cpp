@@ -229,7 +229,7 @@ TEST(Interpolation, BaryCentric) {
     DisplVector[3] = {10.0, 11.0, 12.0};
 
 
-    ThreeVector<float> Location = {0.5, 0., 0.5};
+    ThreeVector<float> Location = {0.1, 0.1, 0.1};
 
 //    ASSERT_TRUE(Location == ThreeVector<float>(0.5, 0.5, 0.5));
 
