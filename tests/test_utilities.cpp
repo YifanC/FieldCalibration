@@ -360,6 +360,10 @@ std::vector<float> BaryCoord;
 //    ASSERT_NEAR(InterpolatedDispl[1],1.,1E-3);
 //    ASSERT_NEAR(InterpolatedDispl[2],1.,1E-3);
 
+    ASSERT_EQ(InterpolatedDispl[0],1.);
+    ASSERT_EQ(InterpolatedDispl[1],1.);
+    ASSERT_EQ(InterpolatedDispl[2],1.);
+
 
 
 //    ASSERT_EQ(first_track.GetNumberOfSamples(), 3);
