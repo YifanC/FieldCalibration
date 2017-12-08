@@ -36,14 +36,6 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
             Delaunay Mesh2 = TrackMesher(LaserSet2.GetTrackSet());
 
             for (unsigned long track = 0; track < LaserSet1.GetTrackSet().size(); track++) {
-<<<<<<< HEAD
-// reserve the space for the correction vector for each track
-                unsigned long NrSamples1 = LaserSet1.GetTrackSet()[track].GetNumberOfSamples();
-                std::vector<ThreeVector<float>> CorrPart1(NrSamples1, ThreeVector<float>(float_max, float_max, float_max));
-
-// Loop over data points (samples) of each track
-                // TODO:CorrPart is filled to 0 Threevector when the interpolation is failed !!!!! This is also a problem
-=======
 
                 // reserve the space for the correction vector for each track
                 unsigned long NrSamples1 = LaserSet1.GetTrackSet()[track].GetNumberOfSamples();
@@ -51,7 +43,7 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
 
                 // Loop over data points (samples) of each track
                 // TODO CorrPart is filled to 0 Threevector when the interpolation is failed !!!!! This is also a problem
->>>>>>> Iter
+
                 for (unsigned long sample = 0; sample < NrSamples1; sample++) {
                     CorrPart1[sample] = InterpolateCGAL(LaserSet2.GetTrackSet(), LaserSet2.GetTrackSet(), Mesh2,
                                                         LaserSet1.GetTrackSet()[track].GetSamplePosition(sample));
@@ -61,12 +53,9 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
             }
 
             for (unsigned long track = 0; track < LaserSet2.GetTrackSet().size(); track++) {
-<<<<<<< HEAD
-// reserve the space for the correction vector for each track
-=======
 
                 // reserve the space for the correction vector for each track
->>>>>>> Iter
+
                 unsigned long NrSamples2 = LaserSet2.GetTrackSet()[track].GetNumberOfSamples();
                 std::vector<ThreeVector<float>> CorrPart2(NrSamples2, ThreeVector<float>(float_max, float_max, float_max));
 

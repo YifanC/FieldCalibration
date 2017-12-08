@@ -176,7 +176,7 @@ xPoint xVectorToPoint(ThreeVector<float> &InputVector) {
 // If the Map flag is false: set the unknown point to 0, which is suitable for the middle steps
 ThreeVector<float>
 InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<LaserTrack> &LaserMeshSet,
-                const Delaunay &Mesh, ThreeVector<float> Location, bool Map) {
+                const Delaunay &Mesh, ThreeVector<float> Location) {
     float float_max = std::numeric_limits<float>::max();
 
     // Create a array which contains the info of all 4 vertices of a cell
@@ -404,7 +404,7 @@ InterpolateMap(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<L
 
                 // Fill displacement map
                 // The Map trigger is turned on for interpolation for regular grid. This will set the unknown point to float_max
-                DisplacementMap.push_back(InterpolateCGAL(LaserTrackSet, LaserMeshSet, Mesh, Location, true));
+                DisplacementMap.push_back(InterpolateCGAL(LaserTrackSet, LaserMeshSet, Mesh, Location));
 
             } // end zbin loop
         } // end ybin loop

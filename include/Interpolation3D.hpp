@@ -50,7 +50,7 @@ ThreeVector<float> PointToVector(Point &);
 
 ThreeVector<float>
 InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<LaserTrack> &LaserMeshSet,
-                const Delaunay &Mesh, ThreeVector<float> Location, bool Map = false);
+                const Delaunay &Mesh, ThreeVector<float> Location);
 
 std::vector<ThreeVector<float>>
 InterpolateMap(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<LaserTrack> &LaserMeshSet,

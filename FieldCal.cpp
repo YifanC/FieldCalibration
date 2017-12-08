@@ -279,8 +279,13 @@ int main(int argc, char **argv) {
 
             std::cout << "Time after N-step correction" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
+//            // Merge 2 Laser samples with displacement vector for mesh and iteration
+//            Laser LaserRecoOrigin = MergeLaser(LaserRecoOrigin1, LaserRecoOrigin2);
+//            Laser LaserCorrected = MergeLaser(LaserWithDisp.first, LaserWithDisp.second);
+
             std::cout << " [" << set << "] Generate mesh..." << std::endl;
-            
+
+//            Delauna
 	        Delaunay MeshMap1;
             Delaunay MeshMap2;
 
@@ -305,21 +310,17 @@ int main(int argc, char **argv) {
             // The correction map is based on reco space coord
             if (CorrMapFlag) {
                 DisplMapsHolder.push_back(
-                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1,
-                                       Detector, CorrMapFlag));
+                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1, Detector));
                 DisplMapsHolder.push_back(
-                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserRecoOrigin2.GetTrackSet(), MeshMap2,
-                                       Detector, CorrMapFlag));
+                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserRecoOrigin2.GetTrackSet(), MeshMap2, Detector));
             }
 
             // The distortion map is based on true space coord
             else {
                 DisplMapsHolder.push_back(
-                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(), MeshMap1, Detector,
-                                       CorrMapFlag));
+                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(), MeshMap1, Detector));
                 DisplMapsHolder.push_back(
-                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserWithDisp.second.GetTrackSet(), MeshMap2, Detector,
-                                       CorrMapFlag));
+                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserWithDisp.second.GetTrackSet(), MeshMap2, Detector));
             }
         }
         // Now we go on to create an unified displacement map
@@ -346,7 +347,7 @@ int main(int argc, char **argv) {
 
         // Fill displacement map into TH3 histograms and write them to file
         std::cout << "Write to File ..." << std::endl;
-        WriteRootFile(DisplacementMap, Detector, ss_outfile.str(), CorrMapFlag);
+        WriteRootFile(DisplacementMap, Detector, ss_outfile.str());
     }
 
     // The Emap calculation works when the input is correction map
@@ -482,7 +483,7 @@ Laser ReadRecoTracks(std::vector<std::string> InputFiles) {
 
 
 void WriteRootFile(std::vector<ThreeVector<float>> &InterpolationData, TPCVolumeHandler &TPCVolume,
-                   std::string OutputFilename, bool CorrMapFlag = false) {
+                   std::string OutputFilename) {
     // Store TPC properties which are important for the TH3 generation
 
     ThreeVector<unsigned long> Resolution = TPCVolume.GetDetectorResolution();
@@ -508,11 +509,11 @@ void WriteRootFile(std::vector<ThreeVector<float>> &InterpolationData, TPCVolume
                                     Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
 
     // Loop over all xbins
-    for (unsigned xbin = 0; xbin < Resolution[0] + 2; xbin++) {
+    for (unsigned xbin = 0; xbin < Resolution[0] ; xbin++) {
         // Loop over all ybins
-        for (unsigned ybin = 0; ybin < Resolution[1] + 2; ybin++) {
+        for (unsigned ybin = 0; ybin < Resolution[1] ; ybin++) {
             // Loop over all zbins
-            for (unsigned zbin = 0; zbin < Resolution[2] + 2; zbin++) {
+            for (unsigned zbin = 0; zbin < Resolution[2] ; zbin++) {
                 // Loop over all coordinates
 
                 for (unsigned coord = 0; coord < 3; coord++) {
