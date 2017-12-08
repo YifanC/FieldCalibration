@@ -76,9 +76,6 @@ void LaserInterpThread(Laser &, const Laser &, const Delaunay &);
 
 std::vector<Laser> ReachedExitPoint(const Laser &, float);
 
-//std::vector<ThreeVector<float>> Elocal(TPCVolumeHandler &, float cryoTemp, float E0, float v0, const char *);
-//std::vector<ThreeVector<float>> Eposition(TPCVolumeHandler &, float cryoTemp, float E0, float v0, const char *);
-
 void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TPCVolume,
                    ThreeVector<unsigned long> Resolution, float E0, std::string);
 
@@ -87,7 +84,7 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
 bool CorrMapFlag = false; // Calculate Reco (coord) correction vectors for true; Calculate True (coord) distortion vectors for false
 bool DoCorr = false; // Calculate Reco (coord) correction map for true; Skip calculation of True (coord) correction map for false
 bool DoEmap = false; // Calculate electric map for true; Skip calculation of electric map for false
-bool twosideIter = true; //Calculate the correction vector with 2-side iteration sample. If the false, then calculate the correction vector with interlace iteration sample.
+bool TwoSideIter = true;
 
 // Main function
 int main(int argc, char **argv) {
@@ -119,11 +116,11 @@ int main(int argc, char **argv) {
             case 'j':
                 n_threads = atoi(optarg);
             	break;
-            case 'N':
+	        case 'N':
                 Nstep = atoi(optarg);
                 break;
             case 'i':
-                twosideIter = false;
+                TwoSideIter = false;
                 break;
             case 'C':
                 CorrMapFlag = true;
@@ -145,11 +142,11 @@ int main(int argc, char **argv) {
 #endif
 */
 
-    //// Now handle input files
-    // For the case of 2-side iteration
+    // Define input files for 2-side iteration
     std::vector<std::string> InputFiles1;
     std::vector<std::string> InputFiles2;
-    // For the case of iterlaced iteration
+
+    // Define input file for interlaced iteration
     std::vector<std::string> InputFiles;
 
     unsigned int n_files = 0;
@@ -162,8 +159,7 @@ int main(int argc, char **argv) {
             throw std::runtime_error(std::string("file does not exist: ") + filename);
         }
 
-        if(twosideIter) {
-            // Seperate the laser data by laser system (side) flag
+        if(TwoSideIter){
             TChain *tree = new TChain("lasers");
             tree->Add(filename.c_str());
             int side;
@@ -173,26 +169,23 @@ int main(int argc, char **argv) {
             int LCS = hside->GetMean();
             delete tree;
 
-            std::cout << "LCS: " << LCS << std::endl;
-
-            if (LCS == 1) { InputFiles1.push_back(filename); }
-            else if (LCS == 2) { InputFiles2.push_back(filename); }
-            else { std::cerr << "The laser system is not labeled correctly." << std::endl; }
+            if (LCS == 1) {InputFiles1.push_back(filename); }
+            else if(LCS==2){InputFiles2.push_back(filename); }
+            else{ std::cerr << "The laser system is not labeled correctly." << std::endl; }
         }
         else{
             InputFiles.push_back(filename);
         }
-
     }
 
-    if(twosideIter){
+    if (TwoSideIter) {
         if(InputFiles1.empty() || InputFiles2.empty()){
-            std::cerr << "Please provide the laser data from 2 sides." << std::endl;
+            std::cerr << "Please provide the laser input data from 2 sides." << std::endl;
         }
     }
     else{
         if(InputFiles.empty()){
-            std::cerr << "Please provide the proper laser data." << std::endl;
+            std::cerr << "Please provide laser input data." << std::endl;
         }
     }
 
@@ -209,19 +202,12 @@ int main(int argc, char **argv) {
     float E0 = 0.273; // kV/cm
     float v0 = 1.11436; // mm/us, because of the fit of drift velocity as function of E field, while the LArSoft unit is cm/us
 
-//    std::cout<<"The drift velocity range in consideration is from "<< ElectronDriftVelocity(cryoTemp, 0)<<" to "<< ElectronDriftVelocity(cryoTemp, 2*E0)<<std::endl;
-
     std::stringstream ss_outfile;
     std::stringstream ss_Eoutfile;
     float float_max = std::numeric_limits<float>::max();
     ThreeVector<float> Unknown = {float_max, float_max, float_max};
 
-
-
-    /////////////////////////////////////
-//TODO: Filename
-    /// /////////////////////////
-    // needs to be improved if there is no correction map calculation!!!???
+    //TODO: To be improved...what if no D map calculation for E map calculation
     // Set the name for Dmap
     if (CorrMapFlag) {
         ss_outfile << "RecoCorrection-N" << Nstep << "-S" << n_split << ".root";
@@ -242,8 +228,9 @@ int main(int argc, char **argv) {
 
     if (DoCorr) {
         std::vector<std::vector<ThreeVector<float>>> DisplMapsHolder;
-        // We don't need to size the DisplMapsHolder
-//        DisplMapsHolder.resize(n_split);
+
+        float float_max = std::numeric_limits<float>::max();
+        ThreeVector<float> Empty = {float_max, float_max, float_max};
 
         // Read data and store it to a Laser object
         std::cout << "Reading data..." << std::endl;
@@ -251,7 +238,7 @@ int main(int argc, char **argv) {
         std::vector<Laser> LaserSets1;
         std::vector<Laser> LaserSets2;
 
-        if(twosideIter){
+        if(TwoSideIter){
             // Read the laser data from file to 'Laser'. The laser data from 2 sides are sperated
             Laser FullTracks1 = ReadRecoTracks(InputFiles1);
             Laser FullTracks2 = ReadRecoTracks(InputFiles2);
@@ -259,16 +246,18 @@ int main(int argc, char **argv) {
             LaserSets1 = SplitTrackSet(FullTracks1, n_split);
             LaserSets2 = SplitTrackSet(FullTracks2, n_split);
         }
+
         else{
             // Read the laser data from file to 'Laser'.
             Laser FullTracks = ReadRecoTracks(InputFiles);
             // Seperate laser iteration sample
-            Laser LaserSample1 = InterlacedIteration(FullTracks)[0];
-            Laser LaserSample2 = InterlacedIteration(FullTracks)[1];
+            Laser LaserSample1 = InterlacedIterTrackSamples(FullTracks)[0];
+            Laser LaserSample2 = InterlacedIterTrackSamples(FullTracks)[1];
             // Split laser iteration samples into subsamples
             LaserSets1 = SplitTrackSet(LaserSample1, n_split);
             LaserSets2 = SplitTrackSet(LaserSample2, n_split);
         }
+
 
         // Now we loop over each individual set and compute the displacement vectors.
         // TODO: This could be parallelized
@@ -277,66 +266,69 @@ int main(int argc, char **argv) {
  */
         for (unsigned int set = 0; set < n_split; set++) {
 
-            std::cout << "Processing subset " << set << "/" << n_split << "... " << std::endl;
-
+            // The disadvantage is the LaserRecoOrigin will be discard after the calculation of this set
             Laser LaserRecoOrigin1 = LaserSets1[set];
             Laser LaserRecoOrigin2 = LaserSets2[set];
+
+            std::cout << "Processing subset " << set << "/" << n_split << "... " << std::endl;
 
             // Calculate track displacement
             std::cout << " [" << set << "] Find track displacements... " << std::endl;
 
-            std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, LaserSets1[set], LaserSets2[set],
-                                                                       CorrMapFlag);
+            std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, LaserSets1[set], LaserSets2[set], CorrMapFlag);
 
             std::cout << "Time after N-step correction" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
-            // Merge 2 Laser samples with displacement vector for mesh and iteration
-            Laser LaserRecoOrigin = MergeLaser(LaserRecoOrigin1, LaserRecoOrigin2);
-            Laser LaserCorrected = MergeLaser(LaserWithDisp.first, LaserWithDisp.second);
+            std::cout << " [" << set << "] Generate mesh..." << std::endl;
+            
+	        Delaunay MeshMap1;
+            Delaunay MeshMap2;
 
-//            //Add anode information (no distortion) into Laser track sets
-//            LaserRecoOrigin.AppendTrack(Anode(Detector));
-//            LaserCorrected.AppendTrack(Anode(Detector));
-
-            // Create delaunay mesh
-            Delaunay MeshMap;
+            std::cout << "Time after mesh " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
             // The correction map is built on the mesh of reconstructed position which is the origin LaserSets
             if (CorrMapFlag) {
-
-                std::cout << " [" << set << "] Generate mesh..." << std::endl;
-                MeshMap = TrackMesher(LaserRecoOrigin.GetTrackSet());
-                std::cout << "Time after mesh " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
-
-                // Interpolate Displacement Map (regularly spaced grid)
-                std::cout << "Start interpolation..." << std::endl;
-                // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
-
-                DisplMapsHolder.push_back(
-                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserRecoOrigin.GetTrackSet(), MeshMap, Detector));
+                MeshMap1 = TrackMesher(LaserRecoOrigin1.GetTrackSet());
+                MeshMap2 = TrackMesher(LaserRecoOrigin2.GetTrackSet());
             }
-                // The distortion map is built on the mesh of true position which is moved LaserSets
+
+            // The distortion map is built on the mesh of true position which is moved LaserSets
             else {
-                std::cout << " [" << set << "] Generate mesh..." << std::endl;
-                MeshMap = TrackMesher(LaserCorrected.GetTrackSet());
-                std::cout << "Time after mesh " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+                MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
+                MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
+            }
 
-                // Interpolate Displacement Map (regularly spaced grid)
-                std::cout << "Start interpolation..." << std::endl;
-                // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
+            // Interpolate Displacement Map (regularly spaced grid)
+            std::cout << "Start interpolation..." << std::endl;
+            // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
 
+            // The correction map is based on reco space coord
+            if (CorrMapFlag) {
                 DisplMapsHolder.push_back(
-                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserCorrected.GetTrackSet(), MeshMap, Detector));
+                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1,
+                                       Detector, CorrMapFlag));
+                DisplMapsHolder.push_back(
+                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserRecoOrigin2.GetTrackSet(), MeshMap2,
+                                       Detector, CorrMapFlag));
+            }
+
+            // The distortion map is based on true space coord
+            else {
+                DisplMapsHolder.push_back(
+                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(), MeshMap1, Detector,
+                                       CorrMapFlag));
+                DisplMapsHolder.push_back(
+                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserWithDisp.second.GetTrackSet(), MeshMap2, Detector,
+                                       CorrMapFlag));
             }
         }
-
         // Now we go on to create an unified displacement map
         std::vector<ThreeVector<float>> DisplacementMap(DisplMapsHolder.front().size(), ThreeVector<float>(0., 0., 0.));
         std::vector<float> Nvalid(DisplMapsHolder.front().size(), 0.);
 
         for (auto &SubMap: DisplMapsHolder) {
             for (unsigned int idx = 0; idx < DisplacementMap.size(); idx++) {
-                if (SubMap[idx] != Unknown) {
+                if (SubMap[idx] != Empty) {
                     DisplacementMap[idx] = DisplacementMap[idx] + SubMap[idx];
                     Nvalid[idx]++;
                 }
@@ -346,29 +338,23 @@ int main(int argc, char **argv) {
         for (unsigned int idx = 0; idx < DisplacementMap.size(); idx++) {
             if (Nvalid[idx] == 0) {
                 // Set those bin with non valid number into float max again
-                DisplacementMap[idx] = Unknown;
+                DisplacementMap[idx] = {float_max, float_max, float_max};
             } else {
                 DisplacementMap[idx] = DisplacementMap[idx] / Nvalid[idx];
             }
         }
 
-        std::cout << "Size of DisplMapHolder (Nr. of Maps to be averaged)" << DisplMapsHolder.size() << std::endl;
-
         // Fill displacement map into TH3 histograms and write them to file
         std::cout << "Write to File ..." << std::endl;
-        WriteRootFile(DisplacementMap, Detector, ss_outfile.str() );
+        WriteRootFile(DisplacementMap, Detector, ss_outfile.str(), CorrMapFlag);
     }
 
     // The Emap calculation works when the input is correction map
     if (DoEmap) {
-
         // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
         auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_outfile.str().c_str());
         std::vector<ThreeVector<float>> En = E_field.first;
         std::vector<ThreeVector<float>> Position = E_field.second;
-
-//        std::vector<ThreeVector<float>> Position = Eposition(Detector, cryoTemp, E0, v0, ss_outfile.str().c_str());
-//        std::vector<ThreeVector<float>> En = Elocal(Detector, cryoTemp, E0, v0, ss_outfile.str().c_str());
 
         // Create mesh for Emap
         std::cout << "Generate mesh for E field..." << std::endl;
@@ -496,7 +482,7 @@ Laser ReadRecoTracks(std::vector<std::string> InputFiles) {
 
 
 void WriteRootFile(std::vector<ThreeVector<float>> &InterpolationData, TPCVolumeHandler &TPCVolume,
-                   std::string OutputFilename) {
+                   std::string OutputFilename, bool CorrMapFlag = false) {
     // Store TPC properties which are important for the TH3 generation
 
     ThreeVector<unsigned long> Resolution = TPCVolume.GetDetectorResolution();
@@ -508,7 +494,6 @@ void WriteRootFile(std::vector<ThreeVector<float>> &InterpolationData, TPCVolume
 
     // Initialize all TH3F
     std::vector<TH3F> RecoDisplacement;
-
     RecoDisplacement.push_back(TH3F("Reco_Displacement_X", "Reco Displacement X",
                                     Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
                                     Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
@@ -523,29 +508,19 @@ void WriteRootFile(std::vector<ThreeVector<float>> &InterpolationData, TPCVolume
                                     Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
 
     // Loop over all xbins
-    for (unsigned xbin = 0; xbin < Resolution[0]; xbin++) {
+    for (unsigned xbin = 0; xbin < Resolution[0] + 2; xbin++) {
         // Loop over all ybins
-        for (unsigned ybin = 0; ybin < Resolution[1]; ybin++) {
+        for (unsigned ybin = 0; ybin < Resolution[1] + 2; ybin++) {
             // Loop over all zbins
-            for (unsigned zbin = 0; zbin < Resolution[2]; zbin++) {
+            for (unsigned zbin = 0; zbin < Resolution[2] + 2; zbin++) {
                 // Loop over all coordinates
 
                 for (unsigned coord = 0; coord < 3; coord++) {
                     // Fill interpolated grid points into histograms
-                    // bin=0 is underflow, bin = nbin+1 is overflow
                     RecoDisplacement[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
                                                           InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))][coord]);
-                    // It's equivalent to the following expression
                     // Remember, the range of the hist bin is (1, nbins), while when we fill the vector, it starts from 0. (0,nbins-1)
-                    // RecoDisplacement[coord].SetBinContent(xbin+1,ybin+1,zbin+1, InterpolationData[zbin+ybin*TPCVolume.GetDetectorResolution()[2]+xbin*TPCVolume.GetDetectorResolution()[1]*TPCVolume.GetDetectorResolution()[2]][coord]);
                 } // end coordinate loop
-
-                if(xbin ==0){
-                    std::cout<<"x: "<<xbin<<"; y: "<<ybin<<"; z: "<<zbin
-                             <<"; Dx: "<<InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))][0]
-                             <<"; Dy: "<<InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))][1]
-                             <<"; Dz: "<<InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))][2]<<std::endl;
-                }
             } // end zbin loop
         } // end ybin loop
     } // end zbin loop
@@ -607,27 +582,19 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
 
     // Initialize all TH3F
     std::vector<TH3F> Emap;
-    Emap.push_back(TH3F("Emap_X", "E field map X", Resolution[0], MinimumCoord[0] - Unit[0] * 0.5,
-                        MaximumCoord[0] + Unit[0] * 0.5, Resolution[1], MinimumCoord[1] - Unit[1] * 0.5,
-                        MaximumCoord[1] + Unit[1] * 0.5, Resolution[2], MinimumCoord[2] - Unit[2] * 0.5,
-                        MaximumCoord[2] + Unit[2] * 0.5));
-    Emap.push_back(TH3F("Emap_Y", "E field map Y", Resolution[0], MinimumCoord[0] - Unit[0] * 0.5,
-                        MaximumCoord[0] + Unit[0] * 0.5, Resolution[1], MinimumCoord[1] - Unit[1] * 0.5,
-                        MaximumCoord[1] + Unit[1] * 0.5, Resolution[2], MinimumCoord[2] - Unit[2] * 0.5,
-                        MaximumCoord[2] + Unit[2] * 0.5));
-    Emap.push_back(TH3F("Emap_Z", "E field map Z", Resolution[0], MinimumCoord[0] - Unit[0] * 0.5,
-                        MaximumCoord[0] + Unit[0] * 0.5, Resolution[1], MinimumCoord[1] - Unit[1] * 0.5,
-                        MaximumCoord[1] + Unit[1] * 0.5, Resolution[2], MinimumCoord[2] - Unit[2] * 0.5,
-                        MaximumCoord[2] + Unit[2] * 0.5));
+    Emap.push_back(TH3F("Emap_X", "E field map X",
+                        Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
+                        Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
+                        Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
+    Emap.push_back(TH3F("Emap_Y", "E field map Y",
+                        Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
+                        Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
+                        Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
+    Emap.push_back(TH3F("Emap_Z", "E field map Z",
+                        Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
+                        Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
+                        Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
 
-//    ThreeVector<unsigned long> Coord = {0, 4, 14};
-//    EdgeEx(Efield, Resolution, Unit, E0, Coord);
-//
-//    ThreeVector<unsigned long> Coord2 = {0, 11, 41};
-//    EdgeEx(Efield, Resolution, Unit, E0, Coord2);
-//
-//    ThreeVector<unsigned long> Coord3 = {Resolution[1]-1, 11, 41};
-//    EdgeEx(Efield, Resolution, Unit, E0, Coord3);
 
     // the loop should be consistent to the one in the EInterpolateMap()
     for (unsigned xbin = 0; xbin < Resolution[0]; xbin++) {
@@ -661,8 +628,9 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
                     // Loop over all coordinates dx,dy,dz
                     for (unsigned coord = 0; coord < 3; coord++) {
                         // Fill interpolated grid points into histograms. bin=0 is underflow, bin = nbin+1 is overflow
-                        Emap[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
-                                                  Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]);
+                        Emap[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1, Efield[zbin + ybin * Resolution[2] +
+                                                                                       xbin * Resolution[2] *
+                                                                                       Resolution[1]][coord]);
                     } // end coordinate loop
                 }
 //                std::cout<<"xbin: "<<xbin<<"; ybin: "<<ybin<<"; zbin: "<<zbin<<"---Ex: "<<Efield[zbin+ybin*Resolution[2]+xbin*Resolution[2]*Resolution[1]][0]<<"; Ey: "<<Efield[zbin+ybin*Resolution[2]+xbin*Resolution[2]*Resolution[1]][1]<<"; Ez: "<< Efield[zbin+ybin*Resolution[2]+xbin*Resolution[2]*Resolution[1]][2]<<std::endl;

@@ -13,6 +13,6 @@ std::vector<Laser> ReachedExitPoint(const Laser&, float);
 
 std::vector<Laser> SplitTrackSet(const Laser&, unsigned int);
 
-std::vector<Laser> InterlacedIteration(const Laser &LaserSet);
-
 Laser MergeLaser(const Laser &LaserA, const Laser &LaserB);
+
+std::vector<Laser> InterlacedIterTrackSamples(const Laser &LaserSet);

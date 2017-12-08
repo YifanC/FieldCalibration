@@ -55,8 +55,9 @@ std::vector<Laser> SplitTrackSet(const Laser &LaserSet, unsigned int Downsample)
     return Sets;
 }
 
-std::vector<Laser> InterlacedIteration(const Laser &LaserSet) {
-    /* This function separates the input laser data set into 2 data subsamples for interlaced iterated correction.*/
+
+std::vector<Laser> InterlacedIterTrackSamples(const Laser &LaserSet) {
+    // This function separates the input laser data set into 2 data subsamples for iterated correction.
     std::vector<Laser> Sets;
     Sets.resize(2);
 
