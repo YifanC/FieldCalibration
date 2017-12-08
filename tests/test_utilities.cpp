@@ -229,7 +229,7 @@ TEST(Interpolation, BaryCentric) {
     DisplVector[3] = {10.0, 11.0, 12.0};
 
 
-    ThreeVector<float> Location = {0., 0.5, 0.};
+    ThreeVector<float> Location = {0., 0., 0.5};
 
 //    ASSERT_TRUE(Location == ThreeVector<float>(0.5, 0.5, 0.5));
 
@@ -346,9 +346,9 @@ std::vector<float> BaryCoord;
 //    ASSERT_NEAR(InterpolatedDispl[1],1.,1E-3);
 //    ASSERT_NEAR(InterpolatedDispl[2],1.,1E-3);
 
-    ASSERT_EQ(InterpolatedDispl[0],4.);
-    ASSERT_EQ(InterpolatedDispl[1],5.);
-    ASSERT_EQ(InterpolatedDispl[2],6.);
+    ASSERT_EQ(InterpolatedDispl[0],5.5);
+    ASSERT_EQ(InterpolatedDispl[1],6.5);
+    ASSERT_EQ(InterpolatedDispl[2],7.5);
 
 
 
