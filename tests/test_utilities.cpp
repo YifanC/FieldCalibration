@@ -223,13 +223,13 @@ TEST(Interpolation, BaryCentric) {
 
     std::vector<ThreeVector<float>> DisplVector(4, ThreeVector<float>(0., 0., 0.));
 
-    DisplVector[0] = {1.0, 1.0, 1.0};
-    DisplVector[1] = {1.0, 1.0, 1.0};
-    DisplVector[2] = {1.0, 1.0, 1.0};
-    DisplVector[3] = {1.0, 1.0, 1.0};
+    DisplVector[0] = {1.0, 2.0, 3.0};
+    DisplVector[1] = {4.0, 5.0, 6.0};
+    DisplVector[2] = {7.0, 8.0, 9.0};
+    DisplVector[3] = {10.0, 11.0, 12.0};
 
 
-    ThreeVector<float> Location = {0.5, 0.5, 0.5};
+    ThreeVector<float> Location = {0., 0., 0.};
 
 //    ASSERT_TRUE(Location == ThreeVector<float>(0.5, 0.5, 0.5));
 
@@ -288,7 +288,7 @@ std::vector<float> BaryCoord;
     //Location -= LaserMeshSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
     Location -= Vertex[3];
 
-    ASSERT_TRUE(Location == ThreeVector<float>(0.5, 0.5, -0.5));
+//    ASSERT_TRUE(Location == ThreeVector<float>(0.5, 0.5, -0.5));
 
     // If the transformation matrix can be successfully inverted
     if (TransMatrix.Invert()) {
@@ -347,8 +347,8 @@ std::vector<float> BaryCoord;
 //    ASSERT_NEAR(InterpolatedDispl[2],1.,1E-3);
 
     ASSERT_EQ(InterpolatedDispl[0],1.);
-    ASSERT_EQ(InterpolatedDispl[1],1.);
-    ASSERT_EQ(InterpolatedDispl[2],1.);
+    ASSERT_EQ(InterpolatedDispl[1],2.);
+    ASSERT_EQ(InterpolatedDispl[2],3.);
 
 
 
