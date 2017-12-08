@@ -288,7 +288,7 @@ std::vector<float> BaryCoord;
     //Location -= LaserMeshSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
     Location -= Vertex[3];
 
-    ASSERT_TRUE(Location == ThreeVector<float>(-0.5, -0.5, -0.5));
+//    ASSERT_TRUE(Location == ThreeVector<float>(-0.5, -0.5, -0.5));
 
     // If the transformation matrix can be successfully inverted
     if (TransMatrix.Invert()) {
