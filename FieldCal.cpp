@@ -288,7 +288,7 @@ int main(int argc, char **argv) {
             // For merged laser set
 //            Delaunay MeshMap;
             // For laser set 1 and 2 (2side or 2 interlaced sample)
-//	        Delaunay MeshMap1;
+	        Delaunay MeshMap1;
             Delaunay MeshMap2;
 
 
@@ -298,7 +298,7 @@ int main(int argc, char **argv) {
 
 //                MeshMap = TrackMesher(LaserRecoOrigin.GetTrackSet());
 
-//                MeshMap1 = TrackMesher(LaserRecoOrigin1.GetTrackSet());
+                MeshMap1 = TrackMesher(LaserRecoOrigin1.GetTrackSet());
                 MeshMap2 = TrackMesher(LaserRecoOrigin2.GetTrackSet());
 
                 std::cout << "Time after mesh " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
@@ -309,8 +309,8 @@ int main(int argc, char **argv) {
 //                DisplMapsHolder.push_back(
 //                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserRecoOrigin.GetTrackSet(), MeshMap, Detector));
 
-//                DisplMapsHolder.push_back(
-//                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1, Detector));
+                DisplMapsHolder.push_back(
+                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1, Detector));
                 DisplMapsHolder.push_back(
                         InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserRecoOrigin2.GetTrackSet(), MeshMap2, Detector));
 
@@ -322,7 +322,7 @@ int main(int argc, char **argv) {
 
 //                MeshMap = TrackMesher(LaserCorrected.GetTrackSet());
 
-//                MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
+                MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
                 MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
 
                 std::cout << "Time after mesh " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
@@ -333,8 +333,8 @@ int main(int argc, char **argv) {
 //                DisplMapsHolder.push_back(
 //                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserCorrected.GetTrackSet(), MeshMap, Detector));
 
-//                DisplMapsHolder.push_back(
-//                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(), MeshMap1, Detector));
+                DisplMapsHolder.push_back(
+                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(), MeshMap1, Detector));
                 DisplMapsHolder.push_back(
                         InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserWithDisp.second.GetTrackSet(), MeshMap2, Detector));
             }
