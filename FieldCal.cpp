@@ -286,7 +286,7 @@ int main(int argc, char **argv) {
             std::cout << " [" << set << "] Generate mesh..." << std::endl;
 
             // For merged laser set
-//            Delaunay MeshMap;
+            Delaunay MeshMap;
             // For laser set 1 and 2 (2side or 2 interlaced sample)
 	        Delaunay MeshMap1;
             Delaunay MeshMap2;
@@ -296,7 +296,7 @@ int main(int argc, char **argv) {
             // The correction map is built on the mesh of reconstructed position which is the origin LaserSets
             if (CorrMapFlag) {
 
-//                MeshMap = TrackMesher(LaserRecoOrigin.GetTrackSet());
+                MeshMap = TrackMesher(LaserRecoOrigin.GetTrackSet());
 
                 MeshMap1 = TrackMesher(LaserRecoOrigin1.GetTrackSet());
                 MeshMap2 = TrackMesher(LaserRecoOrigin2.GetTrackSet());
@@ -306,8 +306,8 @@ int main(int argc, char **argv) {
                 // Interpolate Displacement Map (regularly spaced grid)
                 std::cout << "Start interpolation..." << std::endl;
 
-//                DisplMapsHolder.push_back(
-//                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserRecoOrigin.GetTrackSet(), MeshMap, Detector));
+                DisplMapsHolder.push_back(
+                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserRecoOrigin.GetTrackSet(), MeshMap, Detector));
 
                 DisplMapsHolder.push_back(
                         InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1, Detector));
@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
             // The distortion map is built on the mesh of true position which is moved LaserSets
             else {
 
-//                MeshMap = TrackMesher(LaserCorrected.GetTrackSet());
+                MeshMap = TrackMesher(LaserCorrected.GetTrackSet());
 
                 MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
                 MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
@@ -330,8 +330,8 @@ int main(int argc, char **argv) {
                 // Interpolate Displacement Map (regularly spaced grid)
                 std::cout << "Start interpolation..." << std::endl;
 
-//                DisplMapsHolder.push_back(
-//                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserCorrected.GetTrackSet(), MeshMap, Detector));
+                DisplMapsHolder.push_back(
+                        InterpolateMap(LaserCorrected.GetTrackSet(), LaserCorrected.GetTrackSet(), MeshMap, Detector));
 
                 DisplMapsHolder.push_back(
                         InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(), MeshMap1, Detector));
