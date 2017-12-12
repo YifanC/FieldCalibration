@@ -615,8 +615,8 @@ TEST(Interpolation, Anode) {
 //    ThreeVector<float> RR4 = Location - Vertex[3];
 
     //// Reuse Location and store its position relative to the last vertex of the cell it is contained in
-    //Location -= LaserMeshSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
-    Location -= Vertex[3];
+    Location -= LaserSet.GetTrackSet()[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
+//    Location -= Vertex[3];
 
 //    ASSERT_TRUE(Location == ThreeVector<float>(0.1, 0.1, -0.9));
 
