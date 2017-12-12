@@ -384,7 +384,7 @@ TEST(Interpolation, Mesh) {
 
     LaserSet.AppendTrack(Track1);
 
-    ThreeVector<float> Location = {0., 0., 0.};
+    ThreeVector<float> Location = {1., 0., 0.};
 
 //    ASSERT_TRUE(Location == ThreeVector<float>(0.5, 0.5, 0.5));
 
@@ -511,175 +511,175 @@ TEST(Interpolation, Mesh) {
 
 }
 
-TEST(Interpolation, Anode) {
-
-    float float_max = std::numeric_limits<float>::max();
-
-    // Choose detector dimensions, coordinate system offset and resolutions
-    ThreeVector<float> DetectorSize = {256.04, 232.5, 1036.8};
-    ThreeVector<float> DetectorOffset = {0.0, -DetectorSize[1] / static_cast<float>(2.0), 0.0};
-    ThreeVector<unsigned long> DetectorResolution = {26, 26, 101};
-    // Create the detector volume
-    TPCVolumeHandler Detector(DetectorSize, DetectorOffset, DetectorResolution);
-
-    ThreeVector<unsigned long> Resolution = Detector.GetDetectorResolution();
-    int AnodeSize = Resolution[1]*Resolution[2];
-    ThreeVector<float> Unit = {Detector.GetDetectorSize()[0] / (Resolution[0] - 1),
-                               Detector.GetDetectorSize()[1] / (Resolution[1] - 1),
-                               Detector.GetDetectorSize()[2] / (Resolution[2] - 1)};
-
-    Laser LaserSet;
-
-    LaserSet.AppendTrack(Anode(Detector));
-
-//    std::vector<ThreeVector<float>> Vertex(4, ThreeVector<float>(0., 0., 0.));
+//TEST(Interpolation, Anode) {
 //
-//    Vertex[0] = {0.0, 0.0, 0.0};
-//    Vertex[1] = {1.0, 0.0, 0.0};
-//    Vertex[2] = {0.0, 1.0, 0.0};
-//    Vertex[3] = {0.0, 0.0, 1.0};
+//    float float_max = std::numeric_limits<float>::max();
 //
-//    std::vector<ThreeVector<float>> DisplVector(4, ThreeVector<float>(0., 0., 0.));
+//    // Choose detector dimensions, coordinate system offset and resolutions
+//    ThreeVector<float> DetectorSize = {256.04, 232.5, 1036.8};
+//    ThreeVector<float> DetectorOffset = {0.0, -DetectorSize[1] / static_cast<float>(2.0), 0.0};
+//    ThreeVector<unsigned long> DetectorResolution = {26, 26, 101};
+//    // Create the detector volume
+//    TPCVolumeHandler Detector(DetectorSize, DetectorOffset, DetectorResolution);
 //
-//    DisplVector[0] = {1.0, 2.0, 3.0};
-//    DisplVector[1] = {4.0, 5.0, 6.0};
-//    DisplVector[2] = {7.0, 8.0, 9.0};
-//    DisplVector[3] = {10.0, 11.0, 12.0};
+//    ThreeVector<unsigned long> Resolution = Detector.GetDetectorResolution();
+//    int AnodeSize = Resolution[1]*Resolution[2];
+//    ThreeVector<float> Unit = {Detector.GetDetectorSize()[0] / (Resolution[0] - 1),
+//                               Detector.GetDetectorSize()[1] / (Resolution[1] - 1),
+//                               Detector.GetDetectorSize()[2] / (Resolution[2] - 1)};
+//
+//    Laser LaserSet;
+//
+//    LaserSet.AppendTrack(Anode(Detector));
+//
+////    std::vector<ThreeVector<float>> Vertex(4, ThreeVector<float>(0., 0., 0.));
+////
+////    Vertex[0] = {0.0, 0.0, 0.0};
+////    Vertex[1] = {1.0, 0.0, 0.0};
+////    Vertex[2] = {0.0, 1.0, 0.0};
+////    Vertex[3] = {0.0, 0.0, 1.0};
+////
+////    std::vector<ThreeVector<float>> DisplVector(4, ThreeVector<float>(0., 0., 0.));
+////
+////    DisplVector[0] = {1.0, 2.0, 3.0};
+////    DisplVector[1] = {4.0, 5.0, 6.0};
+////    DisplVector[2] = {7.0, 8.0, 9.0};
+////    DisplVector[3] = {10.0, 11.0, 12.0};
+////
+////
+////
+////    LaserTrack Track1 = LaserTrack(Vertex,DisplVector);
+////
+////    LaserSet.AppendTrack(Track1);
+//
+//    ThreeVector<float> Location = {0.,
+//                               10 * Unit[1] + Detector.GetDetectorOffset()[1],
+//                               50 * Unit[2] + Detector.GetDetectorOffset()[2]};
+//
+////    ASSERT_TRUE(Location == ThreeVector<float>(0.5, 0.5, 0.5));
+//
+//// Create a array which contains the info of all 4 vertices of a cell
+//    std::array<std::pair<unsigned long, unsigned long>, 4> PointIndex;
+//
+//// Initialize a displacement vector with zero
+//    ThreeVector<float> InterpolatedDispl = {0.0, 0.0, 0.0};
+//
+//// Initialize Barycentric coordinate system (it will have 4 dimensions)
+//    std::vector<float> BaryCoord;
+//
+//    Delaunay Mesh;
+//    Mesh = TrackMesher(LaserSet.GetTrackSet());
+//
+//    // Find cell in the mesh where the point is located
+//    Delaunay::Cell_handle Cell = Mesh.locate(VectorToPoint(Location));
+//
+//    // Loop over all four vertex points of the cell of interest
+//    for (unsigned vertex_no = 0; vertex_no < PointIndex.size(); vertex_no++) {
+//        // Get vertex info of the cell (track number, sample number)
+//        PointIndex[vertex_no] = Cell->vertex(vertex_no)->info();
+//    }
+//
+//    // Initialize matrix for Location transformation into barycentric coordinate system
+//    Matrix3x3 TransMatrix = {{0, 0, 0},
+//                             {0, 0, 0},
+//                             {0, 0, 0}};
+//
+//    // Loop over matrix rows
+//    for (unsigned row = 0; row < 3; row++) {
+//        // Loop over matrix columns
+//        for (unsigned column = 0; column < 3; column++) {
+//            // Fill transformation matrix elements
+////            TransMatrix[row][column] = Vertex[column][row] - Vertex[3][row];
+////            ASSERT_EQ(TransMatrix[row][column],)
+//
+//            TransMatrix[row][column] =
+//                    LaserSet.GetTrackSet()[PointIndex[column].first].GetSamplePosition(PointIndex[column].second)[row] -
+//                    LaserSet.GetTrackSet()[PointIndex.back().first].GetSamplePosition(PointIndex.back().second)[row];
+//
+//        }
+//    }
+//
+////    ASSERT_EQ(TransMatrix[0][0],0.);
+////    ASSERT_EQ(TransMatrix[0][1],1.);
+////    ASSERT_EQ(TransMatrix[0][2],0.);
+////    ASSERT_EQ(TransMatrix[1][0],0.);
+////    ASSERT_EQ(TransMatrix[1][1],0.);
+////    ASSERT_EQ(TransMatrix[1][2],1.);
+////    ASSERT_EQ(TransMatrix[2][0],-1.);
+////    ASSERT_EQ(TransMatrix[2][1],-1.);
+////    ASSERT_EQ(TransMatrix[2][2],-1.);
 //
 //
 //
-//    LaserTrack Track1 = LaserTrack(Vertex,DisplVector);
 //
-//    LaserSet.AppendTrack(Track1);
-
-    ThreeVector<float> Location = {0.,
-                               10 * Unit[1] + Detector.GetDetectorOffset()[1],
-                               50 * Unit[2] + Detector.GetDetectorOffset()[2]};
-
-//    ASSERT_TRUE(Location == ThreeVector<float>(0.5, 0.5, 0.5));
-
-// Create a array which contains the info of all 4 vertices of a cell
-    std::array<std::pair<unsigned long, unsigned long>, 4> PointIndex;
-
-// Initialize a displacement vector with zero
-    ThreeVector<float> InterpolatedDispl = {0.0, 0.0, 0.0};
-
-// Initialize Barycentric coordinate system (it will have 4 dimensions)
-    std::vector<float> BaryCoord;
-
-    Delaunay Mesh;
-    Mesh = TrackMesher(LaserSet.GetTrackSet());
-
-    // Find cell in the mesh where the point is located
-    Delaunay::Cell_handle Cell = Mesh.locate(VectorToPoint(Location));
-
-    // Loop over all four vertex points of the cell of interest
-    for (unsigned vertex_no = 0; vertex_no < PointIndex.size(); vertex_no++) {
-        // Get vertex info of the cell (track number, sample number)
-        PointIndex[vertex_no] = Cell->vertex(vertex_no)->info();
-    }
-
-    // Initialize matrix for Location transformation into barycentric coordinate system
-    Matrix3x3 TransMatrix = {{0, 0, 0},
-                             {0, 0, 0},
-                             {0, 0, 0}};
-
-    // Loop over matrix rows
-    for (unsigned row = 0; row < 3; row++) {
-        // Loop over matrix columns
-        for (unsigned column = 0; column < 3; column++) {
-            // Fill transformation matrix elements
-//            TransMatrix[row][column] = Vertex[column][row] - Vertex[3][row];
-//            ASSERT_EQ(TransMatrix[row][column],)
-
-            TransMatrix[row][column] =
-                    LaserSet.GetTrackSet()[PointIndex[column].first].GetSamplePosition(PointIndex[column].second)[row] -
-                    LaserSet.GetTrackSet()[PointIndex.back().first].GetSamplePosition(PointIndex.back().second)[row];
-
-        }
-    }
-
-//    ASSERT_EQ(TransMatrix[0][0],0.);
-//    ASSERT_EQ(TransMatrix[0][1],1.);
-//    ASSERT_EQ(TransMatrix[0][2],0.);
-//    ASSERT_EQ(TransMatrix[1][0],0.);
-//    ASSERT_EQ(TransMatrix[1][1],0.);
-//    ASSERT_EQ(TransMatrix[1][2],1.);
-//    ASSERT_EQ(TransMatrix[2][0],-1.);
-//    ASSERT_EQ(TransMatrix[2][1],-1.);
-//    ASSERT_EQ(TransMatrix[2][2],-1.);
-
-
-
-
-//    ThreeVector<float> RR4 = Location - Vertex[3];
-
-    //// Reuse Location and store its position relative to the last vertex of the cell it is contained in
-    Location -= LaserSet.GetTrackSet()[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
-//    Location -= Vertex[3];
-
-//    ASSERT_TRUE(Location == ThreeVector<float>(0.1, 0.1, -0.9));
-
-    // If the transformation matrix can be successfully inverted
-    if (TransMatrix.Invert()) {
-        // Use inverted matrix to fill the first three coordinates
-        ThreeVector<float> BC = TransMatrix * Location;
-        BaryCoord = BC.GetStdVector();
-
-//        ASSERT_NEAR(BC[0],1.,1E-3);
-//        ASSERT_NEAR(BC[1],0.,1E-3);
-//        ASSERT_NEAR(BC[2],0.,1E-3);
-
-
-
-        // The sum of all barycentric coordinates has to be 1 by definition, use this to calculate the 4th coordinate
-        BaryCoord.push_back(1 - BaryCoord[0] - BaryCoord[1] - BaryCoord[2]);
-
-//        ASSERT_EQ(BC[0],0.1);
-//        ASSERT_EQ(BC[1],-0.9);
-//        ASSERT_EQ(BC[2],0.7);
-//        ASSERT_EQ(BC[3],1.1);
-    }
-    else // if the matrix can't be inverted
-    {
-        //SAY SOMETHING IS WRONG!
-        InterpolatedDispl = {-99.,-99.,-99.};
-
-    }
-
-//    ASSERT_NEAR(BaryCoord[0],1.,1E-3);
-//    ASSERT_NEAR(BaryCoord[1],0.,1E-3);
-//    ASSERT_NEAR(BaryCoord[2],0.,1E-3);
-//    ASSERT_NEAR(BaryCoord[3],0.,1E-3);
-
-    // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
-    // So if one of the coordinates is smaller than zero
-    if (BaryCoord[0] < 0.0 || BaryCoord[1] < 0.0 || BaryCoord[2] < 0.0 || BaryCoord[3] < 0.0) {
-        InterpolatedDispl = {-999.,-999.,-999.};
-
-    }
-
-    // If the function is still alive, loop over all barycentric coordinates
-    for (unsigned vertex_no = 0; vertex_no < 4; vertex_no++) {
-        // Use the barycentric coordinates as a weight for the correction stored at this vertex in order to get the interpolated displacement
-        InterpolatedDispl += (LaserSet.GetTrackSet()[PointIndex[vertex_no].first].GetDisplacement(PointIndex[vertex_no].second) *
-        BaryCoord[vertex_no]);
-
-//        InterpolatedDispl += DisplVector[vertex_no] * BaryCoord[vertex_no];
-    }
-
-//    ASSERT_TRUE(InterpolatedDispl == ThreeVector<float>(1., 1., 1.));
-
-//    ASSERT_NEAR(InterpolatedDispl[0],1.,1E-3);
-//    ASSERT_NEAR(InterpolatedDispl[1],1.,1E-3);
-//    ASSERT_NEAR(InterpolatedDispl[2],1.,1E-3);
-
-//    ASSERT_EQ(InterpolatedDispl[0],4.);
-//    ASSERT_EQ(InterpolatedDispl[1],5.);
-//    ASSERT_EQ(InterpolatedDispl[2],6.);
-
-
-}
+////    ThreeVector<float> RR4 = Location - Vertex[3];
+//
+//    //// Reuse Location and store its position relative to the last vertex of the cell it is contained in
+//    Location -= LaserSet.GetTrackSet()[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
+////    Location -= Vertex[3];
+//
+////    ASSERT_TRUE(Location == ThreeVector<float>(0.1, 0.1, -0.9));
+//
+//    // If the transformation matrix can be successfully inverted
+//    if (TransMatrix.Invert()) {
+//        // Use inverted matrix to fill the first three coordinates
+//        ThreeVector<float> BC = TransMatrix * Location;
+//        BaryCoord = BC.GetStdVector();
+//
+////        ASSERT_NEAR(BC[0],1.,1E-3);
+////        ASSERT_NEAR(BC[1],0.,1E-3);
+////        ASSERT_NEAR(BC[2],0.,1E-3);
+//
+//
+//
+//        // The sum of all barycentric coordinates has to be 1 by definition, use this to calculate the 4th coordinate
+//        BaryCoord.push_back(1 - BaryCoord[0] - BaryCoord[1] - BaryCoord[2]);
+//
+////        ASSERT_EQ(BC[0],0.1);
+////        ASSERT_EQ(BC[1],-0.9);
+////        ASSERT_EQ(BC[2],0.7);
+////        ASSERT_EQ(BC[3],1.1);
+//    }
+//    else // if the matrix can't be inverted
+//    {
+//        //SAY SOMETHING IS WRONG!
+//        InterpolatedDispl = {-99.,-99.,-99.};
+//
+//    }
+//
+////    ASSERT_NEAR(BaryCoord[0],1.,1E-3);
+////    ASSERT_NEAR(BaryCoord[1],0.,1E-3);
+////    ASSERT_NEAR(BaryCoord[2],0.,1E-3);
+////    ASSERT_NEAR(BaryCoord[3],0.,1E-3);
+//
+//    // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
+//    // So if one of the coordinates is smaller than zero
+//    if (BaryCoord[0] < 0.0 || BaryCoord[1] < 0.0 || BaryCoord[2] < 0.0 || BaryCoord[3] < 0.0) {
+//        InterpolatedDispl = {-999.,-999.,-999.};
+//
+//    }
+//
+//    // If the function is still alive, loop over all barycentric coordinates
+//    for (unsigned vertex_no = 0; vertex_no < 4; vertex_no++) {
+//        // Use the barycentric coordinates as a weight for the correction stored at this vertex in order to get the interpolated displacement
+//        InterpolatedDispl += (LaserSet.GetTrackSet()[PointIndex[vertex_no].first].GetDisplacement(PointIndex[vertex_no].second) *
+//        BaryCoord[vertex_no]);
+//
+////        InterpolatedDispl += DisplVector[vertex_no] * BaryCoord[vertex_no];
+//    }
+//
+////    ASSERT_TRUE(InterpolatedDispl == ThreeVector<float>(1., 1., 1.));
+//
+////    ASSERT_NEAR(InterpolatedDispl[0],1.,1E-3);
+////    ASSERT_NEAR(InterpolatedDispl[1],1.,1E-3);
+////    ASSERT_NEAR(InterpolatedDispl[2],1.,1E-3);
+//
+////    ASSERT_EQ(InterpolatedDispl[0],4.);
+////    ASSERT_EQ(InterpolatedDispl[1],5.);
+////    ASSERT_EQ(InterpolatedDispl[2],6.);
+//
+//
+//}
 
 
 int main(int ac, char* av[])
