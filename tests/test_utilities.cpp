@@ -384,7 +384,7 @@ TEST(Interpolation, Mesh) {
 
     LaserSet.AppendTrack(Track1);
 
-    ThreeVector<float> Location = {1., 0., 0.};
+    ThreeVector<float> Location = {0., 0., 0.};
 
 //    ASSERT_TRUE(Location == ThreeVector<float>(0.5, 0.5, 0.5));
 
@@ -445,8 +445,8 @@ TEST(Interpolation, Mesh) {
 //    ThreeVector<float> RR4 = Location - Vertex[3];
 
     //// Reuse Location and store its position relative to the last vertex of the cell it is contained in
-    //Location -= LaserMeshSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
-    Location -= Vertex[3];
+    Location -= LaserSet.GetTrackSet()[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
+//    Location -= Vertex[3];
 
 //    ASSERT_TRUE(Location == ThreeVector<float>(0.1, 0.1, -0.9));
 
@@ -492,10 +492,10 @@ TEST(Interpolation, Mesh) {
     // If the function is still alive, loop over all barycentric coordinates
     for (unsigned vertex_no = 0; vertex_no < 4; vertex_no++) {
         // Use the barycentric coordinates as a weight for the correction stored at this vertex in order to get the interpolated displacement
-//        InterpolatedDispl += (LaserTrackSet[PointIndex[vertex_no].first].GetDisplacement(PointIndex[vertex_no].second) *
-//        BaryCoord[vertex_no]);
+        InterpolatedDispl += (LaserSet.GetTrackSet()[PointIndex[vertex_no].first].GetDisplacement(PointIndex[vertex_no].second) *
+        BaryCoord[vertex_no]);
 
-        InterpolatedDispl += DisplVector[vertex_no] * BaryCoord[vertex_no];
+//        InterpolatedDispl += DisplVector[vertex_no] * BaryCoord[vertex_no];
     }
 
 //    ASSERT_TRUE(InterpolatedDispl == ThreeVector<float>(1., 1., 1.));
@@ -504,9 +504,9 @@ TEST(Interpolation, Mesh) {
 //    ASSERT_NEAR(InterpolatedDispl[1],1.,1E-3);
 //    ASSERT_NEAR(InterpolatedDispl[2],1.,1E-3);
 
-//    ASSERT_EQ(InterpolatedDispl[0],4.);
-//    ASSERT_EQ(InterpolatedDispl[1],5.);
-//    ASSERT_EQ(InterpolatedDispl[2],6.);
+    ASSERT_EQ(InterpolatedDispl[0],1.);
+    ASSERT_EQ(InterpolatedDispl[1],2.);
+    ASSERT_EQ(InterpolatedDispl[2],3.);
 
 
 }
@@ -675,8 +675,8 @@ TEST(Interpolation, Anode) {
 //    ASSERT_NEAR(InterpolatedDispl[2],1.,1E-3);
 
 //    ASSERT_EQ(InterpolatedDispl[0],4.);
-    ASSERT_EQ(InterpolatedDispl[1],5.);
-    ASSERT_EQ(InterpolatedDispl[2],6.);
+//    ASSERT_EQ(InterpolatedDispl[1],5.);
+//    ASSERT_EQ(InterpolatedDispl[2],6.);
 
 
 }
