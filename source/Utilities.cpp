@@ -88,3 +88,28 @@ Laser MergeLaser(const Laser &LaserA, const Laser &LaserB) {
 
     return MergedLaser;
 }
+
+// Acknowledge the zero distortion at anode into mesh by forming the information into "LaserTrack"
+LaserTrack Anode(TPCVolumeHandler &TPCVolume){
+
+    ThreeVector<unsigned long> Resolution = TPCVolume.GetDetectorResolution();
+    int AnodeSize = Resolution[1]*Resolution[2];
+    ThreeVector<float> Unit = {TPCVolume.GetDetectorSize()[0] / (Resolution[0] - 1),
+                               TPCVolume.GetDetectorSize()[1] / (Resolution[1] - 1),
+                               TPCVolume.GetDetectorSize()[2] / (Resolution[2] - 1)};
+
+    std::vector<ThreeVector<float>> AnodePoints;
+    std::vector<ThreeVector<float>> AnodeDisp(AnodeSize,ThreeVector<float>(0.,0.,0.));
+
+    for (unsigned ybin = 0; ybin < Resolution[1]; ybin++) {
+        for (unsigned zbin = 0; zbin < Resolution[2]; zbin++) {
+
+            //Push back the location (x,y,z coord) of Anode Points. Anode sits at x=0
+            ThreeVector<float> grid = {0., ybin * Unit[1] + TPCVolume.GetDetectorOffset()[1], zbin * Unit[2] + TPCVolume.GetDetectorOffset()[2]};
+            AnodePoints.push_back(grid);
+
+        }
+    }
+
+    return LaserTrack(AnodePoints,AnodeDisp);
+}

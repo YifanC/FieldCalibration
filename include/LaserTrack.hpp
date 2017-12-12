@@ -58,6 +58,8 @@ public:
 
     LaserTrack(std::array<float, 2> &, ThreeVector<float> &, const TPCVolumeHandler &);
 
+    LaserTrack(const std::vector<ThreeVector<float>> &RecoTrack, const std::vector<ThreeVector<float>> &LaserDisp);
+
     LaserTrack(const unsigned int, std::array<float, 2> &, ThreeVector<float> &, const TPCVolumeHandler &);
 
     // Displacement Algorithm names. Add new algorithm name if new algo is introduced

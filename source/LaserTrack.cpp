@@ -45,6 +45,34 @@ LaserTrack::LaserTrack(const ThreeVector<float> &InEntryPoint, const ThreeVector
     LaserDisplacement.resize(LaserReco.size());
 }
 
+////////////////////////////////////
+//TODO:Check if it's right
+// This part is to disguise the anode zero distortion as tracks, so they can be easily merged after iteration calculation
+LaserTrack::LaserTrack(const std::vector<ThreeVector<float>> &RecoTrack, const std::vector<ThreeVector<float>> &LaserDisp) {
+
+    if(RecoTrack.size()!=LaserDisp.size()){
+        std::cerr << "ERROR: Please provide RecoTrack and LaserDisp in same size !" << std::endl;
+    }
+
+    // Resever enogh space for the LaserReco vector. Can be important if you go to the Memory limit
+    LaserReco.reserve(RecoTrack.size());
+
+    // Loop over all RecoTrack points
+    for (const auto &TrackPoint : RecoTrack) {
+        // Fill TrackPoints as vectors into the LaserReco vector
+        LaserReco.push_back(TrackPoint);
+    }
+
+    // Initialize LaserDisplacement vector
+    LaserDisplacement.resize(LaserReco.size());
+
+    // Loop over all RecoTrack points
+    for (const auto &DispVec : LaserDisp) {
+        // Fill TrackPoints as vectors into the LaserReco vector
+        LaserDisplacement.push_back(DispVec);
+    }
+}
+
 LaserTrack::LaserTrack(std::array<float, 2> &Angles, ThreeVector<float> &Position, const TPCVolumeHandler &TPCVolume)
         : TrackAngles(Angles), LaserPosition(Position) {
     FindBoundaries(TPCVolume);
