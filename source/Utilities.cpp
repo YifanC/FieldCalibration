@@ -3,6 +3,7 @@
 //
 
 #include "../include/Utilities.hpp"
+#include "../include/TPCVolumeHandler.hpp"
 
 std::vector<Laser> ReachedExitPoint(const Laser &LaserSet, float ExitBoundary) {
     /*
@@ -105,7 +106,9 @@ LaserTrack Anode(TPCVolumeHandler &TPCVolume){
         for (unsigned zbin = 0; zbin < Resolution[2]; zbin++) {
 
             //Push back the location (x,y,z coord) of Anode Points. Anode sits at x=0
-            ThreeVector<float> grid = {0., ybin * Unit[1] + TPCVolume.GetDetectorOffset()[1], zbin * Unit[2] + TPCVolume.GetDetectorOffset()[2]};
+            ThreeVector<float> grid = {0.,
+                                       ybin * Unit[1] + TPCVolume.GetDetectorOffset()[1],
+                                       zbin * Unit[2] + TPCVolume.GetDetectorOffset()[2]};
             AnodePoints.push_back(grid);
 
         }
