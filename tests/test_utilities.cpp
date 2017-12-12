@@ -662,10 +662,10 @@ TEST(Interpolation, Anode) {
     // If the function is still alive, loop over all barycentric coordinates
     for (unsigned vertex_no = 0; vertex_no < 4; vertex_no++) {
         // Use the barycentric coordinates as a weight for the correction stored at this vertex in order to get the interpolated displacement
-//        InterpolatedDispl += (LaserTrackSet[PointIndex[vertex_no].first].GetDisplacement(PointIndex[vertex_no].second) *
-//        BaryCoord[vertex_no]);
+        InterpolatedDispl += (LaserSet.GetTrackSet()[PointIndex[vertex_no].first].GetDisplacement(PointIndex[vertex_no].second) *
+        BaryCoord[vertex_no]);
 
-        InterpolatedDispl += DisplVector[vertex_no] * BaryCoord[vertex_no];
+//        InterpolatedDispl += DisplVector[vertex_no] * BaryCoord[vertex_no];
     }
 
 //    ASSERT_TRUE(InterpolatedDispl == ThreeVector<float>(1., 1., 1.));
