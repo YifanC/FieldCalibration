@@ -422,8 +422,9 @@ TEST(Interpolation, Mesh) {
 //            ASSERT_EQ(TransMatrix[row][column],)
 
             TransMatrix[row][column] =
-                    LaserSet[PointIndex[column].first].GetSamplePosition(PointIndex[column].second)[row] -
-                    LaserSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second)[row];
+                    LaserSet.GetTrackSet()[PointIndex[column].first].GetSamplePosition(PointIndex[column].second)[row] -
+                    LaserSet.GetTrackSet()[PointIndex.back().first].GetSamplePosition(PointIndex.back().second)[row];
+            
         }
     }
 
