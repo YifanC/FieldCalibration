@@ -69,7 +69,7 @@ LaserTrack::LaserTrack(const std::vector<ThreeVector<float>> &RecoTrack, const s
     }
 
     // Initialize LaserDisplacement vector
-    LaserDisplacement.resize(LaserReco.size());
+    LaserDisplacement.reserve(LaserReco.size());
 
     // Loop over all RecoTrack points
     for (const auto &DispVec : LaserDisp) {
