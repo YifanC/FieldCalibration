@@ -72,9 +72,14 @@ ThreeVector<float>
 EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::vector<ThreeVector<float>> &Position, const xDelaunay &Mesh,
                  ThreeVector<float> Location, const TPCVolumeHandler &TPC);
 
+float EcompInterpolateCGAL(std::vector<float> &En, std::vector<ThreeVector<float>> &Position,
+                           const xDelaunay &Mesh, ThreeVector<float> Location, const TPCVolumeHandler &TPC);
+
 std::vector<ThreeVector<float>>
 EInterpolateMap(std::vector<ThreeVector<float>> &En, std::vector<ThreeVector<float>> &Position, const xDelaunay &Mesh,
                 const TPCVolumeHandler &TPC, ThreeVector<unsigned long> EReso);
+
+
 /////////////////E map session
 
 #endif

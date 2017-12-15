@@ -50,6 +50,8 @@
 #endif
 */
 
+#include <dirent.h>
+
 // Own Files
 #include "include/LaserTrack.hpp"
 #include "include/ThreeVector.hpp"
@@ -203,11 +205,11 @@ int main(int argc, char **argv) {
     float v0 = 1.11436; // mm/us, because of the fit of drift velocity as function of E field, while the LArSoft unit is cm/us
 
     std::stringstream ss_outfile;
+    std::stringstream ss_Einfile;
     std::stringstream ss_Eoutfile;
     float float_max = std::numeric_limits<float>::max();
     ThreeVector<float> Unknown = {float_max, float_max, float_max};
-
-    //TODO: To be improved...what if no D map calculation for E map calculation
+    
     // Set the name for Dmap
     if (CorrMapFlag) {
         ss_outfile << "RecoCorrection-N" << Nstep << "-S" << n_split << ".root";
@@ -216,14 +218,35 @@ int main(int argc, char **argv) {
         ss_outfile << "TrueDistortion-N" << Nstep << "-S" << n_split << ".root";
     }
 
-    ss_Eoutfile << "Emap-N" << Nstep << "-S" << n_split <<".root";
+    // Name the input and output file name of E field calculation
+    int NEinfile = 0;
+    std::string Einfile;
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir (".")) != NULL) {
+        while ((ent = readdir (dir)) != NULL) {
+            if(std::string(ent->d_name).compare(0,8,"RecoCorr")==0){
+                NEinfile++;
+                Einfile.assign(std::string(ent->d_name));
+                ss_Einfile <<Einfile;
+                ss_Eoutfile << "Emap-"<<Einfile.substr(9,Einfile.find_last_of(Einfile));
+            }
+        }
+        closedir (dir);
+    } else {
+        std::cerr << "Local directory is not accessible." << std::endl;
+    }
 
-//    ss_outfile << "RecoCorr-Simu.root";
-//    ss_Eoutfile << "Emap-Simu.root";
-
-//    ss_outfile << "RecoCorrection-N2-S10.root";
-//    ss_Eoutfile << "EMap-N2-S10.root";
-
+    if(NEinfile==1){
+        std::ifstream ifile(ss_Einfile.str().c_str());
+        if(ifile){
+            std::cout<<"E field input file exists."<<std::endl;
+        } else{
+            std::cerr << "Please make sure there is one and only one 'RecoCorr*.root' file for E field calculation." << std::endl;
+        }
+    } else{
+        std::cerr << "Please make sure there is one and only one 'RecoCorr*.root' file for E field calculation." << std::endl;
+    }
 
 
     if (DoCorr) {
@@ -373,7 +396,7 @@ int main(int argc, char **argv) {
     // The Emap calculation works when the input is correction map
     if (DoEmap) {
         // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
-        auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_outfile.str().c_str());
+        auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
         std::vector<ThreeVector<float>> En = E_field.first;
         std::vector<ThreeVector<float>> Position = E_field.second;
 
@@ -620,31 +643,31 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
     for (unsigned xbin = 0; xbin < Resolution[0]; xbin++) {
         for (unsigned ybin = 0; ybin < Resolution[1]; ybin++) {
             for (unsigned zbin = 0; zbin < Resolution[2]; zbin++) {
-                if((Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][0] > 0.5*float_max ||
-                   Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][1] > 0.5*float_max ||
-                   Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][2] > 0.5*float_max) &&
-                   xbin == 0)
-                {
-//                    std::cout<<"x: "<<xbin<<"; y: "<<ybin<<"; z: "<<zbin<<" !Flag!"<<std::endl;
-                    ThreeVector<unsigned long> Coord = {xbin, ybin, zbin};
-                    Emap[0].SetBinContent(xbin + 1, ybin + 1, zbin + 1, EdgeEx(Efield, Resolution, Unit, E0, Coord));
-                    Emap[1].SetBinContent(xbin + 1, ybin + 1, zbin + 1, 0);
-                    Emap[2].SetBinContent(xbin + 1, ybin + 1, zbin + 1, 0);
-                    std::cout<<"Maxwell...xbin: "<<xbin<<", ybin: "<<ybin<<", zbin: "<<zbin<<", Ex: "<<EdgeEx(Efield, Resolution, Unit, E0, Coord)<<std::endl;
-                }
-                else if(xbin ==0){
-                    Emap[0].SetBinContent(xbin + 1, ybin + 1, zbin + 1, -999);
-                    Emap[1].SetBinContent(xbin + 1, ybin + 1, zbin + 1, -999);
-                    Emap[2].SetBinContent(xbin + 1, ybin + 1, zbin + 1, -999);
-                }
-                else{
-                    if(xbin == 0){
-                        std::cout<<"Mesh-Interpolation...xbin: "<<xbin<<", ybin: "<<ybin<<", zbin: "<<zbin
-                                 <<", Ex: "<<Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][0]
-                                 <<", Ey: "<<Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][1]
-                                 <<", Ez: "<<Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][2]
-                                 <<std::endl;
-                    }
+//                if((Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][0] > 0.5*float_max ||
+//                   Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][1] > 0.5*float_max ||
+//                   Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][2] > 0.5*float_max) &&
+//                   xbin == 0)
+//                {
+////                    std::cout<<"x: "<<xbin<<"; y: "<<ybin<<"; z: "<<zbin<<" !Flag!"<<std::endl;
+//                    ThreeVector<unsigned long> Coord = {xbin, ybin, zbin};
+//                    Emap[0].SetBinContent(xbin + 1, ybin + 1, zbin + 1, EdgeEx(Efield, Resolution, Unit, E0, Coord));
+//                    Emap[1].SetBinContent(xbin + 1, ybin + 1, zbin + 1, 0);
+//                    Emap[2].SetBinContent(xbin + 1, ybin + 1, zbin + 1, 0);
+//                    std::cout<<"Maxwell...xbin: "<<xbin<<", ybin: "<<ybin<<", zbin: "<<zbin<<", Ex: "<<EdgeEx(Efield, Resolution, Unit, E0, Coord)<<std::endl;
+//                }
+//                else if(xbin ==0){
+//                    Emap[0].SetBinContent(xbin + 1, ybin + 1, zbin + 1, -999);
+//                    Emap[1].SetBinContent(xbin + 1, ybin + 1, zbin + 1, -999);
+//                    Emap[2].SetBinContent(xbin + 1, ybin + 1, zbin + 1, -999);
+//                }
+//                else{
+//                    if(xbin == 0){
+//                        std::cout<<"Mesh-Interpolation...xbin: "<<xbin<<", ybin: "<<ybin<<", zbin: "<<zbin
+//                                 <<", Ex: "<<Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][0]
+//                                 <<", Ey: "<<Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][1]
+//                                 <<", Ez: "<<Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][2]
+//                                 <<std::endl;
+//                    }
                     // Loop over all coordinates dx,dy,dz
                     for (unsigned coord = 0; coord < 3; coord++) {
                         // Fill interpolated grid points into histograms. bin=0 is underflow, bin = nbin+1 is overflow
@@ -652,7 +675,7 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
                                                                                        xbin * Resolution[2] *
                                                                                        Resolution[1]][coord]);
                     } // end coordinate loop
-                }
+//                }
             } // end zbin loop
         } // end ybin loop
     } // end zbin loop

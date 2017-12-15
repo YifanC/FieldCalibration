@@ -60,6 +60,13 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
                 // mm/us, the magnitude of the drift velocity at the local gap
                 // Be very careful that Rn.GetNorm() and Delta_x are in the unit of cm, not mm
                 float vn = Rn.GetNorm() / Delta_x * v0;
+
+                if(isinf(vn)){
+                    std::cout<<"TrueNext.x: "<<True_next[0]<<"TrueNext.y: "<<True_next[1]<<"TrueNext.z: "<<True_next[2]<<std::endl;
+                    std::cout<<"True.x: "<<True[0]<<"True.y: "<<True[1]<<"True.z: "<<True[2]<<std::endl;
+                    std::cout<<"Rn.x: "<<Rn[0]<<"Rn.y: "<<Rn[1]<<"Rn.z: "<<Rn[2]<<std::endl;
+                    std::cout<<"Rn. norm: "<< Rn.GetNorm()<<"; Delta_X: "<<Delta_x<<"; v0: "<<std::endl;
+                }
 //                std::cout<<"Rn.GetNorm: "<<Rn.GetNorm()<<", Delta_x: "<<Delta_x<<", v0: "<<v0<<std::endl;
 //                std::cout<<"Rn_x: "<<Rn[0]<<", Rn_y: "<<Rn[1]<<", Rn_z: "<<Rn[2]<<std::endl;
 //                std::cout<<"True_next: "<<True_next.GetNorm()<<", True: "<<True.GetNorm()<<std::endl;
