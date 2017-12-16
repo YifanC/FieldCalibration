@@ -331,23 +331,23 @@ ThreeVector<float> EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::ve
         // Set E field to zero and end function immediately!
 //        std::cout<<"The transition matrix for this E grid point is not invertable. "<<std::endl;
 //        InterpolatedEfield = {273.0,0.0,0.0};
-        InterpolatedEfield = {float_max, float_max, float_max};
-//        InterpolatedEfield = {-99,-99,-99};
+//        InterpolatedEfield = {float_max, float_max, float_max};
+        InterpolatedEfield = {-99,-99,-99};
         return InterpolatedEfield;
     }
 
     // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
     // So if one of the coordinates is negative, terminate the function
-//    float eps = 1E4;
-    float eps = 0.0;
-//    if(BaryCoord[0] <= 0.0 || BaryCoord[1] <= 0.0 || BaryCoord[2] <= 0.0 || BaryCoord[3] <= 0.0)
+    float eps = 1E7;
+//    float eps = 0.0;
+//    if(BaryCoord[0] < 0.0 || BaryCoord[1] < 0.0 || BaryCoord[2] < 0.0 || BaryCoord[3] < 0.0){
     if (BaryCoord[0] < 0.0 - eps || BaryCoord[0] > 1.0 + eps || BaryCoord[1] < 0.0 - eps || BaryCoord[1] > 1.0 + eps ||
         BaryCoord[2] < 0.0 - eps || BaryCoord[2] > 1.0 + eps || BaryCoord[3] < 0.0 - eps || BaryCoord[3] > 1.0 + eps) {
         // Set E field to zero and end function immediately!
 //        std::cout<<"There is negative barycentric coordinate at this E grid point! "<<std::endl;
 //        InterpolatedEfield = {273.0,0.0,0.0};
 //        std::cout << "x: " << Location[0]<<"; y: "<<Location[1]<<"; z: "<<Location[2]<<std::endl;
-//        std::cout<<"A: "<< BaryCoord[0]<<"; B: "<< BaryCoord[1]<<"; C: "<< BaryCoord[2]<<"; D: "<< BaryCoord[3]<<std::endl;
+        std::cout<<"A: "<< BaryCoord[0]<<"; B: "<< BaryCoord[1]<<"; C: "<< BaryCoord[2]<<"; D: "<< BaryCoord[3]<<std::endl;
 //        InterpolatedEfield = {-99,-99,-99};
 //            std::cout<<"loc: "<<loc<<"; li: "<<li<<"; lj: "<<lj<<std::endl;
         InterpolatedEfield = {float_max, float_max, float_max};
@@ -363,9 +363,6 @@ ThreeVector<float> EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::ve
     }
 
     // Return interpolated E field
-    if(InterpolatedEfield[0]>20){
-        std::cout<<"Ex: "<< InterpolatedEfield[0] <<"; Ey: "<<InterpolatedEfield[1]<<"; Ez: "<<InterpolatedEfield[2]<<std::endl;
-    }
     return InterpolatedEfield;
 }
 
@@ -549,7 +546,12 @@ EInterpolateMap(std::vector<ThreeVector<float>> &En, std::vector<ThreeVector<flo
                         TPC.GetDetectorOffset()[2] + TPC.GetDetectorSize()[2] / static_cast<float>(EReso[2] - 1) * zbin;
 
 //                std::cout<<"x: "<<Location[0]<<"; y: "<<Location[1]<<"; z: "<<Location[2]<<std::endl;
-
+                if(EInterpolateCGAL(En, Position, Mesh, Location, TPC)[0]>20 && xbin!=0 && xbin!=20){
+                    std::cout<<"x: "<<xbin<<"; y: "<<ybin<<"; z: "<<zbin
+                             <<"; Ex: "<< EInterpolateCGAL(En, Position, Mesh, Location, TPC)[0]
+                             <<"; Ey: "<<EInterpolateCGAL(En, Position, Mesh, Location, TPC)[1]
+                             <<"; Ez: "<<EInterpolateCGAL(En, Position, Mesh, Location, TPC)[2]<<std::endl;
+                }
                 // Fill displacement map
                 EMap.push_back(EInterpolateCGAL(En, Position, Mesh, Location, TPC));
             } // end zbin loop

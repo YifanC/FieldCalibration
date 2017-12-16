@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
     std::stringstream ss_Eoutfile;
     float float_max = std::numeric_limits<float>::max();
     ThreeVector<float> Unknown = {float_max, float_max, float_max};
-    
+
     // Set the name for Dmap
     if (CorrMapFlag) {
         ss_outfile << "RecoCorrection-N" << Nstep << "-S" << n_split << ".root";
@@ -671,9 +671,13 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
                     // Loop over all coordinates dx,dy,dz
                     for (unsigned coord = 0; coord < 3; coord++) {
                         // Fill interpolated grid points into histograms. bin=0 is underflow, bin = nbin+1 is overflow
-                        Emap[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1, Efield[zbin + ybin * Resolution[2] +
-                                                                                       xbin * Resolution[2] *
-                                                                                       Resolution[1]][coord]);
+                        Emap[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
+                                                  Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]);
+//                        if(Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]>20){
+//                            std::cout<<"x: "<<xbin +1 <<"; y: "<<ybin+1<<"; z: "<<zbin+1<<"Efield[ "<<coord<<"]: "
+//                                     <<Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]
+//                                     <<std::endl;
+//                        }
                     } // end coordinate loop
 //                }
             } // end zbin loop
