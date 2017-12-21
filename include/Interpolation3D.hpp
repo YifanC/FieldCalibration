@@ -79,6 +79,14 @@ std::vector<ThreeVector<float>>
 EInterpolateMap(std::vector<ThreeVector<float>> &En, std::vector<ThreeVector<float>> &Position, const xDelaunay &Mesh,
                 const TPCVolumeHandler &TPC, ThreeVector<unsigned long> EReso);
 
+std::vector<ThreeVector<float>>
+EcompInterpolateMap(std::vector<float> &Ex, std::vector<ThreeVector<float>> &PositionX, const xDelaunay &MeshX,
+                    std::vector<float> &Ey, std::vector<ThreeVector<float>> &PositionY, const xDelaunay &MeshY,
+                    std::vector<float> &Ez, std::vector<ThreeVector<float>> &PositionZ, const xDelaunay &MeshZ,
+                    const TPCVolumeHandler &TPC, ThreeVector<unsigned long> EReso);
+
+
+
 
 /////////////////E map session
 

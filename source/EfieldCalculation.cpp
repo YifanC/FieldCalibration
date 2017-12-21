@@ -13,7 +13,7 @@
 
 
 // pair<En,Position>
-// *root_name is the name of the correction map
+// *root_name is the name of the correction map (input of the calculation)
 std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
 Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const char *root_name) {
 
@@ -29,14 +29,13 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
                                        TPCVolume.GetDetectorSize()[2] / (NrGrid[2] - 1)};
     float Delta_x = DetectorReso[0]; //cm
 
-//    std::vector<ThreeVector< float>> En(Resolution[2] * Resolution[1] * (Resolution[0]-1));
-//    std::vector<ThreeVector<float>> Position(Resolution[2]*Resolution[1]*(Resolution[0]-1));
     std::vector<ThreeVector<float>> En;
     std::vector<ThreeVector<float>> Position;
 
     for (unsigned Nz = 0; Nz < NrGrid[2]; Nz++) {
         for (unsigned Ny = 0; Ny < NrGrid[1]; Ny++) {
-            // Since the E field calculation is based on the gap of the D map, the number of x loop is one less than Resolution of the displacement map
+            // Since the E field calculation is based on the gap of the D map,
+            // the number of x loop is one less than Resolution of the displacement map
             for (unsigned Nx = 0; Nx < (NrGrid[0] - 1); Nx++) {
                 //x = 0 (anode); x = Nx (cathode)
                 ThreeVector<float> RecoGrid(Nx * DetectorReso[0],
@@ -61,16 +60,7 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
                 // Be very careful that Rn.GetNorm() and Delta_x are in the unit of cm, not mm
                 float vn = Rn.GetNorm() / Delta_x * v0;
 
-                if(isinf(vn)){
-                    std::cout<<"TrueNext.x: "<<True_next[0]<<"TrueNext.y: "<<True_next[1]<<"TrueNext.z: "<<True_next[2]<<std::endl;
-                    std::cout<<"True.x: "<<True[0]<<"True.y: "<<True[1]<<"True.z: "<<True[2]<<std::endl;
-                    std::cout<<"Rn.x: "<<Rn[0]<<"Rn.y: "<<Rn[1]<<"Rn.z: "<<Rn[2]<<std::endl;
-                    std::cout<<"Rn. norm: "<< Rn.GetNorm()<<"; Delta_X: "<<Delta_x<<"; v0: "<<std::endl;
-                }
-//                std::cout<<"Rn.GetNorm: "<<Rn.GetNorm()<<", Delta_x: "<<Delta_x<<", v0: "<<v0<<std::endl;
-//                std::cout<<"Rn_x: "<<Rn[0]<<", Rn_y: "<<Rn[1]<<", Rn_z: "<<Rn[2]<<std::endl;
-//                std::cout<<"True_next: "<<True_next.GetNorm()<<", True: "<<True.GetNorm()<<std::endl;
-
+                // Only include the valid calculated Efield (which is not float_max) in the pre-mesh
                 if (searchE(vn, cryoTemp, E0) < 0.5 * std::numeric_limits<float>::max()) {
                     // the E field as a vector has the same direction of Rn (vector) in each gap
                     // E kV/cm
@@ -78,8 +68,6 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
                     // Set the local E field (E field from each gap) at the middle of the gap
                     Position.push_back(True + (float) 0.5 * Rn);
                 }
-//                Position[Nx+ybin*(Resolution[0]-1)+zbin*(Resolution[0]-1)*Resolution[1]] = True + (float) 0.5 * Rn;
-//                En[Nx+ybin*(Resolution[0]-1)+zbin*(Resolution[0]-1)*Resolution[1]] = searchE(vn,cryoTemp,E0) / Rn.GetNorm() * Rn;
             }
         }
     }
@@ -89,6 +77,156 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
 
     return field;
 }
+
+// tuple <Ex, Ey, Ez, PositionX, PositionY, PositionZ>
+// *root_name is the name of the correction map (input of the calculation)
+// The boundary condition at TPC edge is included in this function by default.
+std::tuple<std::vector<float >, std::vector<float >, std::vector<float >,
+        std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
+EfieldXYZwithBoundary(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const char *root_name) {
+
+    TFile *InFile = new TFile(root_name, "READ");
+
+    TH3F *Dx = (TH3F *) InFile->Get("Reco_Displacement_X");
+    TH3F *Dy = (TH3F *) InFile->Get("Reco_Displacement_Y");
+    TH3F *Dz = (TH3F *) InFile->Get("Reco_Displacement_Z");
+
+    ThreeVector<unsigned long> NrGrid = TPCVolume.GetDetectorResolution();
+    ThreeVector<float> DetectorReso = {TPCVolume.GetDetectorSize()[0] / (NrGrid[0] - 1),
+                                       TPCVolume.GetDetectorSize()[1] / (NrGrid[1] - 1),
+                                       TPCVolume.GetDetectorSize()[2] / (NrGrid[2] - 1)};
+    float Delta_x = DetectorReso[0]; //cm
+    ThreeVector<float> Offset = TPCVolume.GetDetectorOffset();
+
+    ThreeVector<float> MinimumCoord = TPCVolume.GetMapMinimum();
+    ThreeVector<float> MaximumCoord = TPCVolume.GetMapMaximum();
+
+    std::vector<float> Ex;
+    std::vector<float> Ey;
+    std::vector<float> Ez;
+    std::vector<ThreeVector<float>> Position;
+    std::vector<ThreeVector<float>> PositionX;
+    std::vector<ThreeVector<float>> PositionY;
+    std::vector<ThreeVector<float>> PositionZ;
+
+    for (unsigned Nz = 0; Nz < NrGrid[2]; Nz++) {
+        for (unsigned Ny = 0; Ny < NrGrid[1]; Ny++) {
+            // Since the E field calculation is based on the gap of the D map,
+            // the number of x loop is one less than Resolution of the displacement map
+            for (unsigned Nx = 0; Nx < (NrGrid[0] - 1); Nx++) {
+                //x = 0 (anode); x = NrGrid[0] (cathode)
+                ThreeVector<float> RecoGrid(Nx * DetectorReso[0],
+                                            Ny * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
+                                            Nz * DetectorReso[2]);
+                ThreeVector<float> Dxyz = {(float) Dx->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                           (float) Dy->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                           (float) Dz->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
+                ThreeVector<float> True = RecoGrid + Dxyz;
+
+                ThreeVector<float> RecoGrid_next((Nx + 1) * DetectorReso[0],
+                                                 Ny * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
+                                                 Nz * DetectorReso[2]);
+                ThreeVector<float> Dxyz_next = {(float) Dx->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
+                                                (float) Dy->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
+                                                (float) Dz->GetBinContent(Nx + 2, Ny + 1, Nz + 1)};
+                ThreeVector<float> True_next = RecoGrid_next + Dxyz_next;
+
+                ThreeVector<float> Rn = True_next - True;
+
+                // mm/us, the magnitude of the drift velocity at the local gap
+                // Be very careful that Rn.GetNorm() and Delta_x are in the unit of cm, not mm
+                float vn = Rn.GetNorm() / Delta_x * v0;
+
+
+                if (searchE(vn, cryoTemp, E0) < 0.5 * std::numeric_limits<float>::max()) {
+                    // the E field as a vector has the same direction of Rn (vector) in each gap
+                    // E kV/cm
+//                    En.push_back(searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn);
+                    ThreeVector<float> En = searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn;
+                    Ex.push_back(En[0]);
+                    Ey.push_back(En[1]);
+                    Ez.push_back(En[2]);
+                    // Set the local E field (E field from each gap) at the middle of the gap
+                    Position.push_back(True + (float) 0.5 * Rn);
+                }
+
+
+            }
+        }
+    }
+
+    PositionX = Position;
+    PositionY = Position;
+    PositionZ = Position;
+
+    // The following part can be merge into the former big loop.
+    // However, it may be more clear in this way.
+    // If you would like to merge into the previous loop, be cautious the mesh at Xbin = NrGrid[0]-1.
+    // It's better to have larger mesh size.
+    // X=Xmin, X=Xmax
+    for (unsigned ybin = 0; ybin < NrGrid[1]; ybin++) {
+        for (unsigned zbin = 0; zbin < NrGrid[2]; zbin++) {
+
+            //Push back the location (x,y,z coord) of Anode Points. Anode sits at x=0
+            ThreeVector<float> gridX0 = {MinimumCoord[0], ybin * DetectorReso[1] + Offset[1], zbin * DetectorReso[2] + Offset[2]};
+            PositionX.push_back(gridX0);
+            Ey.push_back(0.);
+            Ez.push_back(0.);
+
+            //Push back the location (x,y,z coord) of Anode Points. Anode sits at x=0
+            ThreeVector<float> gridX1 = {MaximumCoord[0], ybin * DetectorReso[1] + Offset[1], zbin * DetectorReso[2] + Offset[2]};
+            PositionX.push_back(gridX1);
+            Ey.push_back(0.);
+            Ez.push_back(0.);
+
+        }
+    }
+
+//    // Y=Ymin, Y=Ymax
+//    for (unsigned xbin = 0; xbin < NrGrid[0]; xbin++) {
+//        for (unsigned zbin = 0; zbin < NrGrid[2]; zbin++) {
+//
+//            //Push back the location (x,y,z coord) of Anode Points. Anode sits at x=0
+//            ThreeVector<float> gridY0 = {xbin * DetectorReso[0] + Offset[0], MinimumCoord[1], zbin * DetectorReso[2] + Offset[2]};
+//            PositionY.push_back(gridY0);
+//            Ex.push_back(0.);
+//            Ez.push_back(0.);
+//
+//            //Push back the location (x,y,z coord) of Anode Points. Anode sits at x=0
+//            ThreeVector<float> gridY1 = {xbin * DetectorReso[0] + Offset[0], MaximumCoord[1], zbin * DetectorReso[2] + Offset[2]};
+//            PositionY.push_back(gridY1);
+//            Ex.push_back(0.);
+//            Ez.push_back(0.);
+//
+//        }
+//    }
+//
+//    // Z=Zmin, Z=Zmax
+//    for (unsigned ybin = 0; ybin < NrGrid[1]; ybin++) {
+//        for (unsigned xbin = 0; xbin < NrGrid[0]; xbin++) {
+//
+//            //Push back the location (x,y,z coord) of Anode Points. Anode sits at x=0
+//            ThreeVector<float> gridZ0 = {xbin * DetectorReso[0] + Offset[0], ybin * DetectorReso[1] + Offset[1], MinimumCoord[2]};
+//            PositionZ.push_back(gridZ0);
+//            Ey.push_back(0.);
+//            Ex.push_back(0.);
+//
+//            //Push back the location (x,y,z coord) of Anode Points. Anode sits at x=0
+//            ThreeVector<float> gridZM = {xbin * DetectorReso[0] + Offset[0], ybin * DetectorReso[1] + Offset[1], MaximumCoord[2]};
+//            PositionZ.push_back(gridZM);
+//            Ey.push_back(0.);
+//            Ex.push_back(0.);
+//
+//        }
+//    }
+
+    std::tuple<std::vector<float >, std::vector<float >, std::vector<float >,
+            std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>> field;
+    field = std::make_tuple(Ex, Ey, Ez, PositionX, PositionY, PositionZ);
+
+    return field;
+}
+
 
 
 // This function uses Faraday's Law to calculate Ex at the boundary where the mesh didn't cover

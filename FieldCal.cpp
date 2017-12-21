@@ -87,6 +87,8 @@ bool CorrMapFlag = false; // Calculate Reco (coord) correction vectors for true;
 bool DoCorr = false; // Calculate Reco (coord) correction map for true; Skip calculation of True (coord) correction map for false
 bool DoEmap = false; // Calculate electric map for true; Skip calculation of electric map for false
 bool TwoSideIter = true;
+bool AnodeNoDisp = true;
+bool EBoundary = true;
 
 // Main function
 int main(int argc, char **argv) {
@@ -310,21 +312,10 @@ int main(int argc, char **argv) {
 //            LaserRecoOrigin.AppendTrack(Anode(Detector));
 //            LaserCorrected.AppendTrack(Anode(Detector));
 
-            std::cout<<"[Before Anode] LaserOrigin1: "<<LaserRecoOrigin1.GetNumberOfTracks()<<std::endl;
-            std::cout<<"[Before Anode] LaserOrigin2: "<<LaserRecoOrigin2.GetNumberOfTracks()<<std::endl;
-            std::cout<<"[Before Anode] LaserWithDisp.first: "<<LaserWithDisp.first.GetNumberOfTracks()<<std::endl;
-            std::cout<<"[Before Anode] LaserWithDisp.second: "<<LaserWithDisp.second.GetNumberOfTracks()<<std::endl;
-
             LaserRecoOrigin1.AppendTrack(Anode(Detector));
             LaserRecoOrigin2.AppendTrack(Anode(Detector));
             LaserWithDisp.first.AppendTrack(Anode(Detector));
             LaserWithDisp.second.AppendTrack(Anode(Detector));
-
-            std::cout<<"[After Anode] LaserOrigin1: "<<LaserRecoOrigin1.GetNumberOfTracks()<<std::endl;
-            std::cout<<"[After Anode] LaserOrigin2: "<<LaserRecoOrigin2.GetNumberOfTracks()<<std::endl;
-            std::cout<<"[After Anode] LaserWithDisp.first: "<<LaserWithDisp.first.GetNumberOfTracks()<<std::endl;
-            std::cout<<"[After Anode] LaserWithDisp.second: "<<LaserWithDisp.second.GetNumberOfTracks()<<std::endl;
-
 
             std::cout << " [" << set << "] Generate mesh..." << std::endl;
 
@@ -395,22 +386,73 @@ int main(int argc, char **argv) {
 
     // The Emap calculation works when the input is correction map
     if (DoEmap) {
+//        // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
+//        auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
+//        std::vector<ThreeVector<float>> En = E_field.first;
+//        std::vector<ThreeVector<float>> Position = E_field.second;
+//
+//        // Create mesh for Emap
+//        std::cout << "Generate mesh for E field..." << std::endl;
+//        xDelaunay EMesh = Mesher(Position, Detector);
+//
+//        // Interpolate E Map (regularly spaced grid)
+//        std::cout << "Start interpolation the E field..." << std::endl;
+//        std::vector<ThreeVector<float>> EMap = EInterpolateMap(En, Position, EMesh, Detector, EMapResolution);
+//
+//        // Fill displacement map into TH3 histograms and write them to file
+//        std::cout << "Write Emap to File ..." << std::endl;
+//        WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
+
         // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
-        auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
-        std::vector<ThreeVector<float>> En = E_field.first;
-        std::vector<ThreeVector<float>> Position = E_field.second;
+        if(EBoundary){
 
-        // Create mesh for Emap
-        std::cout << "Generate mesh for E field..." << std::endl;
-        xDelaunay EMesh = Mesher(Position, Detector);
+            auto EfieldXYZ = EfieldXYZwithBoundary(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
+            std::vector<float> Ex = std::get<0>(EfieldXYZ);
+            std::vector<float> Ey = std::get<1>(EfieldXYZ);
+            std::vector<float> Ez = std::get<2>(EfieldXYZ);
+            std::vector<ThreeVector<float>> PositionX = std::get<3>(EfieldXYZ);
+            std::vector<ThreeVector<float>> PositionY = std::get<3>(EfieldXYZ);
+            std::vector<ThreeVector<float>> PositionZ = std::get<3>(EfieldXYZ);
 
-        // Interpolate E Map (regularly spaced grid)
-        std::cout << "Start interpolation the E field..." << std::endl;
-        std::vector<ThreeVector<float>> EMap = EInterpolateMap(En, Position, EMesh, Detector, EMapResolution);
+            // Create mesh for Emap
+            std::cout << "Generate mesh for E field..." << std::endl;
+            xDelaunay EMeshX = Mesher(PositionX, Detector);
+            xDelaunay EMeshY = Mesher(PositionY, Detector);
+            xDelaunay EMeshZ = Mesher(PositionZ, Detector);
 
-        // Fill displacement map into TH3 histograms and write them to file
-        std::cout << "Write Emap to File ..." << std::endl;
-        WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
+            // Interpolate E Map (regularly spaced grid)
+            std::cout << "Start interpolation the E field..." << std::endl;
+            std::vector<ThreeVector<float>> EMapXYZ = EcompInterpolateMap(Ex, PositionX, EMeshX,
+                                                                          Ey, PositionY, EMeshY,
+                                                                          Ez, PositionZ, EMeshZ,
+                                                                          Detector, EMapResolution);
+
+            // Fill displacement map into TH3 histograms and write them to file
+            std::cout << "Write Emap to File ..." << std::endl;
+            WriteEmapRoot(EMapXYZ, Detector, EMapResolution, E0, ss_Eoutfile.str());
+            std::cout<<"Signature! "<<std::endl;
+
+        }
+        else{
+            auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
+            std::vector<ThreeVector<float>> En = E_field.first;
+            std::vector<ThreeVector<float>> Position = E_field.second;
+
+            // Create mesh for Emap
+            std::cout << "Generate mesh for E field..." << std::endl;
+            xDelaunay EMesh = Mesher(Position, Detector);
+
+            // Interpolate E Map (regularly spaced grid)
+            std::cout << "Start interpolation the E field..." << std::endl;
+            std::vector<ThreeVector<float>> EMap = EInterpolateMap(En, Position, EMesh, Detector, EMapResolution);
+
+            // Fill displacement map into TH3 histograms and write them to file
+            std::cout << "Write Emap to File ..." << std::endl;
+            WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
+        }
+
+
+
     }
 
 
@@ -418,32 +460,6 @@ int main(int argc, char **argv) {
 
 
 } // end main
-
-
-//// Acknowledge the zero distortion at anode into mesh by forming the information into "LaserTrack"
-//LaserTrack Anode(TPCVolumeHandler &TPCVolume){
-//
-//    ThreeVector<unsigned long> Resolution = TPCVolume.GetDetectorResolution();
-//    int AnodeSize = Resolution[1]*Resolution[2];
-//    ThreeVector<float> Unit = {TPCVolume.GetDetectorSize()[0] / (Resolution[0] - 1),
-//                               TPCVolume.GetDetectorSize()[1] / (Resolution[1] - 1),
-//                               TPCVolume.GetDetectorSize()[2] / (Resolution[2] - 1)};
-//
-//    std::vector<ThreeVector<float>> AnodePoints;
-//    std::vector<ThreeVector<float>> AnodeDisp(AnodeSize,ThreeVector<float>(0.,0.,0.));
-//
-//    for (unsigned ybin = 0; ybin < Resolution[1]; ybin++) {
-//        for (unsigned zbin = 0; zbin < Resolution[2]; zbin++) {
-//
-//            //Push back the location (x,y,z coord) of Anode Points. Anode sits at x=0
-//            ThreeVector<float> grid = {0., ybin * Unit[1] + TPCVolume.GetDetectorOffset()[1], zbin * Unit[2]};
-//            AnodePoints.push_back(grid);
-//
-//        }
-//    }
-//
-//    return LaserTrack(AnodePoints,AnodeDisp);
-//}
 
 Laser ReadRecoTracks(std::vector<std::string> InputFiles) {
     // Create Laser (collection of laser tracks) this will be the returned object
