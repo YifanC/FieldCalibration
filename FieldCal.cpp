@@ -87,8 +87,8 @@ bool CorrMapFlag = false; // Calculate Reco (coord) correction vectors for true;
 bool DoCorr = false; // Calculate Reco (coord) correction map for true; Skip calculation of True (coord) correction map for false
 bool DoEmap = false; // Calculate electric map for true; Skip calculation of electric map for false
 bool TwoSideIter = true;
-bool AnodeNoDisp = true;
-bool EBoundary = true;
+bool DBoundary = false;
+bool EBoundary = false;
 
 // Main function
 int main(int argc, char **argv) {
@@ -110,9 +110,11 @@ int main(int argc, char **argv) {
 
         return -1;
     }
+
+    // TODO:give better options
     // Lets handle all options
     int c;
-    while((c = getopt(argc, argv, ":d:j:N:iCDE")) != -1){
+    while((c = getopt(argc, argv, ":d:j:N:iABCDE")) != -1){
         switch(c){
             case 'd':
                 n_split = atoi(optarg);
@@ -125,6 +127,12 @@ int main(int argc, char **argv) {
                 break;
             case 'i':
                 TwoSideIter = false;
+                break;
+            case 'A':
+                DBoundary = true;
+                break;
+            case 'B':
+                EBoundary = true;
                 break;
             case 'C':
                 CorrMapFlag = true;
@@ -312,14 +320,17 @@ int main(int argc, char **argv) {
 //            LaserRecoOrigin.AppendTrack(Anode(Detector));
 //            LaserCorrected.AppendTrack(Anode(Detector));
 
-            LaserRecoOrigin1.AppendTrack(Anode(Detector));
-            LaserRecoOrigin2.AppendTrack(Anode(Detector));
-            LaserWithDisp.first.AppendTrack(Anode(Detector));
-            LaserWithDisp.second.AppendTrack(Anode(Detector));
+            if(DBoundary){
+                LaserRecoOrigin1.AppendTrack(Anode(Detector));
+                LaserRecoOrigin2.AppendTrack(Anode(Detector));
+                LaserWithDisp.first.AppendTrack(Anode(Detector));
+                LaserWithDisp.second.AppendTrack(Anode(Detector));
+            }
+
 
             std::cout << " [" << set << "] Generate mesh..." << std::endl;
 
-//            Delauna
+//            Delaunay MeshMap;
 	        Delaunay MeshMap1;
             Delaunay MeshMap2;
 
@@ -386,22 +397,6 @@ int main(int argc, char **argv) {
 
     // The Emap calculation works when the input is correction map
     if (DoEmap) {
-//        // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
-//        auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
-//        std::vector<ThreeVector<float>> En = E_field.first;
-//        std::vector<ThreeVector<float>> Position = E_field.second;
-//
-//        // Create mesh for Emap
-//        std::cout << "Generate mesh for E field..." << std::endl;
-//        xDelaunay EMesh = Mesher(Position, Detector);
-//
-//        // Interpolate E Map (regularly spaced grid)
-//        std::cout << "Start interpolation the E field..." << std::endl;
-//        std::vector<ThreeVector<float>> EMap = EInterpolateMap(En, Position, EMesh, Detector, EMapResolution);
-//
-//        // Fill displacement map into TH3 histograms and write them to file
-//        std::cout << "Write Emap to File ..." << std::endl;
-//        WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
 
         // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
         if(EBoundary){
@@ -430,10 +425,10 @@ int main(int argc, char **argv) {
             // Fill displacement map into TH3 histograms and write them to file
             std::cout << "Write Emap to File ..." << std::endl;
             WriteEmapRoot(EMapXYZ, Detector, EMapResolution, E0, ss_Eoutfile.str());
-            std::cout<<"Signature! "<<std::endl;
 
         }
         else{
+            // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
             auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
             std::vector<ThreeVector<float>> En = E_field.first;
             std::vector<ThreeVector<float>> Position = E_field.second;
