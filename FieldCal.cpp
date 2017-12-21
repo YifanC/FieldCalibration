@@ -214,10 +214,10 @@ int main(int argc, char **argv) {
 
     // Set the name for Dmap
     if (CorrMapFlag) {
-        ss_outfile << "RecoCorrection-N" << Nstep << "-S" << n_split << ".root";
+        ss_outfile << "RecoCorr-N" << Nstep << "-S" << n_split << ".root";
     }
     if (!CorrMapFlag) {
-        ss_outfile << "TrueDistortion-N" << Nstep << "-S" << n_split << ".root";
+        ss_outfile << "TrueDist-N" << Nstep << "-S" << n_split << ".root";
     }
 
     // Name the input and output file name of E field calculation
