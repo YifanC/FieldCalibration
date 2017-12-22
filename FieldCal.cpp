@@ -194,8 +194,18 @@ int main(int argc, char **argv) {
             else{ std::cerr << "The laser system is not labeled correctly." << std::endl; }
         }
         if(CosmicLaserIter){
-            if(filename.compare(1,4,"aser")==0) {InputFiles1.push_back(filename); }
-            else if(filename.compare(1,5,"osmic")==0){InputFiles2.push_back(filename); }
+            // The following is very dangerous! if there is "laser" and "cosmic" in the filename (path to the file)
+            // The current version accept the file path contains "laser" but not "cosmic"
+            std::string slaser ("aser");
+            std::string scosmic ("osmic");
+            if(filename.find(scosmic) != std::string::npos){
+                std::cout<<"cosmic: "<<filename<<std::endl;
+                InputFiles2.push_back(filename);
+            }
+            else if(filename.find(slaser) != std::string::npos) {
+                std::cout<<"laser: "<<filename<<std::endl;
+                InputFiles1.push_back(filename);
+            }
             else{ std::cerr << "Laser or Cosmic? Check the file name." << std::endl; }
         }
         if(InterlacedIter){
