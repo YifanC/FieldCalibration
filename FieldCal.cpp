@@ -86,7 +86,9 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
 bool CorrMapFlag = false; // Calculate Reco (coord) correction vectors for true; Calculate True (coord) distortion vectors for false
 bool DoCorr = false; // Calculate Reco (coord) correction map for true; Skip calculation of True (coord) correction map for false
 bool DoEmap = false; // Calculate electric map for true; Skip calculation of electric map for false
-bool TwoSideIter = true;
+bool TwoSideIter = false;
+bool InterlacedIter = false;
+bool CosmicLaserIter = false;
 bool DBoundary = false;
 bool EBoundary = false;
 
@@ -114,7 +116,7 @@ int main(int argc, char **argv) {
     // TODO:give better options
     // Lets handle all options
     int c;
-    while((c = getopt(argc, argv, ":d:j:N:iABCDE")) != -1){
+    while((c = getopt(argc, argv, ":d:j:N:itABCDE")) != -1){
         switch(c){
             case 'd':
                 n_split = atoi(optarg);
@@ -126,7 +128,13 @@ int main(int argc, char **argv) {
                 Nstep = atoi(optarg);
                 break;
             case 'i':
-                TwoSideIter = false;
+                InterlacedIter = true;
+                break;
+            case 't':
+                TwoSideIter = true;
+                break;
+            case 'o':
+                CosmicLaserIter = true;
                 break;
             case 'A':
                 DBoundary = true;
@@ -185,12 +193,17 @@ int main(int argc, char **argv) {
             else if(LCS==2){InputFiles2.push_back(filename); }
             else{ std::cerr << "The laser system is not labeled correctly." << std::endl; }
         }
-        else{
+        if(CosmicLaserIter){
+            if(filename.compare(1,4,"aser")==0) {InputFiles1.push_back(filename); }
+            else if(filename.compare(1,5,"osmic")==0){InputFiles2.push_back(filename); }
+            else{ std::cerr << "Laser or Cosmic? Check the file name." << std::endl; }
+        }
+        if(InterlacedIter){
             InputFiles.push_back(filename);
         }
     }
 
-    if (TwoSideIter) {
+    if (TwoSideIter || CosmicLaserIter) {
         if(InputFiles1.empty() || InputFiles2.empty()){
             std::cerr << "Please provide the laser input data from 2 sides." << std::endl;
         }
@@ -271,7 +284,7 @@ int main(int argc, char **argv) {
         std::vector<Laser> LaserSets1;
         std::vector<Laser> LaserSets2;
 
-        if(TwoSideIter){
+        if(TwoSideIter || CosmicLaserIter){
             // Read the laser data from file to 'Laser'. The laser data from 2 sides are sperated
             Laser FullTracks1 = ReadRecoTracks(InputFiles1);
             Laser FullTracks2 = ReadRecoTracks(InputFiles2);
