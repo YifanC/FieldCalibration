@@ -94,6 +94,7 @@ bool EBoundary = false;
 
 // Main function
 int main(int argc, char **argv) {
+
     // Start timer, just because it's nice to know how long shit takes
     time_t timer;
     std::time(&timer);
@@ -156,11 +157,11 @@ int main(int argc, char **argv) {
     }
 
 
-/*
-#ifdef _OPENMP
-    omp_set_num_threads(n_threads);
-#endif
-*/
+
+//#ifdef _OPENMP
+//    omp_set_num_threads(n_threads);
+//#endif
+
 
     // Define input files for 2-side iteration
     std::vector<std::string> InputFiles1;
@@ -317,9 +318,9 @@ int main(int argc, char **argv) {
 
         // Now we loop over each individual set and compute the displacement vectors.
         // TODO: This could be parallelized
-/*
-#pragma omp parallel for
- */
+
+//#pragma omp parallel for
+
         for (unsigned int set = 0; set < n_split; set++) {
 
             // The disadvantage is the LaserRecoOrigin will be discard after the calculation of this set
@@ -475,7 +476,6 @@ int main(int argc, char **argv) {
 
 
     std::cout << "End of program after " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
-
 
 } // end main
 

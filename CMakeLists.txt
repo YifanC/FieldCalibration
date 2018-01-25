@@ -73,6 +73,8 @@ set(SOURCE_FILES
         source/DriftVelocity.cpp
         source/EfieldCalculation.cpp
         source/LaserDisplacementIteration.cpp
+        source/WeightAverage.cpp
+       # source/VoxelMesh.cpp
         )
 
 #set(HEADER_FILES include/Laser.hpp include/LaserTrack.hpp include/Laser.hpp include/ThreeVector.hpp include/Matrix3x3.hpp include/TPCVolumeHandler include/Interpolation3D.hpp source/Utilities.cpp include/Utilities.hpp)
