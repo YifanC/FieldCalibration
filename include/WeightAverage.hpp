@@ -10,7 +10,11 @@
 
 
 std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>>>
-MeshVoxel(const std::vector<LaserTrack> &LaserTrackSet);
+MeshVoxel(const std::vector<LaserTrack> &LaserTrackSet,const TPCVolumeHandler &TPC);
+
+std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>>
+AveragebyDistance(std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>>> &VoxelMesh,
+                  const TPCVolumeHandler &TPC);
 
 
 
