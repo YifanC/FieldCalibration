@@ -261,6 +261,7 @@ int main(int argc, char **argv) {
     }
     if (!CorrMapFlag) {
         ss_outfile << "TrueDist-N" << Nstep << "-S" << n_split << ".root";
+        ss_D_outtxt << "no_calib_usage_TrueDist-N" << Nstep << "-S" << n_split << ".txt";
     }
 
     // Name the input and output file name of E field calculation
