@@ -345,7 +345,8 @@ int main(int argc, char **argv) {
         if(WeightAverage){
 
             // Calculate track displacement
-            std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, TracksSample1, TracksSample2, CorrMapFlag);
+//            std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, TracksSample1, TracksSample2, CorrMapFlag);
+            std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, LaserSets1[0], LaserSets2[0], CorrMapFlag);
 
             // TODO: Let's hope merge function is alright!
             Laser LaserCorrected = MergeLaser(LaserWithDisp.first, LaserWithDisp.second);
