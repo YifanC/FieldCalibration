@@ -441,66 +441,67 @@ int main(int argc, char **argv) {
                                            MeshMap2, Detector));
                 }
             }
+
             // Now we go on to create an unified displacement map
 //            std::vector<ThreeVector<float>> DisplacementMap(DisplMapsHolder.front().size(),
 //                                                            ThreeVector<float>(0., 0., 0.));
-//            std::vector<float> Nvalid(DisplMapsHolder.front().size(), 0.);
+            std::vector<float> Nvalid(DisplMapsHolder.front().size(), 0.);
+
+            for (auto &SubMap: DisplMapsHolder) {
+                for (unsigned int idx = 0; idx < DisplacementMap.size(); idx++) {
+                    if (SubMap[idx] != Empty) {
+                        DisplacementMap[idx].first = DisplacementMap[idx].first + SubMap[idx];
+                        Nvalid[idx]++;
+                    }
+                }
+            }
+
+            for (unsigned int idx = 0; idx < DisplacementMap.size(); idx++) {
+                if (Nvalid[idx] == 0) {
+                    // Set those bin with non valid number into float max again
+                    DisplacementMap[idx].first = {float_max, float_max, float_max};
+                } else {
+                    DisplacementMap[idx].first = DisplacementMap[idx].first / Nvalid[idx];
+                }
+            }
+
+
+//            // Loop the displacement map in the form of vector
+//            for (int idx = 0; idx < DisplacementMap.size(); idx++){
 //
-//            for (auto &SubMap: DisplMapsHolder) {
-//                for (unsigned int idx = 0; idx < DisplacementMap.size(); idx++) {
-//                    if (SubMap[idx] != Empty) {
-//                        DisplacementMap[idx].first = DisplacementMap[idx] + SubMap[idx];
-//                        Nvalid[idx]++;
+//                std::vector<ThreeVector<float>> BinStatistics;
+//                ThreeVector<float> BinAverage;
+//                ThreeVector<float> BinStd;
+//                int Nvalid = 0;
+//
+//                // Loop the bins in submaps to calculate the bin averaging displacement
+//                for (int NsubMap = 0; NsubMap < DisplMapsHolder.size(); NsubMap++){
+//                    if(DisplMapsHolder[NsubMap][idx] != Empty){
+//                        // If a submap bin is not empty, push back to a profile vector
+//                        BinStatistics.push_back(DisplMapsHolder[NsubMap][idx]);
+//                        BinAverage += BinStatistics.back();
+//                        Nvalid++;
 //                    }
 //                }
-//            }
+//                // Averaging displacement in a bin
+//                BinAverage = BinAverage / (float) Nvalid;
 //
-//            for (unsigned int idx = 0; idx < DisplacementMap.size(); idx++) {
-//                if (Nvalid[idx] == 0) {
-//                    // Set those bin with non valid number into float max again
-//                    DisplacementMap[idx].first = {float_max, float_max, float_max};
-//                } else {
-//                    DisplacementMap[idx].first = DisplacementMap[idx].first / Nvalid[idx];
+//                // Loop the profile vector to calculate the standard deviation
+//                for (int binValid = 0; binValid < Nvalid; binValid++){
+//                    for(int k = 0; k < 3; k++){
+//                        BinStd[k] += (BinStatistics[binValid][k]-BinAverage[k])* (BinStatistics[binValid][k]-BinAverage[k]);
+//                    }
 //                }
+//                // Standard deviation of the displacement in a bin
+//                for(int k = 0; k < 3; k++){
+//                    BinStd[k] = sqrtf(BinStd[k] / (float) Nvalid);
+//                }
+//
+//                // Construct 1d displacement map
+//                std::pair<ThreeVector<float >, ThreeVector<float>> BinInfo = std::make_pair(BinAverage,BinStd);
+//                DisplacementMap.push_back(BinInfo);
+//
 //            }
-
-
-            // Loop the displacement map in the form of vector
-            for (int idx = 0; idx < DisplacementMap.size(); idx++){
-
-                std::vector<ThreeVector<float>> BinStatistics;
-                ThreeVector<float> BinAverage;
-                ThreeVector<float> BinStd;
-                int Nvalid = 0;
-
-                // Loop the bins in submaps to calculate the bin averaging displacement
-                for (int NsubMap = 0; NsubMap < DisplMapsHolder.size(); NsubMap++){
-                    if(DisplMapsHolder[NsubMap][idx] != Empty){
-                        // If a submap bin is not empty, push back to a profile vector
-                        BinStatistics.push_back(DisplMapsHolder[NsubMap][idx]);
-                        BinAverage += BinStatistics.back();
-                        Nvalid++;
-                    }
-                }
-                // Averaging displacement in a bin
-                BinAverage = BinAverage / (float) Nvalid;
-
-                // Loop the profile vector to calculate the standard deviation
-                for (int binValid = 0; binValid < Nvalid; binValid++){
-                    for(int k = 0; k < 3; k++){
-                        BinStd[k] += (BinStatistics[binValid][k]-BinAverage[k])* (BinStatistics[binValid][k]-BinAverage[k]);
-                    }
-                }
-                // Standard deviation of the displacement in a bin
-                for(int k = 0; k < 3; k++){
-                    BinStd[k] = sqrtf(BinStd[k] / (float) Nvalid);
-                }
-
-                // Construct 1d displacement map
-                std::pair<ThreeVector<float >, ThreeVector<float>> BinInfo = std::make_pair(BinAverage,BinStd);
-                DisplacementMap.push_back(BinInfo);
-
-            }
 
 
 //            // Fill displacement map into TH3 histograms and write them to file
