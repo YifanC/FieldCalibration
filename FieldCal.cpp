@@ -360,7 +360,7 @@ int main(int argc, char **argv) {
             DisplacementMap = AveragebyDistance(MeshforGrid, Detector);
 
         }
-
+/*
         if(!WeightAverage) {
 
             // Now we loop over each individual set and compute the displacement vectors.
@@ -512,6 +512,7 @@ int main(int argc, char **argv) {
 //            std::cout << "Write to File ..." << std::endl;
 //            WriteRootFile(DisplacementMap, Detector, ss_outfile.str());
         }
+        */
 
         // Fill displacement map into TH3 histograms and write them to root and txt file
         std::cout << "Write to File ..." << std::endl;
