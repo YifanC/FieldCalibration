@@ -351,13 +351,17 @@ int main(int argc, char **argv) {
             // TODO: Let's hope merge function is alright!
             Laser LaserCorrected = MergeLaser(LaserWithDisp.first, LaserWithDisp.second);
 
+            std::cout << "Meshing for weighted mean in voxels" <<  std::endl;
+
             auto MeshforGrid = MeshVoxel(LaserCorrected.GetTrackSet(),Detector);
+
+            std::cout << "Calculate weighted mean in voxels" <<  std::endl;
 
             DisplacementMap = AveragebyDistance(MeshforGrid, Detector);
 
         }
 
-        else {
+        if(!WeightAverage) {
 
             // Now we loop over each individual set and compute the displacement vectors.
             // TODO: This could be parallelized
