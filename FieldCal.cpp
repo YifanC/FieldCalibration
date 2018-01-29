@@ -342,7 +342,8 @@ int main(int argc, char **argv) {
 
 //        std::vector<ThreeVector<float>> DisplacementMap(DisplMapsHolder.front().size(),
 //                                                        ThreeVector<float>(0., 0., 0.));
-        if(WeightAverage){
+//        if(WeightAverage){
+        if(true){
 
             // Calculate track displacement
 //            std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, TracksSample1, TracksSample2, CorrMapFlag);
