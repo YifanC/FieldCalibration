@@ -66,6 +66,7 @@ AveragebyDistance(std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVe
 
     //Initialize the map of displacement and its error(deviation)
     std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> AverageGrid;
+    AverageGrid.resize(Resolution[0]*Resolution[1]*Resolution[2]);
 
     for(int i = 0; i<VoxelMesh.size(); i++){
 
@@ -122,9 +123,9 @@ AveragebyDistance(std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVe
         ThreeVector<float> Deviation = {sqrtf(sigma[0]), sqrtf(sigma[1]), sqrtf(sigma[2])};
         //End for weighed deviation
 
-        std::pair<ThreeVector<float >, ThreeVector<float>> DistortionError = std::make_pair(Average, Deviation);
+//        std::pair<ThreeVector<float >, ThreeVector<float>> DistortionError = std::make_pair(Average, Deviation);
 
-        AverageGrid.push_back(DistortionError);
+        AverageGrid[i] = std::make_pair(Average, Deviation);
 
     }
 
