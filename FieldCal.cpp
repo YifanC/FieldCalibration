@@ -255,46 +255,49 @@ int main(int argc, char **argv) {
     ThreeVector<float> Unknown = {float_max, float_max, float_max};
 
     // Set the name for Dmap
-    if (CorrMapFlag) {
-        ss_outfile << "RecoCorr-N" << Nstep << "-S" << n_split << ".root";
-        ss_D_outtxt << "RecoCorr-N" << Nstep << "-S" << n_split << ".txt";
-    }
-    if (!CorrMapFlag) {
-        ss_outfile << "TrueDist-N" << Nstep << "-S" << n_split << ".root";
-        ss_D_outtxt << "no_calib_usage_TrueDist-N" << Nstep << "-S" << n_split << ".txt";
+    if(DoCorr){
+        if (CorrMapFlag) {
+            ss_outfile << "RecoCorr-N" << Nstep << "-S" << n_split << ".root";
+            ss_D_outtxt << "RecoCorr-N" << Nstep << "-S" << n_split << ".txt";
+        }
+        if (!CorrMapFlag) {
+            ss_outfile << "TrueDist-N" << Nstep << "-S" << n_split << ".root";
+            ss_D_outtxt << "no_calib_usage_TrueDist-N" << Nstep << "-S" << n_split << ".txt";
+        }
     }
 
     // Name the input and output file name of E field calculation
-    int NEinfile = 0;
-    std::string Einfile;
-    DIR *dir;
-    struct dirent *ent;
-    if ((dir = opendir (".")) != NULL) {
-        while ((ent = readdir (dir)) != NULL) {
-            if(std::string(ent->d_name).compare(0,8,"RecoCorr")==0){
-                NEinfile++;
-                Einfile.assign(std::string(ent->d_name));
-                ss_Einfile <<Einfile;
-                ss_Eoutfile << "Emap-"<<Einfile.substr(9,Einfile.find_last_of(Einfile));
-                ss_E_outtxt << "Emap"<< ".txt";
+    if(DoEmap){
+        int NEinfile = 0;
+        std::string Einfile;
+        DIR *dir;
+        struct dirent *ent;
+        if ((dir = opendir (".")) != NULL) {
+            while ((ent = readdir (dir)) != NULL) {
+                if(std::string(ent->d_name).compare(0,8,"RecoCorr")==0){
+                    NEinfile++;
+                    Einfile.assign(std::string(ent->d_name));
+                    ss_Einfile <<Einfile;
+                    ss_Eoutfile << "Emap-"<<Einfile.substr(9,Einfile.find_last_of(Einfile));
+                    ss_E_outtxt << "Emap"<< ".txt";
+                }
             }
+            closedir (dir);
+        } else {
+            std::cerr << "Local directory is not accessible." << std::endl;
         }
-        closedir (dir);
-    } else {
-        std::cerr << "Local directory is not accessible." << std::endl;
-    }
 
-    if(NEinfile==1){
-        std::ifstream ifile(ss_Einfile.str().c_str());
-        if(ifile){
-            std::cout<<"E field input file exists."<<std::endl;
+        if(NEinfile==1){
+            std::ifstream ifile(ss_Einfile.str().c_str());
+            if(ifile){
+                std::cout<<"E field input file exists."<<std::endl;
+            } else{
+                std::cerr << "Please make sure there is one and only one 'RecoCorr*.root' file for E field calculation." << std::endl;
+            }
         } else{
             std::cerr << "Please make sure there is one and only one 'RecoCorr*.root' file for E field calculation." << std::endl;
         }
-    } else{
-        std::cerr << "Please make sure there is one and only one 'RecoCorr*.root' file for E field calculation." << std::endl;
     }
-
 
     if (DoCorr) {
         std::vector<std::vector<ThreeVector<float>>> DisplMapsHolder;
@@ -343,11 +346,13 @@ int main(int argc, char **argv) {
 //        std::vector<ThreeVector<float>> DisplacementMap(DisplMapsHolder.front().size(),
 //                                                        ThreeVector<float>(0., 0., 0.));
 //        if(WeightAverage){
-        if(true){
+        if(false){
 
             // Calculate track displacement
 //            std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, TracksSample1, TracksSample2, CorrMapFlag);
             std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, LaserSets1[0], LaserSets2[0], CorrMapFlag);
+
+            std::cout << "Time after N-step correction" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
             // TODO: Let's hope merge function is alright!
             Laser LaserCorrected = MergeLaser(LaserWithDisp.first, LaserWithDisp.second);
@@ -356,13 +361,18 @@ int main(int argc, char **argv) {
 
             auto MeshforGrid = MeshVoxel(LaserCorrected.GetTrackSet(),Detector);
 
+            std::cout << "Time after mesh in voxel" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+
             std::cout << "Calculate weighted mean in voxels" <<  std::endl;
 
             DisplacementMap = AveragebyDistance(MeshforGrid, Detector);
 
+            std::cout << "Time after mean calculation in voxels" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+
         }
-/*
-        if(!WeightAverage) {
+
+//        if(!WeightAverage) {
+        if(true) {
 
             // Now we loop over each individual set and compute the displacement vectors.
             // TODO: This could be parallelized
@@ -448,14 +458,14 @@ int main(int argc, char **argv) {
             }
 
             // Now we go on to create an unified displacement map
-//            std::vector<ThreeVector<float>> DisplacementMap(DisplMapsHolder.front().size(),
-//                                                            ThreeVector<float>(0., 0., 0.));
+            std::vector<ThreeVector<float>> DisplacementMapD(DisplMapsHolder.front().size(), ThreeVector<float>(0., 0., 0.));
             std::vector<float> Nvalid(DisplMapsHolder.front().size(), 0.);
 
             for (auto &SubMap: DisplMapsHolder) {
-                for (unsigned int idx = 0; idx < DisplacementMap.size(); idx++) {
+                for (unsigned int idx = 0; idx < DisplacementMapD.size(); idx++) {
                     if (SubMap[idx] != Empty) {
-                        DisplacementMap[idx].first = DisplacementMap[idx].first + SubMap[idx];
+//                        DisplacementMap[idx].first = DisplacementMap[idx].first + SubMap[idx];
+                        DisplacementMapD[idx] = DisplacementMapD[idx] + SubMap[idx];
                         Nvalid[idx]++;
                     }
                 }
@@ -464,9 +474,11 @@ int main(int argc, char **argv) {
             for (unsigned int idx = 0; idx < DisplacementMap.size(); idx++) {
                 if (Nvalid[idx] == 0) {
                     // Set those bin with non valid number into float max again
-                    DisplacementMap[idx].first = {float_max, float_max, float_max};
+//                    DisplacementMap[idx].first = {float_max, float_max, float_max};
+                    DisplacementMapD[idx] = Empty;
                 } else {
-                    DisplacementMap[idx].first = DisplacementMap[idx].first / Nvalid[idx];
+//                    DisplacementMap[idx].first = DisplacementMap[idx].first / Nvalid[idx];
+                    DisplacementMapD[idx] = DisplacementMapD[idx] / Nvalid[idx];
                 }
             }
 
@@ -509,16 +521,16 @@ int main(int argc, char **argv) {
 //            }
 
 
-//            // Fill displacement map into TH3 histograms and write them to file
-//            std::cout << "Write to File ..." << std::endl;
-//            WriteRootFile(DisplacementMap, Detector, ss_outfile.str());
+            // Fill displacement map into TH3 histograms and write them to file
+            std::cout << "Write to File ..." << std::endl;
+            WriteRootFile(DisplacementMapD, Detector, ss_outfile.str());
         }
-        */
 
-        // Fill displacement map into TH3 histograms and write them to root and txt file
-        std::cout << "Write to File ..." << std::endl;
-        WriteRootFileDeviation(DisplacementMap, Detector, ss_outfile.str());
-        WriteTextFile(DisplacementMap,ss_D_outtxt.str());
+
+//        // Fill displacement map into TH3 histograms and write them to root and txt file
+//        std::cout << "Write to File ..." << std::endl;
+//        WriteRootFileDeviation(DisplacementMap, Detector, ss_outfile.str());
+//        WriteTextFile(DisplacementMap,ss_D_outtxt.str());
     }
 
     // The Emap calculation works when the input is correction map
