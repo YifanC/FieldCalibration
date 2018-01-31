@@ -44,11 +44,11 @@
 #include "TTreeReader.h"
 #include "TTreeReaderValue.h"
 
-/*
+
 #ifdef _OPENMP
 #include "omp.h"
 #endif
-*/
+
 
 #include <dirent.h>
 
@@ -165,9 +165,9 @@ int main(int argc, char **argv) {
 
 
 
-//#ifdef _OPENMP
-//    omp_set_num_threads(n_threads);
-//#endif
+#ifdef _OPENMP
+    omp_set_num_threads(n_threads);
+#endif
 
 
     // Define input files for 2-side iteration
@@ -377,7 +377,7 @@ int main(int argc, char **argv) {
             // Now we loop over each individual set and compute the displacement vectors.
             // TODO: This could be parallelized
 
-//#pragma omp parallel for
+#pragma omp parallel for
 
             for (unsigned int set = 0; set < n_split; set++) {
 
