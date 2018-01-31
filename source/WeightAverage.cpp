@@ -64,9 +64,19 @@ AveragebyDistance(std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVe
                                TPC.GetDetectorSize()[2] / (Resolution[2] - 1)};
     ThreeVector<float> MinimumCoord = TPC.GetMapMinimum();
 
+//    //Initialize the map of displacement and its error(deviation)
+//    std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> AverageGrid;
+//    AverageGrid.resize(Resolution[0]*Resolution[1]*Resolution[2]);
+
     //Initialize the map of displacement and its error(deviation)
-    std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> AverageGrid;
-    AverageGrid.resize(Resolution[0]*Resolution[1]*Resolution[2]);
+    int Mapsize = Resolution[0]*Resolution[1]*Resolution[2];
+    float float_max = std::numeric_limits<float>::max();
+    ThreeVector<float> Empty = {float_max, float_max, float_max};
+
+    std::pair<ThreeVector<float >, ThreeVector<float>>
+            PairIni = std::make_pair(Empty,Empty);
+
+        std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> AverageGrid(Mapsize, PairIni);
 
     for(int i = 0; i<VoxelMesh.size(); i++){
 
@@ -83,49 +93,55 @@ AveragebyDistance(std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVe
         std::vector<float> vecw;
         std::vector<ThreeVector<float>> vecDisp;
 
-        float sumw = 0;
-        ThreeVector<float> sumDispw = {0, 0, 0};
-
-        for(int j = 0; j <VoxelMesh[i].size(); j++){
-
-            ThreeVector<float> SamplePosition = VoxelMesh[i][j].first;
-            ThreeVector<float> SampleDistortion = VoxelMesh[i][j].second;
-
-            // Take 1/R as weight
-            // Shall we try 1/R2 as well?
-            float w = 1 / sqrtf((Grid[0]-SamplePosition[0])*(Grid[0]-SamplePosition[0])
-                            +(Grid[1]-SamplePosition[1])*(Grid[1]-SamplePosition[1])
-                            +(Grid[2]-SamplePosition[2])*(Grid[2]-SamplePosition[2]));
-
-
-            vecDisp.push_back(SampleDistortion);
-
-            vecw.push_back(w);
-
-            //Normalization factor
-            sumw += w;
-
-            sumDispw += SampleDistortion * w;
+        if(VoxelMesh[i].empty()){
+            AverageGrid[i] = std::make_pair(Empty, Empty);
+            continue;
         }
+        else{
+            float sumw = 0;
+            ThreeVector<float> sumDispw = {0, 0, 0};
 
-        ThreeVector<float> Average = sumDispw/sumw;
-        //End of weighed mean calculation
+            for(int j = 0; j <VoxelMesh[i].size(); j++){
 
-        //Start for weighed deviation
-        ThreeVector<float> sigma = {0, 0, 0};
+                ThreeVector<float> SamplePosition = VoxelMesh[i][j].first;
+                ThreeVector<float> SampleDistortion = VoxelMesh[i][j].second;
 
-        for(int j = 0; j < VoxelMesh[i].size(); j++){
-            for(int k = 0; k < 3; k++){
-                sigma[k] += vecw[j]/sumw * (vecDisp[j][k]-Average[k])* (vecDisp[j][k]-Average[k]);
+                // Take 1/R as weight
+                // Shall we try 1/R2 as well?
+                float w = 1 / sqrtf((Grid[0]-SamplePosition[0])*(Grid[0]-SamplePosition[0])
+                                    +(Grid[1]-SamplePosition[1])*(Grid[1]-SamplePosition[1])
+                                    +(Grid[2]-SamplePosition[2])*(Grid[2]-SamplePosition[2]));
+
+
+                vecDisp.push_back(SampleDistortion);
+
+                vecw.push_back(w);
+
+                //Normalization factor
+                sumw += w;
+
+                sumDispw += SampleDistortion * w;
             }
-        }
 
-        ThreeVector<float> Deviation = {sqrtf(sigma[0]), sqrtf(sigma[1]), sqrtf(sigma[2])};
-        //End for weighed deviation
+            ThreeVector<float> Average = sumDispw/sumw;
+            //End of weighed mean calculation
+
+            //Start for weighed deviation
+            ThreeVector<float> sigma = {0, 0, 0};
+
+            for(int j = 0; j < VoxelMesh[i].size(); j++){
+                for(int k = 0; k < 3; k++){
+                    sigma[k] += vecw[j]/sumw * (vecDisp[j][k]-Average[k])* (vecDisp[j][k]-Average[k]);
+                }
+            }
+
+            ThreeVector<float> Deviation = {sqrtf(sigma[0]), sqrtf(sigma[1]), sqrtf(sigma[2])};
+            //End for weighed deviation
 
 //        std::pair<ThreeVector<float >, ThreeVector<float>> DistortionError = std::make_pair(Average, Deviation);
 
-        AverageGrid[i] = std::make_pair(Average, Deviation);
+            AverageGrid[i] = std::make_pair(Average, Deviation);
+        }
 
     }
 
