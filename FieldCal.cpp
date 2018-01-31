@@ -338,10 +338,12 @@ int main(int argc, char **argv) {
         int Mapsize = DetectorResolution[0]*DetectorResolution[1]*DetectorResolution[2];
 //        std::pair<ThreeVector<float >, ThreeVector<float>>
 //                PairIni = std::make_pair(ThreeVector<float>(0., 0., 0.),ThreeVector<float>(0., 0., 0.));
-//
-//        std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> DisplacementMap(Mapsize, PairIni);
-        std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> DisplacementMap;
-        DisplacementMap.reserve(Mapsize);
+        std::pair<ThreeVector<float >, ThreeVector<float>>
+                PairIni = std::make_pair(Empty,Empty);
+
+        std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> DisplacementMap(Mapsize, PairIni);
+//        std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> DisplacementMap;
+//        DisplacementMap.reserve(Mapsize);
 
 //        std::vector<ThreeVector<float>> DisplacementMap(DisplMapsHolder.front().size(),
 //                                                        ThreeVector<float>(0., 0., 0.));
@@ -500,23 +502,31 @@ int main(int argc, char **argv) {
                         Nvalid++;
                     }
                 }
-                // Averaging displacement in a bin
-                BinAverage = BinAverage / (float) Nvalid;
 
-                // Loop the profile vector to calculate the standard deviation
-                for (int binValid = 0; binValid < Nvalid; binValid++){
-                    for(int k = 0; k < 3; k++){
-                        BinStd[k] += (BinStatistics[binValid][k]-BinAverage[k])* (BinStatistics[binValid][k]-BinAverage[k]);
+                if(Nvalid ==0){
+                    DisplacementMap[idx] = std::make_pair(Empty,Empty);
+                }
+                else{
+
+                    // Averaging displacement in a bin
+                    BinAverage = BinAverage / (float) Nvalid;
+
+                    // Loop the profile vector to calculate the standard deviation
+                    for (int binValid = 0; binValid < Nvalid; binValid++){
+                        for(int k = 0; k < 3; k++){
+                            BinStd[k] += (BinStatistics[binValid][k]-BinAverage[k])* (BinStatistics[binValid][k]-BinAverage[k]);
+                        }
                     }
-                }
-                // Standard deviation of the displacement in a bin
-                for(int k = 0; k < 3; k++){
-                    BinStd[k] = sqrtf(BinStd[k] / (float) Nvalid);
-                }
+                    // Standard deviation of the displacement in a bin
+                    for(int k = 0; k < 3; k++){
+                        BinStd[k] = sqrtf(BinStd[k] / (float) Nvalid);
+                    }
 
-                // Construct 1d displacement map
-                std::pair<ThreeVector<float >, ThreeVector<float>> BinInfo = std::make_pair(BinAverage,BinStd);
-                DisplacementMap.push_back(BinInfo);
+                    // Construct 1d displacement map
+                    std::pair<ThreeVector<float >, ThreeVector<float>> BinInfo = std::make_pair(BinAverage,BinStd);
+                    DisplacementMap.push_back(BinInfo);
+
+                }
 
             }
 
