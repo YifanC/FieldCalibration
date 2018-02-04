@@ -98,6 +98,28 @@ bool WeightAverage = false;
 
 // Main function
 int main(int argc, char **argv) {
+//
+////    std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>>> ABC;
+//    std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> ABC;
+//
+//    for(int i=0;i<26*26*101;i++){
+////        const float a = i;
+////        ThreeVector<float > AAA = {a, a*1E1, a*1E2};
+////        ThreeVector<float > BBB = {a*1E3, a*1E4, a*1E5};
+////        const float a = i;
+//        ThreeVector<float > AAA = {1, 2, 3};
+//        ThreeVector<float > BBB = {4, 5, 6};
+//        std::pair<ThreeVector<float >, ThreeVector<float>> pair = std::make_pair(AAA,BBB);
+//        ABC.push_back(pair);
+//    }
+//
+//    std::cout<<"size of ABC: "<<ABC.size()<<std::endl;
+//
+//    for(int j = 0; j<ABC.size();j++){
+//        std::cout<<"No. "<<j<<": "<<ABC[j].first[0]<<", "<<ABC[j].first[1]<<", "<<ABC[j].first[2]
+//                 <<"; "<<ABC[j].second[0]<<", "<<ABC[j].second[1]<<", "<<ABC[j].second[2]<<std::endl;
+//    }
+
 
     // Start timer, just because it's nice to know how long shit takes
     time_t timer;
@@ -315,16 +337,14 @@ int main(int argc, char **argv) {
         std::vector<Laser> LaserSets2;
 
 
-        if(TwoSideIter || CosmicLaserIter){
+        if (TwoSideIter || CosmicLaserIter) {
             // Read the laser data from file to 'Laser'. The laser data from 2 sides are sperated
             TracksSample1 = ReadRecoTracks(InputFiles1);
             TracksSample2 = ReadRecoTracks(InputFiles2);
             // Split laser iteration samples into subsamples
             LaserSets1 = SplitTrackSet(TracksSample1, n_split);
             LaserSets2 = SplitTrackSet(TracksSample2, n_split);
-        }
-
-        else{
+        } else {
             // Read the laser data from file to 'Laser'.
             Laser FullTracks = ReadRecoTracks(InputFiles);
             // Seperate laser iteration sample
@@ -335,13 +355,25 @@ int main(int argc, char **argv) {
             LaserSets2 = SplitTrackSet(TracksSample2, n_split);
         }
 
-        int Mapsize = DetectorResolution[0]*DetectorResolution[1]*DetectorResolution[2];
+        int Mapsize = DetectorResolution[0] * DetectorResolution[1] * DetectorResolution[2];
 //        std::pair<ThreeVector<float >, ThreeVector<float>>
 //                PairIni = std::make_pair(ThreeVector<float>(0., 0., 0.),ThreeVector<float>(0., 0., 0.));
-        std::pair<ThreeVector<float >, ThreeVector<float>>
-                PairIni = std::make_pair(Empty,Empty);
+        std::pair<ThreeVector<float>, ThreeVector<float>>
+                PairIni = std::make_pair(Empty, Empty);
 
-        std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> DisplacementMap(Mapsize, PairIni);
+        std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> DisplacementMap(Mapsize, PairIni);
+
+//        std::cout << "size of DisplacementMap: " << DisplacementMap.size() << std::endl;
+//
+//        for (int j = 0; j < DisplacementMap.size(); j++) {
+//            std::cout << "No. " << j << ": " << DisplacementMap[j].first[0] << ", " << DisplacementMap[j].first[1]
+//                      << ", " << DisplacementMap[j].first[2]
+//                      << "; " << DisplacementMap[j].second[0] << ", " << DisplacementMap[j].second[1] << ", "
+//                      << DisplacementMap[j].second[2] << std::endl;
+//        }
+
+
+
 //        std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> DisplacementMap;
 //        DisplacementMap.reserve(Mapsize);
 
@@ -360,6 +392,7 @@ int main(int argc, char **argv) {
             Laser LaserCorrected = MergeLaser(LaserWithDisp.first, LaserWithDisp.second);
 
             std::cout << "Meshing for weighted mean in voxels" <<  std::endl;
+            //crushed here
 
             auto MeshforGrid = MeshVoxel(LaserCorrected.GetTrackSet(),Detector);
 
@@ -381,7 +414,8 @@ int main(int argc, char **argv) {
 
 #pragma omp parallel for
 
-            for (unsigned int set = 0; set < n_split; set++) {
+//            for (unsigned int set = 0; set < n_split; set++) {
+            for (unsigned int set = 0; set < 1; set++) {
 
                 // The disadvantage is the LaserRecoOrigin will be discard after the calculation of this set
                 Laser LaserRecoOrigin1 = LaserSets1[set];
@@ -486,13 +520,18 @@ int main(int argc, char **argv) {
 
 
             // Loop the displacement map in the form of vector
+            std::cout << "Start to calculate the displacement map mean and error" <<  std::endl;
+            std::cout<<"DisplacementMap size: "<<DisplacementMap.size()<<std::endl;
+            int IDX =0;
             for (int idx = 0; idx < DisplacementMap.size(); idx++){
 
                 std::vector<ThreeVector<float>> BinStatistics;
-                ThreeVector<float> BinAverage;
-                ThreeVector<float> BinStd;
+                ThreeVector<float> BinAverage = {0,0,0};
+                ThreeVector<float> BinSumErr = {0,0,0};
+                ThreeVector<float> BinStd = {0,0,0};
                 int Nvalid = 0;
 
+//                std::cout << "reshape map" <<  std::endl;
                 // Loop the bins in submaps to calculate the bin averaging displacement
                 for (int NsubMap = 0; NsubMap < DisplMapsHolder.size(); NsubMap++){
                     if(DisplMapsHolder[NsubMap][idx] != Empty){
@@ -502,9 +541,11 @@ int main(int argc, char **argv) {
                         Nvalid++;
                     }
                 }
+//                std::cout<<"vector size: "<<BinStatistics.size()<<"; Nvalid: "<<Nvalid<<std::endl;
 
                 if(Nvalid ==0){
                     DisplacementMap[idx] = std::make_pair(Empty,Empty);
+                    continue;
                 }
                 else{
 
@@ -514,21 +555,30 @@ int main(int argc, char **argv) {
                     // Loop the profile vector to calculate the standard deviation
                     for (int binValid = 0; binValid < Nvalid; binValid++){
                         for(int k = 0; k < 3; k++){
-                            BinStd[k] += (BinStatistics[binValid][k]-BinAverage[k])* (BinStatistics[binValid][k]-BinAverage[k]);
+                            BinSumErr[k] += (BinStatistics[binValid][k]-BinAverage[k])* (BinStatistics[binValid][k]-BinAverage[k]);
                         }
                     }
                     // Standard deviation of the displacement in a bin
                     for(int k = 0; k < 3; k++){
-                        BinStd[k] = sqrtf(BinStd[k] / (float) Nvalid);
+                        BinStd[k] = sqrtf(BinSumErr[k] / (float) Nvalid);
+//                        if(std::abs(BinStd[k])>1E10){
+//                            std::cout<<"idx: "<<idx<<"; k: "<<k <<"; BinStd: "<<BinStd[k]<<"; BinSumErr: "<<BinSumErr[k]<<"; Nvalid: "<<Nvalid<<std::endl;
+//                        }
                     }
 
                     // Construct 1d displacement map
                     std::pair<ThreeVector<float >, ThreeVector<float>> BinInfo = std::make_pair(BinAverage,BinStd);
-                    DisplacementMap.push_back(BinInfo);
+//                    DisplacementMap.push_back(BinInfo);
+                    DisplacementMap[idx] = BinInfo;
 
                 }
+                std::cout<<"idx: "<<idx<<", MeanX: "<<BinAverage[0]<<", MeanY: "<<BinAverage[1]<<", MeanZ: "<<BinAverage[2]
+                        <<"; ErrX: "<<BinStd[0]<<", ErrY: "<<BinStd[1]<<", ErrZ: "<<BinStd[2]<<std::endl;
+//                IDX = idx;
+//                std::cout<<"IDX: "<<IDX<<"; size: "<<DisplacementMap.size()<<std::endl;
 
             }
+//            std::cout<<"IDX: "<<IDX<<std::endl;
 
 
 //            // Fill displacement map into TH3 histograms and write them to file
@@ -600,6 +650,7 @@ int main(int argc, char **argv) {
 
 
     std::cout << "End of program after " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+
 
 } // end main
 
@@ -829,7 +880,7 @@ void WriteTextFile(std::vector<std::pair<ThreeVector<float >, ThreeVector<float>
                    << InterpolationData[entry].first[0] <<"\t" << InterpolationData[entry].first[1] <<"\t"
                    << InterpolationData[entry].first[2] <<"\t"
                    << InterpolationData[entry].second[0] <<"\t" << InterpolationData[entry].second[1] <<"\t"
-                   << InterpolationData[entry].second[2];
+                   << InterpolationData[entry].second[2]<<std::endl;
     }
 
     // Close file
