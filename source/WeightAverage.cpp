@@ -25,6 +25,7 @@ MeshVoxel(const std::vector<LaserTrack> &LaserTrackSet,const TPCVolumeHandler &T
                                TPC.GetDetectorSize()[2] / (Resolution[2] - 1)};
     std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>>> Mesh;
     Mesh.resize(Resolution[0]*Resolution[1]*Resolution[2]);
+    std::cout<<"Mesh size: "<<Mesh.size()<<std::endl;
 
     // Loop over data points (tracks) of the whole sample
     for (unsigned long track = 0; track < LaserTrackSet.size(); track++) {
@@ -101,6 +102,8 @@ AveragebyDistance(std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVe
             float sumw = 0;
             ThreeVector<float> sumDispw = {0, 0, 0};
 
+            std::cout<<"id: "<<i<<"; size of bin: "<<VoxelMesh[i].size()<<std::endl;
+
             for(int j = 0; j <VoxelMesh[i].size(); j++){
 
                 ThreeVector<float> SamplePosition = VoxelMesh[i][j].first;
@@ -122,6 +125,8 @@ AveragebyDistance(std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVe
 
                 sumDispw += SampleDistortion * w;
             }
+
+            std::cout<<"size of vecDisp: "<<vecDisp.size()<<"; size of vecw: "<<vecw.size()<<std::endl;
 
             ThreeVector<float> Average = sumDispw/sumw;
             //End of weighed mean calculation
