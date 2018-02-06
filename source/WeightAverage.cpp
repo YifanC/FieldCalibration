@@ -32,6 +32,8 @@ MeshVoxel(const std::vector<LaserTrack> &LaserTrackSet,const TPCVolumeHandler &T
         // Loop over data points (samples) of each track
         for (unsigned long sample = 0; sample < LaserTrackSet[track].GetNumberOfSamples(); sample++) {
 
+            std::cout<<"track: "<<track<<"; sample: "<<sample<<std::endl;
+
             ThreeVector<float> Position = LaserTrackSet[track].GetSamplePosition(sample);
             ThreeVector<float> Disp = LaserTrackSet[track].GetDisplacement(sample);
 
@@ -49,6 +51,8 @@ MeshVoxel(const std::vector<LaserTrack> &LaserTrackSet,const TPCVolumeHandler &T
 
         } // end sample loop
     } // end track loop
+
+    std::cout<<"End of Mesh "<<std::endl;
 
     return Mesh;
 
@@ -74,10 +78,11 @@ AveragebyDistance(std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVe
     float float_max = std::numeric_limits<float>::max();
     ThreeVector<float> Empty = {float_max, float_max, float_max};
 
-    std::pair<ThreeVector<float >, ThreeVector<float>>
-            PairIni = std::make_pair(Empty,Empty);
+    std::pair<ThreeVector<float >, ThreeVector<float>> PairIni = std::make_pair(Empty,Empty);
 
-        std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> AverageGrid(Mapsize, PairIni);
+    std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> AverageGrid(Mapsize, PairIni);
+
+    int NfilledBin = 0;
 
     for(int i = 0; i<VoxelMesh.size(); i++){
 
@@ -99,6 +104,7 @@ AveragebyDistance(std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVe
             continue;
         }
         else{
+            NfilledBin++;
             float sumw = 0;
             ThreeVector<float> sumDispw = {0, 0, 0};
 
@@ -149,6 +155,7 @@ AveragebyDistance(std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVe
         }
 
     }
+    std::cout<<"filled bin in Mesh: "<<NfilledBin<<"; percentage: "<<(float) NfilledBin/Mapsize * 100<<std::endl;
 
     return AverageGrid;
 
