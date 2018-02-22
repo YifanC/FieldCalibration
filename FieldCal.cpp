@@ -280,7 +280,7 @@ int main(int argc, char **argv) {
     if(DoCorr){
         if (CorrMapFlag) {
             ss_outfile << "RecoCorr-N" << Nstep << "-S" << n_split << ".root";
-            ss_D_outtxt << "RecoCorr-N" << Nstep << "-S" << n_split << ".txt";
+            ss_D_outtxt << "Calib-RecoCorr-N" << Nstep << "-S" << n_split << ".txt";
         }
         if (!CorrMapFlag) {
             ss_outfile << "TrueDist-N" << Nstep << "-S" << n_split << ".root";
@@ -363,6 +363,8 @@ int main(int argc, char **argv) {
 
         std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> DisplacementMap(Mapsize, PairIni);
 
+
+
 //        std::cout << "size of DisplacementMap: " << DisplacementMap.size() << std::endl;
 //
 //        for (int j = 0; j < DisplacementMap.size(); j++) {
@@ -390,6 +392,12 @@ int main(int argc, char **argv) {
 
             // TODO: Let's hope merge function is alright!
             Laser LaserCorrected = MergeLaser(LaserWithDisp.first, LaserWithDisp.second);
+
+            std::cout<<"laser11 tracks number: "<<LaserSets1[0].GetNumberOfTracks()
+                     <<"; laser22 tracks number: "<<LaserSets2[0].GetNumberOfTracks()
+                    <<"laser1 tracks number: "<<LaserWithDisp.first.GetNumberOfTracks()
+                     <<"; laser2 tracks number: "<<LaserWithDisp.second.GetNumberOfTracks()
+                    <<"; laser corrected tracks number: "<<LaserCorrected.GetNumberOfTracks() <<std::endl;
 
             std::cout << "Meshing for weighted mean in voxels" <<  std::endl;
             //crushed here
