@@ -50,8 +50,6 @@ LaserTrack::LaserTrack(std::array<float, 2> &Angles, ThreeVector<float> &Positio
     FindBoundaries(TPCVolume);
 }
 
-////////////////////////////////////
-//TODO:Check if it's right
 // This part is to disguise the anode zero distortion as tracks, so they can be easily merged after iteration calculation
 LaserTrack::LaserTrack(const std::vector<ThreeVector<float>> &RecoTrack, const std::vector<ThreeVector<float>> &LaserDisp) {
 

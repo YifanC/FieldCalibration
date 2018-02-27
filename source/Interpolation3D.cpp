@@ -239,18 +239,13 @@ InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<
     // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
     // So if one of the coordinates is smaller than zero
     float eps = 0.0;
-//    if(BaryCoord[0] <= 0.0 || BaryCoord[1] <= 0.0 || BaryCoord[2] <= 0.0 || BaryCoord[3] <= 0.0)
-//    if (BaryCoord[0] < 0.0 || BaryCoord[0] > 1.0 || BaryCoord[1] < 0.0 || BaryCoord[1] > 1.0 ||
-//        BaryCoord[2] < 0.0 || BaryCoord[2] > 1.0 || BaryCoord[3] < 0.0 || BaryCoord[3] > 1.0 ) {
-    if (BaryCoord[0] < 0.0 - eps || BaryCoord[0] > 1.0 + eps || BaryCoord[1] < 0.0 - eps || BaryCoord[1] > 1.0 + eps ||
-        BaryCoord[2] < 0.0 - eps || BaryCoord[2] > 1.0 + eps || BaryCoord[3] < 0.0 - eps || BaryCoord[3] > 1.0 + eps) {
-//    if (BaryCoord[0] <= 0.0 || BaryCoord[1] <= 0.0 || BaryCoord[2] <= 0.0 || BaryCoord[3] <= 0.0) {
+    if (BaryCoord[0] <= 0.0 - eps || BaryCoord[0] >= 1.0 + eps || BaryCoord[1] <= 0.0 - eps || BaryCoord[1] >= 1.0 + eps ||
+        BaryCoord[2] <= 0.0 - eps || BaryCoord[2] >= 1.0 + eps || BaryCoord[3] <= 0.0 - eps || BaryCoord[3] >= 1.0 + eps) {
         // Set displacement zero and end function immediately!
 //        std::cout<<"There is negative barycentric coordinate at this D grid point! "<<std::endl;
         InterpolatedDispl = {float_max, float_max, float_max};
 //        if (Map) { InterpolatedDispl = {float_max, float_max, float_max}; }
 //        else { InterpolatedDispl = {0, 0, 0}; }
-//        InterpolatedDispl = {0,0,0};
         return InterpolatedDispl;
     }
 
@@ -378,24 +373,19 @@ ThreeVector<float> EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::ve
         // Set E field to zero and end function immediately!
 //        std::cout<<"The transition matrix for this E grid point is not invertable. "<<std::endl;
 //        InterpolatedEfield = {273.0,0.0,0.0};
-//        InterpolatedEfield = {float_max, float_max, float_max};
-        InterpolatedEfield = {-99,-99,-99};
+        InterpolatedEfield = {float_max, float_max, float_max};
+//        InterpolatedEfield = {-99,-99,-99};
         return InterpolatedEfield;
     }
 
     // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
     // So if one of the coordinates is negative, terminate the function
     float eps = 1E-7;
-//    float eps = 0.0;
-//    if(BaryCoord[0] < 0.0 || BaryCoord[1] < 0.0 || BaryCoord[2] < 0.0 || BaryCoord[3] < 0.0){
-    if (BaryCoord[0] < 0.0 - eps || BaryCoord[0] > 1.0 + eps || BaryCoord[1] < 0.0 - eps || BaryCoord[1] > 1.0 + eps ||
-        BaryCoord[2] < 0.0 - eps || BaryCoord[2] > 1.0 + eps || BaryCoord[3] < 0.0 - eps || BaryCoord[3] > 1.0 + eps) {
+    if (BaryCoord[0] <= 0.0 - eps || BaryCoord[0] >= 1.0 + eps || BaryCoord[1] <= 0.0 - eps || BaryCoord[1] >= 1.0 + eps ||
+        BaryCoord[2] <= 0.0 - eps || BaryCoord[2] >= 1.0 + eps || BaryCoord[3] <= 0.0 - eps || BaryCoord[3] >= 1.0 + eps) {
         // Set E field to zero and end function immediately!
 //        std::cout<<"There is negative barycentric coordinate at this E grid point! "<<std::endl;
 //        InterpolatedEfield = {273.0,0.0,0.0};
-//        std::cout << "x: " << Location[0]<<"; y: "<<Location[1]<<"; z: "<<Location[2]<<std::endl;
-        std::cout<<"A: "<< BaryCoord[0]<<"; B: "<< BaryCoord[1]<<"; C: "<< BaryCoord[2]<<"; D: "<< BaryCoord[3]<<std::endl;
-//        InterpolatedEfield = {-99,-99,-99};
 //            std::cout<<"loc: "<<loc<<"; li: "<<li<<"; lj: "<<lj<<std::endl;
         InterpolatedEfield = {float_max, float_max, float_max};
         return InterpolatedEfield;
@@ -481,23 +471,17 @@ float EcompInterpolateCGAL(std::vector<float> &En_comp, std::vector<ThreeVector<
 //        std::cout<<"The transition matrix for this E grid point is not invertable. "<<std::endl;
 //        InterpolatedEfield = {273.0,0.0,0.0};
         InterpolatedEfield = float_max;
-//        InterpolatedEfield = {-99,-99,-99};
         return InterpolatedEfield;
     }
 
     // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
     // So if one of the coordinates is negative, terminate the function
     float eps = 1E-7;
-//    float eps = 0.0;
-//    if(BaryCoord[0] <= 0.0 || BaryCoord[1] <= 0.0 || BaryCoord[2] <= 0.0 || BaryCoord[3] <= 0.0)
-    if (BaryCoord[0] < 0.0 - eps || BaryCoord[0] > 1.0 + eps || BaryCoord[1] < 0.0 - eps || BaryCoord[1] > 1.0 + eps ||
-        BaryCoord[2] < 0.0 - eps || BaryCoord[2] > 1.0 + eps || BaryCoord[3] < 0.0 - eps || BaryCoord[3] > 1.0 + eps) {
+    if (BaryCoord[0] <= 0.0 - eps || BaryCoord[0] >= 1.0 + eps || BaryCoord[1] <= 0.0 - eps || BaryCoord[1] >= 1.0 + eps ||
+        BaryCoord[2] <= 0.0 - eps || BaryCoord[2] >= 1.0 + eps || BaryCoord[3] <= 0.0 - eps || BaryCoord[3] >= 1.0 + eps) {
         // Set E field to zero and end function immediately!
 //        std::cout<<"There is negative barycentric coordinate at this E grid point! "<<std::endl;
 //        InterpolatedEfield = {273.0,0.0,0.0};
-//        std::cout << "x: " << Location[0]<<"; y: "<<Location[1]<<"; z: "<<Location[2]<<std::endl;
-//        std::cout<<"A: "<< BaryCoord[0]<<"; B: "<< BaryCoord[1]<<"; C: "<< BaryCoord[2]<<"; D: "<< BaryCoord[3]<<std::endl;
-//        InterpolatedEfield = {-99,-99,-99};
 //            std::cout<<"loc: "<<loc<<"; li: "<<li<<"; lj: "<<lj<<std::endl;
         InterpolatedEfield = float_max;
         return InterpolatedEfield;
@@ -592,14 +576,6 @@ EcompInterpolateMap(std::vector<float> &Ex, std::vector<ThreeVector<float>> &Pos
                 ThreeVector<float> E_field = {EcompInterpolateCGAL(Ex, PositionX, MeshX, Location, TPC),
                                        EcompInterpolateCGAL(Ey, PositionY, MeshY, Location, TPC),
                                        EcompInterpolateCGAL(Ez, PositionZ, MeshZ, Location, TPC)};
-//                ThreeVector<float> E_field = {EcompInterpolateCGAL(Ex, PositionX, MeshX, Location, TPC),
-//                                              EcompInterpolateCGAL(Ey, PositionY, MeshY, Location, TPC),
-//                                              99.};
-
-                if(xbin ==0){
-                    std::cout<<"x: "<<xbin<<"; y: "<<ybin<<"; z: "<<zbin
-                             << "; Ex: "<< E_field[0]<<"; Ey: "<<E_field[1]<<"; Ez: "<<E_field[2]<<std::endl;
-                }
 
                 // Fill displacement map
                 EMap.push_back(E_field);
@@ -640,21 +616,18 @@ void InterpolateTrack(LaserTrack &Track, const std::vector<LaserTrack> &LaserTra
         }
 
         Location -= LaserTrackSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
-//     std::cout << TransMatrix.Determinant() << std::endl;
 
         std::vector<float> BaryCoord;
         if (TransMatrix.Invert()) {
             BaryCoord = (TransMatrix * Location).GetStdVector();
             BaryCoord.push_back(1 - BaryCoord[0] - BaryCoord[1] - BaryCoord[2]);
-//     std::cout << BaryCoord[0] << " " << BaryCoord[1] << " " << BaryCoord[2] << " " << BaryCoord[3] << std::endl;
+
         } else {
-//       BaryCoord = {0.0,0.0,0.0,0.0};
             InterpolatedDispl = {0.0, 0.0, 0.0};
             return;
         }
 
         if (BaryCoord[0] < 0.0 || BaryCoord[1] < 0.0 || BaryCoord[2] < 0.0 || BaryCoord[3] < 0.0) {
-//       std::cout << BaryCoord[0] << " " << BaryCoord[1] << " " << BaryCoord[2] << " " << BaryCoord[3] << std::endl;
             InterpolatedDispl = {0.0, 0.0, 0.0};
             return;
         }

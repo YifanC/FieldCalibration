@@ -108,7 +108,7 @@ AveragebyDistance(std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVe
             float sumw = 0;
             ThreeVector<float> sumDispw = {0, 0, 0};
 
-            std::cout<<"id: "<<i<<"; size of bin: "<<VoxelMesh[i].size()<<std::endl;
+//            std::cout<<"id: "<<i<<"; size of bin: "<<VoxelMesh[i].size()<<std::endl;
 
             for(int j = 0; j <VoxelMesh[i].size(); j++){
 

@@ -98,28 +98,6 @@ bool WeightAverage = false;
 
 // Main function
 int main(int argc, char **argv) {
-//
-////    std::vector<std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>>> ABC;
-//    std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> ABC;
-//
-//    for(int i=0;i<26*26*101;i++){
-////        const float a = i;
-////        ThreeVector<float > AAA = {a, a*1E1, a*1E2};
-////        ThreeVector<float > BBB = {a*1E3, a*1E4, a*1E5};
-////        const float a = i;
-//        ThreeVector<float > AAA = {1, 2, 3};
-//        ThreeVector<float > BBB = {4, 5, 6};
-//        std::pair<ThreeVector<float >, ThreeVector<float>> pair = std::make_pair(AAA,BBB);
-//        ABC.push_back(pair);
-//    }
-//
-//    std::cout<<"size of ABC: "<<ABC.size()<<std::endl;
-//
-//    for(int j = 0; j<ABC.size();j++){
-//        std::cout<<"No. "<<j<<": "<<ABC[j].first[0]<<", "<<ABC[j].first[1]<<", "<<ABC[j].first[2]
-//                 <<"; "<<ABC[j].second[0]<<", "<<ABC[j].second[1]<<", "<<ABC[j].second[2]<<std::endl;
-//    }
-
 
     // Start timer, just because it's nice to know how long shit takes
     time_t timer;
@@ -364,40 +342,20 @@ int main(int argc, char **argv) {
         std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> DisplacementMap(Mapsize, PairIni);
 
 
-
-//        std::cout << "size of DisplacementMap: " << DisplacementMap.size() << std::endl;
-//
-//        for (int j = 0; j < DisplacementMap.size(); j++) {
-//            std::cout << "No. " << j << ": " << DisplacementMap[j].first[0] << ", " << DisplacementMap[j].first[1]
-//                      << ", " << DisplacementMap[j].first[2]
-//                      << "; " << DisplacementMap[j].second[0] << ", " << DisplacementMap[j].second[1] << ", "
-//                      << DisplacementMap[j].second[2] << std::endl;
-//        }
-
-
-
 //        std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> DisplacementMap;
 //        DisplacementMap.reserve(Mapsize);
 
 //        std::vector<ThreeVector<float>> DisplacementMap(DisplMapsHolder.front().size(),
 //                                                        ThreeVector<float>(0., 0., 0.));
         if(WeightAverage){
-//        if(false){
 
             // Calculate track displacement
-//            std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, TracksSample1, TracksSample2, CorrMapFlag);
-            std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, LaserSets1[0], LaserSets2[0], CorrMapFlag);
+            std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, TracksSample1, TracksSample2, CorrMapFlag);
+//            std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, LaserSets1[0], LaserSets2[0], CorrMapFlag);
 
             std::cout << "Time after N-step correction" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
-            // TODO: Let's hope merge function is alright!
             Laser LaserCorrected = MergeLaser(LaserWithDisp.first, LaserWithDisp.second);
-
-            std::cout<<"laser11 tracks number: "<<LaserSets1[0].GetNumberOfTracks()
-                     <<"; laser22 tracks number: "<<LaserSets2[0].GetNumberOfTracks()
-                    <<"laser1 tracks number: "<<LaserWithDisp.first.GetNumberOfTracks()
-                     <<"; laser2 tracks number: "<<LaserWithDisp.second.GetNumberOfTracks()
-                    <<"; laser corrected tracks number: "<<LaserCorrected.GetNumberOfTracks() <<std::endl;
 
             std::cout << "Meshing for weighted mean in voxels" <<  std::endl;
             //crushed here
@@ -415,12 +373,10 @@ int main(int argc, char **argv) {
         }
 
         if(!WeightAverage) {
-//        if(true) {
 
             // Now we loop over each individual set and compute the displacement vectors.
-            // TODO: This could be parallelized
 
-#pragma omp parallel for
+            #pragma omp parallel for
 
 //            for (unsigned int set = 0; set < n_split; set++) {
             for (unsigned int set = 0; set < 1; set++) {
@@ -437,8 +393,7 @@ int main(int argc, char **argv) {
                 std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, LaserSets1[set], LaserSets2[set],
                                                                            CorrMapFlag);
 
-                std::cout << "Time after N-step correction" << std::difftime(std::time(NULL), timer) << " s"
-                          << std::endl;
+                std::cout << "Time after N-step correction" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
 //            // Merge 2 Laser samples with displacement vector for mesh and iteration
 //            Laser LaserRecoOrigin = MergeLaser(LaserRecoOrigin1, LaserRecoOrigin2);
@@ -530,7 +485,6 @@ int main(int argc, char **argv) {
             // Loop the displacement map in the form of vector
             std::cout << "Start to calculate the displacement map mean and error" <<  std::endl;
             std::cout<<"DisplacementMap size: "<<DisplacementMap.size()<<std::endl;
-            int IDX =0;
             for (int idx = 0; idx < DisplacementMap.size(); idx++){
 
                 std::vector<ThreeVector<float>> BinStatistics;
@@ -539,7 +493,6 @@ int main(int argc, char **argv) {
                 ThreeVector<float> BinStd = {0,0,0};
                 int Nvalid = 0;
 
-//                std::cout << "reshape map" <<  std::endl;
                 // Loop the bins in submaps to calculate the bin averaging displacement
                 for (int NsubMap = 0; NsubMap < DisplMapsHolder.size(); NsubMap++){
                     if(DisplMapsHolder[NsubMap][idx] != Empty){
@@ -549,7 +502,6 @@ int main(int argc, char **argv) {
                         Nvalid++;
                     }
                 }
-//                std::cout<<"vector size: "<<BinStatistics.size()<<"; Nvalid: "<<Nvalid<<std::endl;
 
                 if(Nvalid ==0){
                     DisplacementMap[idx] = std::make_pair(Empty,Empty);
@@ -569,9 +521,6 @@ int main(int argc, char **argv) {
                     // Standard deviation of the displacement in a bin
                     for(int k = 0; k < 3; k++){
                         BinStd[k] = sqrtf(BinSumErr[k] / (float) Nvalid);
-//                        if(std::abs(BinStd[k])>1E10){
-//                            std::cout<<"idx: "<<idx<<"; k: "<<k <<"; BinStd: "<<BinStd[k]<<"; BinSumErr: "<<BinSumErr[k]<<"; Nvalid: "<<Nvalid<<std::endl;
-//                        }
                     }
 
                     // Construct 1d displacement map
@@ -580,14 +529,8 @@ int main(int argc, char **argv) {
                     DisplacementMap[idx] = BinInfo;
 
                 }
-                std::cout<<"idx: "<<idx<<", MeanX: "<<BinAverage[0]<<", MeanY: "<<BinAverage[1]<<", MeanZ: "<<BinAverage[2]
-                        <<"; ErrX: "<<BinStd[0]<<", ErrY: "<<BinStd[1]<<", ErrZ: "<<BinStd[2]<<std::endl;
-//                IDX = idx;
-//                std::cout<<"IDX: "<<IDX<<"; size: "<<DisplacementMap.size()<<std::endl;
 
             }
-//            std::cout<<"IDX: "<<IDX<<std::endl;
-
 
 //            // Fill displacement map into TH3 histograms and write them to file
 //            std::cout << "Write to File ..." << std::endl;
@@ -867,18 +810,11 @@ void WriteRootFileDeviation(std::vector<std::pair<ThreeVector<float >, ThreeVect
 void WriteTextFile(std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> &InterpolationData,
                    std::string OutputFilename) {
 
-    std::cout<<"Are you writing txt file now"<<std::endl;
     // Initialize stream to file
     std::ofstream OutputFile;
 
     // Open output file
     OutputFile.open(OutputFilename.c_str(), std::ios::out);
-
-    std::cout<< 0 <<"\t"
-             << InterpolationData[0].first[0] <<"\t" << InterpolationData[0].first[1] <<"\t"
-             << InterpolationData[0].first[2] <<"\t"
-             << InterpolationData[0].second[0] <<"\t" << InterpolationData[0].second[1] <<"\t"
-             << InterpolationData[0].second[2] <<std::endl;
 
     // Loop over all interpolated data points
     for (unsigned entry = 0; entry < InterpolationData.size(); entry++) {
@@ -940,7 +876,6 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
 //                   Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][2] > 0.5*float_max) &&
 //                   xbin == 0)
 //                {
-////                    std::cout<<"x: "<<xbin<<"; y: "<<ybin<<"; z: "<<zbin<<" !Flag!"<<std::endl;
 //                    ThreeVector<unsigned long> Coord = {xbin, ybin, zbin};
 //                    Emap[0].SetBinContent(xbin + 1, ybin + 1, zbin + 1, EdgeEx(Efield, Resolution, Unit, E0, Coord));
 //                    Emap[1].SetBinContent(xbin + 1, ybin + 1, zbin + 1, 0);
@@ -953,23 +888,11 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
 //                    Emap[2].SetBinContent(xbin + 1, ybin + 1, zbin + 1, -999);
 //                }
 //                else{
-//                    if(xbin == 0){
-//                        std::cout<<"Mesh-Interpolation...xbin: "<<xbin<<", ybin: "<<ybin<<", zbin: "<<zbin
-//                                 <<", Ex: "<<Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][0]
-//                                 <<", Ey: "<<Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][1]
-//                                 <<", Ez: "<<Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][2]
-//                                 <<std::endl;
-//                    }
                     // Loop over all coordinates dx,dy,dz
                     for (unsigned coord = 0; coord < 3; coord++) {
                         // Fill interpolated grid points into histograms. bin=0 is underflow, bin = nbin+1 is overflow
                         Emap[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
                                                   Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]);
-//                        if(Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]>20){
-//                            std::cout<<"x: "<<xbin +1 <<"; y: "<<ybin+1<<"; z: "<<zbin+1<<"Efield[ "<<coord<<"]: "
-//                                     <<Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]
-//                                     <<std::endl;
-//                        }
                     } // end coordinate loop
 //                }
             } // end zbin loop
