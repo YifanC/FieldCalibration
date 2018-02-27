@@ -378,8 +378,8 @@ int main(int argc, char **argv) {
 
             #pragma omp parallel for
 
-//            for (unsigned int set = 0; set < n_split; set++) {
-            for (unsigned int set = 0; set < 1; set++) {
+            for (unsigned int set = 0; set < n_split; set++) {
+//            for (unsigned int set = 0; set < 1; set++) {
 
                 // The disadvantage is the LaserRecoOrigin will be discard after the calculation of this set
                 Laser LaserRecoOrigin1 = LaserSets1[set];
