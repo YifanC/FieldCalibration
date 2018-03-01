@@ -168,6 +168,98 @@ xPoint xVectorToPoint(ThreeVector<float> &InputVector) {
     return point_res;
 }
 
+//// This function Interpolates the displacement of Location within the Mesh
+//// For InterpolateCGAL/InterpolateMap,
+//// the first parameter is the one to provide the vector (e.g displacement)
+//// the second parameter is the one to indicate the mesh position
+//// If the Map flag is true: set the unknown point to float max, which is suitable for the final map establish
+//// If the Map flag is false: set the unknown point to 0, which is suitable for the middle steps
+//ThreeVector<float>
+//InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<LaserTrack> &LaserMeshSet,
+//                const Delaunay &Mesh, ThreeVector<float> Location) {
+//    float float_max = std::numeric_limits<float>::max();
+//
+//    // Create a array which contains the info of all 4 vertices of a cell
+//    std::array<std::pair<unsigned long, unsigned long>, 4> PointIndex;
+//
+//    // Initialize a displacement vector with zero
+//    ThreeVector<float> InterpolatedDispl = {0.0, 0.0, 0.0};
+//
+//    // Initialize Barycentric coordinate system (it will have 4 dimensions)
+//    std::vector<float> BaryCoord;
+//
+//    // Find cell in the mesh where the point is located
+//    Delaunay::Cell_handle Cell = Mesh.locate(VectorToPoint(Location));
+//
+//    // Loop over all four vertex points of the cell of interest
+//    for (unsigned vertex_no = 0; vertex_no < PointIndex.size(); vertex_no++) {
+//        // Get vertex info of the cell (track number, sample number)
+//        PointIndex[vertex_no] = Cell->vertex(vertex_no)->info();
+//    }
+//
+//    // Initialize matrix for Location transformation into barycentric coordinate system
+//    Matrix3x3 TransMatrix = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+//
+//    // Loop over matrix rows
+//    for (unsigned row = 0; row < 3; row++) {
+//        // Loop over matrix columns
+//        for (unsigned column = 0; column < 3; column++) {
+//            // Fill transformation matrix elements
+//            // x1,2,3 - x4, y1,2,3 - y4, z1,2,3 - z4
+//            TransMatrix[row][column] =
+//                    LaserMeshSet[PointIndex[column].first].GetSamplePosition(PointIndex[column].second)[row] -
+//                    LaserMeshSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second)[row];
+//        }
+//    }
+//
+//    // Reuse Location and store its position relative to the last vertex of the cell it is contained in
+//    // after is step Location is (r-r4)
+//    Location -= LaserMeshSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
+//
+//    // If the transformation matrix can be successfully inverted
+//    if (TransMatrix.Invert()) {
+//        // Use inverted matrix to fill the first three coordinates
+//        ThreeVector<float> BC = TransMatrix * Location;
+//        BaryCoord = BC.GetStdVector();
+//
+//        // The sum of all barycentric coordinates has to be 1 by definition, use this to calculate the 4th coordinate
+//        BaryCoord.push_back(1 - BaryCoord[0] - BaryCoord[1] - BaryCoord[2]);
+//    }
+//    else // if the matrix can't be inverted
+//    {
+//        // Set displacement zero and end function immediately!
+////        std::cout<<"The transition matrix for this D grid point is not invertable. "<<std::endl;
+//        InterpolatedDispl = {float_max, float_max, float_max};
+////        if (Map) { InterpolatedDispl = {float_max, float_max, float_max}; }
+////        else { InterpolatedDispl = {0, 0, 0}; }
+////        InterpolatedDispl = {0,0,0};
+//        return InterpolatedDispl;
+//    }
+//
+//    // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
+//    // So if one of the coordinates is smaller than zero
+//    float eps = 0.0;
+//    if (BaryCoord[0] <= 0.0 - eps || BaryCoord[0] >= 1.0 + eps || BaryCoord[1] <= 0.0 - eps || BaryCoord[1] >= 1.0 + eps ||
+//        BaryCoord[2] <= 0.0 - eps || BaryCoord[2] >= 1.0 + eps || BaryCoord[3] <= 0.0 - eps || BaryCoord[3] >= 1.0 + eps) {
+//        // Set displacement zero and end function immediately!
+////        std::cout<<"There is negative barycentric coordinate at this D grid point! "<<std::endl;
+//        InterpolatedDispl = {float_max, float_max, float_max};
+////        if (Map) { InterpolatedDispl = {float_max, float_max, float_max}; }
+////        else { InterpolatedDispl = {0, 0, 0}; }
+//        return InterpolatedDispl;
+//    }
+//
+//    // If the function is still alive, loop over all barycentric coordinates
+//    for (unsigned vertex_no = 0; vertex_no < 4; vertex_no++) {
+//        // Use the barycentric coordinates as a weight for the correction stored at this vertex in order to get the interpolated displacement
+//        InterpolatedDispl += (LaserTrackSet[PointIndex[vertex_no].first].GetDisplacement(PointIndex[vertex_no].second) *
+//                              BaryCoord[vertex_no]);
+//    }
+//
+//    // Return interpolated displacement
+//    return InterpolatedDispl;
+//}
+
 // This function Interpolates the displacement of Location within the Mesh
 // For InterpolateCGAL/InterpolateMap,
 // the first parameter is the one to provide the vector (e.g displacement)
@@ -175,8 +267,7 @@ xPoint xVectorToPoint(ThreeVector<float> &InputVector) {
 // If the Map flag is true: set the unknown point to float max, which is suitable for the final map establish
 // If the Map flag is false: set the unknown point to 0, which is suitable for the middle steps
 ThreeVector<float>
-InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<LaserTrack> &LaserMeshSet,
-                const Delaunay &Mesh, ThreeVector<float> Location) {
+InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const Delaunay &Mesh, ThreeVector<float> Location) {
     float float_max = std::numeric_limits<float>::max();
 
     // Create a array which contains the info of all 4 vertices of a cell
@@ -207,14 +298,14 @@ InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<
             // Fill transformation matrix elements
             // x1,2,3 - x4, y1,2,3 - y4, z1,2,3 - z4
             TransMatrix[row][column] =
-                    LaserMeshSet[PointIndex[column].first].GetSamplePosition(PointIndex[column].second)[row] -
-                    LaserMeshSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second)[row];
+                    LaserTrackSet[PointIndex[column].first].GetSamplePosition(PointIndex[column].second)[row] -
+                    LaserTrackSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second)[row];
         }
     }
 
     // Reuse Location and store its position relative to the last vertex of the cell it is contained in
     // after is step Location is (r-r4)
-    Location -= LaserMeshSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
+    Location -= LaserTrackSet[PointIndex.back().first].GetSamplePosition(PointIndex.back().second);
 
     // If the transformation matrix can be successfully inverted
     if (TransMatrix.Invert()) {
@@ -267,8 +358,7 @@ InterpolateCGAL(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<
 // the second parameter is the one to indicate the mesh position
 // Set CorrMapFlag to false as default in head file
 std::vector<ThreeVector<float>>
-InterpolateMap(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<LaserTrack> &LaserMeshSet,
-               const Delaunay &Mesh, const TPCVolumeHandler &TPC) {
+InterpolateMap(const std::vector<LaserTrack> &LaserTrackSet, const Delaunay &Mesh, const TPCVolumeHandler &TPC) {
     // Initialize output data structure
     std::vector<ThreeVector<float>> DisplacementMap;
 
@@ -298,7 +388,7 @@ InterpolateMap(const std::vector<LaserTrack> &LaserTrackSet, const std::vector<L
 
                 // Fill displacement map
                 // The Map trigger is turned on for interpolation for regular grid. This will set the unknown point to float_max
-                DisplacementMap.push_back(InterpolateCGAL(LaserTrackSet, LaserMeshSet, Mesh, Location));
+                DisplacementMap.push_back(InterpolateCGAL(LaserTrackSet, Mesh, Location));
 
             } // end zbin loop
         } // end ybin loop

@@ -388,10 +388,12 @@ int main(int argc, char **argv) {
                 // Calculate track displacement
                 std::cout << " [" << set << "] Find track displacements... " << std::endl;
 
+                // If CorrMapFlag, LaserWithDisp contains reconstructed tracks
+                // If !CorrMapFlag, LaserWithDisp contains true tracks
                 std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, LaserSets1[set], LaserSets2[set],
                                                                            CorrMapFlag);
 
-                std::cout << "Time after N-step correction" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+                std::cout << "Time after N-step iteration" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
 //            // Merge 2 Laser samples with displacement vector for mesh and iteration
 //            Laser LaserRecoOrigin = MergeLaser(LaserRecoOrigin1, LaserRecoOrigin2);
@@ -415,43 +417,55 @@ int main(int argc, char **argv) {
                 Delaunay MeshMap1;
                 Delaunay MeshMap2;
 
+//                 // The correction map is built on the mesh of reconstructed position which is the origin LaserSets
+//                if (CorrMapFlag) {
+//                    MeshMap1 = TrackMesher(LaserRecoOrigin1.GetTrackSet());
+//                    MeshMap2 = TrackMesher(LaserRecoOrigin2.GetTrackSet());
+//                }
+//
+//                    // The distortion map is built on the mesh of true position which is moved LaserSets
+//                else {
+//                    MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
+//                    MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
+//                }
+
+                MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
+                MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
+
                 std::cout << "Time after mesh " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
-
-                // The correction map is built on the mesh of reconstructed position which is the origin LaserSets
-                if (CorrMapFlag) {
-                    MeshMap1 = TrackMesher(LaserRecoOrigin1.GetTrackSet());
-                    MeshMap2 = TrackMesher(LaserRecoOrigin2.GetTrackSet());
-                }
-
-                    // The distortion map is built on the mesh of true position which is moved LaserSets
-                else {
-                    MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
-                    MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
-                }
 
                 // Interpolate Displacement Map (regularly spaced grid)
                 std::cout << "Start interpolation..." << std::endl;
                 // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
 
-                // The correction map is based on reco space coord
-                if (CorrMapFlag) {
-                    DisplMapsHolder.push_back(
-                            InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1,
-                                           Detector));
-                    DisplMapsHolder.push_back(
-                            InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserRecoOrigin2.GetTrackSet(), MeshMap2,
-                                           Detector));
-                }
+//                // The correction map is based on reco space coord
+//                if (CorrMapFlag) {
+//                    DisplMapsHolder.push_back(
+//                            InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1,
+//                                           Detector));
+//                    DisplMapsHolder.push_back(
+//                            InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserRecoOrigin2.GetTrackSet(), MeshMap2,
+//                                           Detector));
+//                }
+//
+//                    // The distortion map is based on true space coord
+//                else {
+//                    DisplMapsHolder.push_back(
+//                            InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(),
+//                                           MeshMap1, Detector));
+//                    DisplMapsHolder.push_back(
+//                            InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserWithDisp.second.GetTrackSet(),
+//                                           MeshMap2, Detector));
+//                }
 
-                    // The distortion map is based on true space coord
-                else {
-                    DisplMapsHolder.push_back(
-                            InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(),
-                                           MeshMap1, Detector));
-                    DisplMapsHolder.push_back(
-                            InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserWithDisp.second.GetTrackSet(),
-                                           MeshMap2, Detector));
-                }
+                // Calculate Displacement map in the form of vector
+                // CorrMapFlag decided if it is distortion or correction map already based on the LaserWithDisp
+                DisplMapsHolder.push_back(
+                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), MeshMap1, Detector));
+                DisplMapsHolder.push_back(
+                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), MeshMap2, Detector));
+
+                std::cout << "Time after interpolation " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
             }
 
 //            // Now we go on to create an unified displacement map
@@ -482,7 +496,6 @@ int main(int argc, char **argv) {
 
             // Loop the displacement map in the form of vector
             std::cout << "Start to calculate the displacement map mean and error" <<  std::endl;
-            std::cout<<"DisplacementMap size: "<<DisplacementMap.size()<<std::endl;
             for (int idx = 0; idx < DisplacementMap.size(); idx++){
 
                 std::vector<ThreeVector<float>> BinStatistics;

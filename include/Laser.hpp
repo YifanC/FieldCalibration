@@ -56,7 +56,9 @@ public:
 //    void AddCorrectionToReco(bool plus);
     void AddCorrectionToReco();
 
-    void SetDisplacement(Laser LaserReco, bool Corr);
+//    void SetDisplacement(Laser LaserReco, bool Corr);
+
+    void SetDisplacement(Laser LaserVecEnd);
 
     void InterpolateTrackSet(const std::vector<LaserTrack> &, const Delaunay &);
 

@@ -85,7 +85,9 @@ public:
 
     void AddCorrectionToRecoPart(std::vector<ThreeVector<float>> CorrPart);
 
-    void Displacement(LaserTrack LaserTrackReco, bool Corr);
+//    void Displacement(LaserTrack LaserTrackReco, bool Corr);
+
+    void Displacement(LaserTrack LaserTrackEnd);
 
     void AddToDisplacement(ThreeVector<float> &, unsigned long);
 

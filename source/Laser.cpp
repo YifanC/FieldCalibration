@@ -83,12 +83,28 @@ void Laser::AddCorrectionToReco() {
     }
 }
 
-// Link the calculated (by iteration) Laser track displacements to the corresponding laser track samples
-void Laser::SetDisplacement(Laser LaserReco, bool Corr = true) {
+//// Link the calculated (by iteration) Laser track displacements to the corresponding laser track samples
+//void Laser::SetDisplacement(Laser LaserReco, bool Corr = true) {
+//    // Loop over all tracks, and calculate displacement
+//    if (LaserTrackSet.size() == LaserReco.GetTrackSet().size()) {
+//        for (int i = 0; i < LaserTrackSet.size(); i++) {
+//            LaserTrackSet[i].Displacement(LaserReco.GetTrackSet()[i], Corr);
+//        }
+//    } else {
+//        std::cerr << "ERROR: Please supply the same size of laser sets to calculate the displacement" << std::endl;
+//    }
+//
+//}
+
+// Link the calculated track displacements to the corresponding laser track samples
+// Be notice that we don't distinguish if it's Distortion or Correction here
+// One should be cautious that the displacement should be set to the tracks which have the vector origins
+// For example, distortion vectors to true tracks and correction vectors to reconstructed tracks
+void Laser::SetDisplacement(Laser LaserVecEnd) {
     // Loop over all tracks, and calculate displacement
-    if (LaserTrackSet.size() == LaserReco.GetTrackSet().size()) {
+    if (LaserTrackSet.size() == LaserVecEnd.GetTrackSet().size()) {
         for (int i = 0; i < LaserTrackSet.size(); i++) {
-            LaserTrackSet[i].Displacement(LaserReco.GetTrackSet()[i], Corr);
+            LaserTrackSet[i].Displacement(LaserVecEnd.GetTrackSet()[i]);
         }
     } else {
         std::cerr << "ERROR: Please supply the same size of laser sets to calculate the displacement" << std::endl;

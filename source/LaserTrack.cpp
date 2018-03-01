@@ -376,29 +376,46 @@ void LaserTrack::AddCorrectionToRecoPart(std::vector<ThreeVector<float>> CorrPar
     }
 }
 
-// Calculating the displacement from the true track to the reco track
-// Since at this stage, the laser tracks are dragged to the true track lines already, the LaserReco is on true track lines
-// Run it with the lasersets and supply the origin reco tracks
-void LaserTrack::Displacement(LaserTrack LaserTrackReco, bool Corr = true) {
+//// Calculating the displacement from the true track to the reco track
+//// Since at this stage, the laser tracks are dragged to the true track lines already, the LaserReco is on true track lines
+//// Run it with the lasersets and supply the origin reco tracks
+//void LaserTrack::Displacement(LaserTrack LaserTrackReco, bool Corr = true) {
+//    // Check if the tracks of the two LaserSets have the same size
+//    if (LaserReco.size() == LaserTrackReco.LaserReco.size()) {
+//        // LaserReco is the true laser tracks
+//        if (Corr) {
+//            // Loop over track points
+//            for (unsigned long sample = 0; sample < LaserReco.size(); sample++) {
+//                // Calculate the correction vector
+//                LaserDisplacement[sample] = LaserReco[sample] - LaserTrackReco.LaserReco[sample];
+//            }
+//        } else {
+//            for (unsigned long sample = 0; sample < LaserReco.size(); sample++) {
+//                // Calculate the distortion vector
+//                LaserDisplacement[sample] = LaserTrackReco.LaserReco[sample] - LaserReco[sample];
+//            }
+//        }
+//    } else {
+//        std::cerr << "ERROR: Please supply the same size of laser sets to calculate the displacement" << std::endl;
+//    }
+//
+//}
+
+// Calculating the displacement in between the true track to the reco track
+// Be notice that we don't distinguish if it's Distortion or Correction here
+// One should be cautious that the displacement should be set to the tracks which have the vector origins
+void LaserTrack::Displacement(LaserTrack LaserTrackEnd) {
     // Check if the tracks of the two LaserSets have the same size
-    if (LaserReco.size() == LaserTrackReco.LaserReco.size()) {
-        // LaserReco is the true laser tracks
-        if (Corr) {
-            // Loop over track points
-            for (unsigned long sample = 0; sample < LaserReco.size(); sample++) {
-                // Calculate the correction vector
-                LaserDisplacement[sample] = LaserReco[sample] - LaserTrackReco.LaserReco[sample];
-            }
-        } else {
-            for (unsigned long sample = 0; sample < LaserReco.size(); sample++) {
-                // Calculate the distortion vector
-                LaserDisplacement[sample] = LaserTrackReco.LaserReco[sample] - LaserReco[sample];
-            }
+    if (LaserReco.size() == LaserTrackEnd.LaserReco.size()) {
+        // LaserReco are the laser tracks which have the vector origins;
+        // LaserTrackEnd are the laser tracks which have the vector ends;
+        for (unsigned long sample = 0; sample < LaserReco.size(); sample++) {
+            // Calculate the distortion vector
+            LaserDisplacement[sample] = LaserTrackEnd.LaserReco[sample] - LaserReco[sample];
         }
     } else {
         std::cerr << "ERROR: Please supply the same size of laser sets to calculate the displacement" << std::endl;
     }
-
 }
 
 
