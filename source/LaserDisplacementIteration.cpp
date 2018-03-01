@@ -35,6 +35,9 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
             Delaunay Mesh1 = TrackMesher(LaserSet1.GetTrackSet());
             Delaunay Mesh2 = TrackMesher(LaserSet2.GetTrackSet());
 
+            // LaserSet1 is going to change during iteration, while we need "origin" LaserSet1 of this step for Laser2 Mesh
+            auto LaserSet1_stepCopy = LaserSet1.GetTrackSet();
+
             for (unsigned long track = 0; track < LaserSet1.GetTrackSet().size(); track++) {
 
                 // reserve the space for the correction vector for each track
@@ -55,13 +58,14 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
             for (unsigned long track = 0; track < LaserSet2.GetTrackSet().size(); track++) {
 
                 // reserve the space for the correction vector for each track
-
                 unsigned long NrSamples2 = LaserSet2.GetTrackSet()[track].GetNumberOfSamples();
                 std::vector<ThreeVector<float>> CorrPart2(NrSamples2, ThreeVector<float>(float_max, float_max, float_max));
 
                 // Loop over data points (samples) of each track
                 for (unsigned long sample = 0; sample < NrSamples2; sample++) {
-                    CorrPart2[sample] = InterpolateCGAL(LaserSet1.GetTrackSet(), LaserSet1.GetTrackSet(), Mesh1,
+//                    CorrPart2[sample] = InterpolateCGAL(LaserSet1.GetTrackSet(), LaserSet1.GetTrackSet(), Mesh1,
+//                                                        LaserSet2.GetTrackSet()[track].GetSamplePosition(sample));
+                    CorrPart2[sample] = InterpolateCGAL(LaserSet1_stepCopy, LaserSet1_stepCopy, Mesh1,
                                                         LaserSet2.GetTrackSet()[track].GetSamplePosition(sample));
                 }
                 LaserSet2.GetTrackSet()[track].AddCorrectionToRecoPart(CorrPart2);

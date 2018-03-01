@@ -358,7 +358,6 @@ int main(int argc, char **argv) {
             Laser LaserCorrected = MergeLaser(LaserWithDisp.first, LaserWithDisp.second);
 
             std::cout << "Meshing for weighted mean in voxels" <<  std::endl;
-            //crushed here
 
             auto MeshforGrid = MeshVoxel(LaserCorrected.GetTrackSet(),Detector);
 
