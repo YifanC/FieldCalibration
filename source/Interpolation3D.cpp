@@ -664,8 +664,8 @@ EcompInterpolateMap(std::vector<float> &Ex, std::vector<ThreeVector<float>> &Pos
                 Location[2] =
                         TPC.GetDetectorOffset()[2] + TPC.GetDetectorSize()[2] / static_cast<float>(EReso[2] - 1) * zbin;
                 ThreeVector<float> E_field = {EcompInterpolateCGAL(Ex, PositionX, MeshX, Location, TPC),
-                                       EcompInterpolateCGAL(Ey, PositionY, MeshY, Location, TPC),
-                                       EcompInterpolateCGAL(Ez, PositionZ, MeshZ, Location, TPC)};
+                                              EcompInterpolateCGAL(Ey, PositionY, MeshY, Location, TPC),
+                                              EcompInterpolateCGAL(Ez, PositionZ, MeshZ, Location, TPC)};
 
                 // Fill displacement map
                 EMap.push_back(E_field);

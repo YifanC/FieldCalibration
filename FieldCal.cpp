@@ -566,8 +566,8 @@ int main(int argc, char **argv) {
             std::vector<float> Ey = std::get<1>(EfieldXYZ);
             std::vector<float> Ez = std::get<2>(EfieldXYZ);
             std::vector<ThreeVector<float>> PositionX = std::get<3>(EfieldXYZ);
-            std::vector<ThreeVector<float>> PositionY = std::get<3>(EfieldXYZ);
-            std::vector<ThreeVector<float>> PositionZ = std::get<3>(EfieldXYZ);
+            std::vector<ThreeVector<float>> PositionY = std::get<4>(EfieldXYZ);
+            std::vector<ThreeVector<float>> PositionZ = std::get<5>(EfieldXYZ);
 
             // Create mesh for Emap
             std::cout << "Generate mesh for E field..." << std::endl;
