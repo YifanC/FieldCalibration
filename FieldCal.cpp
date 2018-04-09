@@ -73,7 +73,7 @@ LaserTrack Anode(TPCVolumeHandler &TPCVolume);
 
 void WriteRootFile(std::vector<ThreeVector<float>> &, TPCVolumeHandler &, std::string);
 
-void WriteRootFileDeviation(std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> &, TPCVolumeHandler &, std::string);
+void WriteRootFileMeanStd(std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> &, TPCVolumeHandler &, std::string);
 
 void WriteTextFile(std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> &, std::string);
 
@@ -551,7 +551,7 @@ int main(int argc, char **argv) {
 
         // Fill displacement map into TH3 histograms and write them to root and txt file
         std::cout << "Write to File ..." << std::endl;
-        WriteRootFileDeviation(DisplacementMap, Detector, ss_outfile.str());
+        WriteRootFileMeanStd(DisplacementMap, Detector, ss_outfile.str());
         WriteTextFile(DisplacementMap,ss_D_outtxt.str());
     }
 
@@ -758,7 +758,7 @@ void WriteRootFile(std::vector<ThreeVector<float>> &InterpolationData, TPCVolume
     gDirectory->GetList()->Delete();
 }
 
-void WriteRootFileDeviation(std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> &InterpolationData,
+void WriteRootFileMeanStd(std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> &InterpolationData,
                             TPCVolumeHandler &TPCVolume, std::string OutputFilename) {
     // Store TPC properties which are important for the TH3 generation
 
@@ -768,6 +768,7 @@ void WriteRootFileDeviation(std::vector<std::pair<ThreeVector<float >, ThreeVect
     ThreeVector<float> Unit = {TPCVolume.GetDetectorSize()[0] / (Resolution[0] - 1),
                                TPCVolume.GetDetectorSize()[1] / (Resolution[1] - 1),
                                TPCVolume.GetDetectorSize()[2] / (Resolution[2] - 1)};
+    ThreeVector<float> Null = {0, 0, 0};
 
     // Initialize all TH3F
     std::vector<TH3F> RecoDisplacement(6, TH3F("Reco_Displacement", "Reco Displacement",
@@ -790,14 +791,24 @@ void WriteRootFileDeviation(std::vector<std::pair<ThreeVector<float >, ThreeVect
             for (unsigned zbin = 0; zbin < Resolution[2] ; zbin++) {
                 // Loop over all coordinates
 
-                for (unsigned coord = 0; coord < 3; coord++) {
-                    // Fill interpolated grid points into histograms
-                    // the range of the hist bin is (1, nbins), while when we fill the vector, it starts from 0. (0,nbins-1)
-                    RecoDisplacement[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
-                                                          InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))].first[coord]);
-                    RecoDisplacement[coord+3].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
-                                                          InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))].second[coord]);
-                } // end coordinate loop
+                if(xbin==0){
+                    for (unsigned coord = 0; coord < 3; coord++) {
+                        // Fill interpolated grid points into histograms
+                        // the range of the hist bin is (1, nbins), while when we fill the vector, it starts from 0. (0,nbins-1)
+                        RecoDisplacement[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1, Null[coord]);
+                        RecoDisplacement[coord+3].SetBinContent(xbin + 1, ybin + 1, zbin + 1, Null[coord]);
+                    } // end coordinate loop
+                }
+                else{
+                    for (unsigned coord = 0; coord < 3; coord++) {
+                        // Fill interpolated grid points into histograms
+                        // the range of the hist bin is (1, nbins), while when we fill the vector, it starts from 0. (0,nbins-1)
+                        RecoDisplacement[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
+                                                              InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))].first[coord]);
+                        RecoDisplacement[coord+3].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
+                                                                InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))].second[coord]);
+                    } // end coordinate loop
+                }
             } // end zbin loop
         } // end ybin loop
     } // end zbin loop
