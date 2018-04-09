@@ -75,7 +75,7 @@ void WriteRootFile(std::vector<ThreeVector<float>> &, TPCVolumeHandler &, std::s
 
 void WriteRootFileMeanStd(std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> &, TPCVolumeHandler &, std::string);
 
-void WriteTextFile(std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> &, std::string);
+void WriteTextFileDMap(std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> &, std::string);
 
 void LaserInterpThread(Laser &, const Laser &, const Delaunay &);
 
@@ -502,6 +502,7 @@ int main(int argc, char **argv) {
                 ThreeVector<float> BinAverage = {0,0,0};
                 ThreeVector<float> BinSumErr = {0,0,0};
                 ThreeVector<float> BinStd = {0,0,0};
+                ThreeVector<float> Null = {0,0,0};
                 int Nvalid = 0;
 
                 // Loop the bins in submaps to calculate the bin averaging displacement
@@ -535,9 +536,21 @@ int main(int argc, char **argv) {
                     }
 
                     // Construct 1d displacement map
-                    std::pair<ThreeVector<float >, ThreeVector<float>> BinInfo = std::make_pair(BinAverage,BinStd);
+                    std::pair<ThreeVector<float >, ThreeVector<float>> BinInfo = std::make_pair(BinAverage, BinStd);
+                    // Construct no displacement info for anode
+                    std::pair<ThreeVector<float >, ThreeVector<float>> BinInfoAnode = std::make_pair(Null, Null);
+
+
+                    if(idx <= (DetectorResolution[2]-1) + DetectorResolution[2] * (DetectorResolution[1]-1)){
+                        DisplacementMap[idx] = BinInfoAnode;
+                    } else{
+                        DisplacementMap[idx] = BinInfo;
+                    }
+
+
+
 //                    DisplacementMap.push_back(BinInfo);
-                    DisplacementMap[idx] = BinInfo;
+//                    DisplacementMap[idx] = BinInfo;
 
                 }
 
@@ -552,7 +565,7 @@ int main(int argc, char **argv) {
         // Fill displacement map into TH3 histograms and write them to root and txt file
         std::cout << "Write to File ..." << std::endl;
         WriteRootFileMeanStd(DisplacementMap, Detector, ss_outfile.str());
-        WriteTextFile(DisplacementMap,ss_D_outtxt.str());
+        WriteTextFileDMap(DisplacementMap,ss_D_outtxt.str());
     }
 
     // The Emap calculation works when the input is correction map
@@ -768,7 +781,6 @@ void WriteRootFileMeanStd(std::vector<std::pair<ThreeVector<float >, ThreeVector
     ThreeVector<float> Unit = {TPCVolume.GetDetectorSize()[0] / (Resolution[0] - 1),
                                TPCVolume.GetDetectorSize()[1] / (Resolution[1] - 1),
                                TPCVolume.GetDetectorSize()[2] / (Resolution[2] - 1)};
-    ThreeVector<float> Null = {0, 0, 0};
 
     // Initialize all TH3F
     std::vector<TH3F> RecoDisplacement(6, TH3F("Reco_Displacement", "Reco Displacement",
@@ -791,24 +803,15 @@ void WriteRootFileMeanStd(std::vector<std::pair<ThreeVector<float >, ThreeVector
             for (unsigned zbin = 0; zbin < Resolution[2] ; zbin++) {
                 // Loop over all coordinates
 
-                if(xbin==0){
-                    for (unsigned coord = 0; coord < 3; coord++) {
-                        // Fill interpolated grid points into histograms
-                        // the range of the hist bin is (1, nbins), while when we fill the vector, it starts from 0. (0,nbins-1)
-                        RecoDisplacement[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1, Null[coord]);
-                        RecoDisplacement[coord+3].SetBinContent(xbin + 1, ybin + 1, zbin + 1, Null[coord]);
-                    } // end coordinate loop
-                }
-                else{
-                    for (unsigned coord = 0; coord < 3; coord++) {
-                        // Fill interpolated grid points into histograms
-                        // the range of the hist bin is (1, nbins), while when we fill the vector, it starts from 0. (0,nbins-1)
-                        RecoDisplacement[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
-                                                              InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))].first[coord]);
-                        RecoDisplacement[coord+3].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
-                                                                InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))].second[coord]);
-                    } // end coordinate loop
-                }
+                for (unsigned coord = 0; coord < 3; coord++) {
+                    // Fill interpolated grid points into histograms
+                    // the range of the hist bin is (1, nbins), while when we fill the vector, it starts from 0. (0,nbins-1)
+                    RecoDisplacement[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
+                                                          InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))].first[coord]);
+                    RecoDisplacement[coord+3].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
+                                                            InterpolationData[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))].second[coord]);
+                } // end coordinate loop
+
             } // end zbin loop
         } // end ybin loop
     } // end zbin loop
@@ -829,7 +832,7 @@ void WriteRootFileMeanStd(std::vector<std::pair<ThreeVector<float >, ThreeVector
 }
 
 
-void WriteTextFile(std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> &InterpolationData,
+void WriteTextFileDMap(std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> &InterpolationData,
                    std::string OutputFilename) {
 
     // Initialize stream to file
