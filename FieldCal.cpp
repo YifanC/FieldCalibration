@@ -77,6 +77,8 @@ void WriteRootFileMeanStd(std::vector<std::pair<ThreeVector<float >, ThreeVector
 
 void WriteTextFileDMap(std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> &, std::string);
 
+void WriteTextFileEMap(std::vector<ThreeVector<float >> &, std::string);
+
 void LaserInterpThread(Laser &, const Laser &, const Delaunay &);
 
 std::vector<Laser> ReachedExitPoint(const Laser &, float);
@@ -279,7 +281,7 @@ int main(int argc, char **argv) {
                     Einfile.assign(std::string(ent->d_name));
                     ss_Einfile <<Einfile;
                     ss_Eoutfile << "Emap-"<<Einfile.substr(9,Einfile.find_last_of(Einfile));
-                    ss_E_outtxt << "Emap"<< ".txt";
+                    ss_E_outtxt << "Emap"<<Einfile.substr(9,Einfile.find_last_of(Einfile))<< ".txt";
                 }
             }
             closedir (dir);
@@ -502,7 +504,11 @@ int main(int argc, char **argv) {
                 ThreeVector<float> BinAverage = {0,0,0};
                 ThreeVector<float> BinSumErr = {0,0,0};
                 ThreeVector<float> BinStd = {0,0,0};
+
+                // Construct no displacement info for anode
                 ThreeVector<float> Null = {0,0,0};
+                std::pair<ThreeVector<float >, ThreeVector<float>> BinInfoAnode = std::make_pair(Null, Null);
+
                 int Nvalid = 0;
 
                 // Loop the bins in submaps to calculate the bin averaging displacement
@@ -517,7 +523,7 @@ int main(int argc, char **argv) {
 
                 if(Nvalid ==0){
                     DisplacementMap[idx] = std::make_pair(Empty,Empty);
-                    continue;
+//                    continue;
                 }
                 else{
 
@@ -537,28 +543,14 @@ int main(int argc, char **argv) {
 
                     // Construct 1d displacement map
                     std::pair<ThreeVector<float >, ThreeVector<float>> BinInfo = std::make_pair(BinAverage, BinStd);
-                    // Construct no displacement info for anode
-                    std::pair<ThreeVector<float >, ThreeVector<float>> BinInfoAnode = std::make_pair(Null, Null);
+                    DisplacementMap[idx] = BinInfo;
 
-
-                    if(idx <= (DetectorResolution[2]-1) + DetectorResolution[2] * (DetectorResolution[1]-1)){
-                        DisplacementMap[idx] = BinInfoAnode;
-                    } else{
-                        DisplacementMap[idx] = BinInfo;
-                    }
-
-
-
-//                    DisplacementMap.push_back(BinInfo);
-//                    DisplacementMap[idx] = BinInfo;
-
+                }
+                if(idx <= (DetectorResolution[2]-1) + DetectorResolution[2] * (DetectorResolution[1]-1)){
+                    DisplacementMap[idx] = BinInfoAnode;
                 }
 
             }
-
-//            // Fill displacement map into TH3 histograms and write them to file
-//            std::cout << "Write to File ..." << std::endl;
-//            WriteRootFile(DisplacementMapD, Detector, ss_outfile.str());
         }
 
 
@@ -617,6 +609,7 @@ int main(int argc, char **argv) {
             // Fill displacement map into TH3 histograms and write them to file
             std::cout << "Write Emap to File ..." << std::endl;
             WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
+            WriteTextFileEMap(EMap,ss_E_outtxt.str());
         }
 
 
@@ -794,7 +787,7 @@ void WriteRootFileMeanStd(std::vector<std::pair<ThreeVector<float >, ThreeVector
     RecoDisplacement[3].SetNameTitle("Reco_Displacement_X_Error", "Reco Deviation of Displacement X");
     RecoDisplacement[4].SetNameTitle("Reco_Displacement_Y_Error", "Reco Deviation of Displacement X");
     RecoDisplacement[5].SetNameTitle("Reco_Displacement_Z_Error", "Reco Deviation of Displacement X");
-
+    
     // Loop over all xbins
     for (unsigned xbin = 0; xbin < Resolution[0] ; xbin++) {
         // Loop over all ybins
@@ -937,3 +930,26 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
     OutputFile.Close();
     gDirectory->GetList()->Delete();
 }
+
+//Write E map in txt file
+void WriteTextFileEMap(std::vector<ThreeVector<float>> &Efield,
+                       std::string OutputFilename) {
+
+    // Initialize stream to file
+    std::ofstream OutputFile;
+
+    // Open output file
+    OutputFile.open(OutputFilename.c_str(), std::ios::out);
+
+    // Loop over all interpolated data points
+    for (unsigned entry = 0; entry < Efield.size(); entry++) {
+
+        // Write every point into a seperate line
+        OutputFile << entry <<"\t"
+                   << Efield[entry][0] <<"\t" << Efield[entry][1] <<"\t"
+                   << Efield[entry][2] <<std::endl;
+    }
+
+    // Close file
+    OutputFile.close();
+} // WriteRootFile
