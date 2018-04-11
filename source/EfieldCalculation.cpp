@@ -23,6 +23,10 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
     TH3F *Dy = (TH3F *) InFile->Get("Reco_Displacement_Y");
     TH3F *Dz = (TH3F *) InFile->Get("Reco_Displacement_Z");
 
+    TH3F *DxErr = (TH3F*) InFile->Get("Reco_Displacement_X_Error");
+    TH3F *DyErr = (TH3F*) InFile->Get("Reco_Displacement_Y_Error");
+    TH3F *DzErr = (TH3F*) InFile->Get("Reco_Displacement_Z_Error");
+
     ThreeVector<unsigned long> NrGrid = TPCVolume.GetDetectorResolution();
     ThreeVector<float> DetectorReso = {TPCVolume.GetDetectorSize()[0] / (NrGrid[0] - 1),
                                        TPCVolume.GetDetectorSize()[1] / (NrGrid[1] - 1),
@@ -30,6 +34,8 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
     float Delta_x = DetectorReso[0]; //cm
 
     std::vector<ThreeVector<float>> En;
+    std::vector<ThreeVector<float>> vsigmaEnP;
+    std::vector<ThreeVector<float>> vsigmaEnM;
     std::vector<ThreeVector<float>> Position;
 
     for (unsigned Nz = 0; Nz < NrGrid[2]; Nz++) {
@@ -46,27 +52,60 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
                                            (float) Dz->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
                 ThreeVector<float> True = RecoGrid + Dxyz;
 
-                ThreeVector<float> RecoGrid_next((Nx + 1) * DetectorReso[0],
+                ThreeVector<float> RecoGrid2((Nx + 1) * DetectorReso[0],
                                                  Ny * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
                                                  Nz * DetectorReso[2]);
-                ThreeVector<float> Dxyz_next = {(float) Dx->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
+                ThreeVector<float> Dxyz2 = {(float) Dx->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
                                                 (float) Dy->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
                                                 (float) Dz->GetBinContent(Nx + 2, Ny + 1, Nz + 1)};
-                ThreeVector<float> True_next = RecoGrid_next + Dxyz_next;
+                ThreeVector<float> True2 = RecoGrid2 + Dxyz2;
 
-                ThreeVector<float> Rn = True_next - True;
+                ThreeVector<float> Rn = True2 - True;
+
+                float MagRn = Rn.GetNorm();
+
+                // Uncertainty on Rn based on uncertainty of Dmap
+
+                ThreeVector<float> DxyzErr = {(float) DxErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                              (float) DyErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                              (float) DzErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
+
+                ThreeVector<float> DxyzErr2 = {(float) DxErr->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
+                                                   (float) DyErr->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
+                                                   (float) DzErr->GetBinContent(Nx + 2, Ny + 1, Nz + 1)};
+
+                float sigmaRn = sqrtf( (Dxyz[0]-Dxyz2[0])*(Dxyz[0]-Dxyz2[0])/(MagRn * MagRn)* (DxyzErr[0]*DxyzErr[0]+DxyzErr2[0]*DxyzErr2[0])
+                                      +(Dxyz[1]-Dxyz2[1])*(Dxyz[1]-Dxyz2[1])/(MagRn * MagRn)* (DxyzErr[1]*DxyzErr[1]+DxyzErr2[1]*DxyzErr2[1])
+                                      +(Dxyz[2]-Dxyz2[2])*(Dxyz[2]-Dxyz2[2])/(MagRn * MagRn)* (DxyzErr[2]*DxyzErr[2]+DxyzErr2[2]*DxyzErr2[2]));
 
                 // mm/us, the magnitude of the drift velocity at the local gap
                 // Be very careful that Rn.GetNorm() and Delta_x are in the unit of cm, not mm
-                float vn = Rn.GetNorm() / Delta_x * v0;
+                float vn = MagRn / Delta_x * v0;
+
+                // Uncertainty of vn
+                float sigmavn = sigmaRn / Delta_x * v0;
+
+                // Uncertainty of En
+                // From this point on, we can not assume En has symmtric uncertainty
+                float sigmaEnP = fabsf(searchE(vn+sigmavn, cryoTemp, E0) - searchE(vn, cryoTemp, E0)) + 1E-3;
+                float sigmaEnM = fabsf(searchE(vn, cryoTemp, E0) - searchE(vn-sigmavn, cryoTemp, E0)) + 1E-3;
 
                 // Only include the valid calculated Efield (which is not float_max) in the pre-mesh
+                // As long as vectors of En and position are consistent, it's ok to skip some values
                 if (searchE(vn, cryoTemp, E0) < 0.5 * std::numeric_limits<float>::max()) {
                     // the E field as a vector has the same direction of Rn (vector) in each gap
                     // E kV/cm
                     En.push_back(searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn);
                     // Set the local E field (E field from each gap) at the middle of the gap
                     Position.push_back(True + (float) 0.5 * Rn);
+
+                    // Uncertainty of En
+                    // From this point on, we can not assume En has symmtric uncertainty
+                    // 1E-3 is the searchE precision, try to lower this number
+                    float sigmaEnP = fabsf(searchE(vn+sigmavn, cryoTemp, E0) - searchE(vn, cryoTemp, E0)) + 1E-3;
+                    float sigmaEnM = fabsf(searchE(vn, cryoTemp, E0) - searchE(vn-sigmavn, cryoTemp, E0)) + 1E-3;
+
+                    ThreeVector<float> PsigmaEn = ≥
                 }
             }
         }
