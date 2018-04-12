@@ -80,10 +80,10 @@ float searchE(float v_drift, float cryoTemp, float E0) {
     int n = 0; // count on the dividing steps, in case of dead loop 2^20 ~ 1E6
 
     if (v_drift > ElectronDriftVelocity(cryoTemp, Emax) || v_drift < ElectronDriftVelocity(cryoTemp, Emin)) {
-        //Something is very very very wrong
-        std::cout
-                << "The given drift velocity refers to a E field which is biased more than 100% E0 in the given condition."
-                << std::endl;
+//        //Something is very very very wrong
+//        std::cout
+//                << "The given drift velocity refers to a E field which is biased more than 100% E0 in the given condition."
+//                << std::endl;
     } else {
         // Bisection method
         while (Eresult != (Emin + Emax) * 0.5 && n < Nmax) {
@@ -102,12 +102,12 @@ float searchE(float v_drift, float cryoTemp, float E0) {
     }
 
     if (Eresult != (Emin + Emax) * 0.5) {
-        // Something is very very very wrong
-        std::cout << "With drift velocity: " << v_drift
-                  << "(mm/us), this function failed to find corresponding E field in the given condition. E: "
-                  << 0.5 * (Emin + Emax)
-                  << ", the v calculated is " << ElectronDriftVelocity(cryoTemp, 0.5 * (Emin + Emax))
-                  << " and the nstep is " << n << std::endl;
+//        // Something is very very very wrong
+//        std::cout << "With drift velocity: " << v_drift
+//                  << "(mm/us), this function failed to find corresponding E field in the given condition. E: "
+//                  << 0.5 * (Emin + Emax)
+//                  << ", the v calculated is " << ElectronDriftVelocity(cryoTemp, 0.5 * (Emin + Emax))
+//                  << " and the nstep is " << n << std::endl;
     }
 
     return Eresult;

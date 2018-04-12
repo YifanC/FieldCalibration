@@ -14,6 +14,7 @@
 #include <cstring>
 #include <thread>
 #include <array>
+#include <random>
 
 // C headers
 #include <pthread.h>
@@ -97,6 +98,7 @@ bool CosmicLaserIter = false;
 bool DBoundary = false;
 bool EBoundary = false;
 bool WeightAverage = false;
+bool ToyThrow = false;
 
 // Main function
 int main(int argc, char **argv) {
@@ -146,9 +148,6 @@ int main(int argc, char **argv) {
             case 'A':
                 DBoundary = true;
                 break;
-            case 'B':
-                EBoundary = true;
-                break;
             case 'C':
                 CorrMapFlag = true;
                 break;
@@ -157,6 +156,12 @@ int main(int argc, char **argv) {
                 break;
             case 'D':
                 DoCorr = true;
+                break;
+            case 'B':
+                EBoundary = true;
+                break;
+            case 'T':
+                ToyThrow = true;
                 break;
             case 'E':
                 DoEmap = true;
@@ -281,7 +286,7 @@ int main(int argc, char **argv) {
                     Einfile.assign(std::string(ent->d_name));
                     ss_Einfile <<Einfile;
                     ss_Eoutfile << "Emap-"<<Einfile.substr(9,Einfile.find_last_of(Einfile));
-                    ss_E_outtxt << "Emap"<<Einfile.substr(9,Einfile.find_last_of(Einfile))<< ".txt";
+                    ss_E_outtxt << "Emap-"<<Einfile.substr(9,Einfile.find_last_of(Einfile))<< ".txt";
                 }
             }
             closedir (dir);
@@ -563,54 +568,190 @@ int main(int argc, char **argv) {
     // The Emap calculation works when the input is correction map
     if (DoEmap) {
 
-        // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
-        if(EBoundary){
+//        if(ToyThrow) {
 
-            auto EfieldXYZ = EfieldXYZwithBoundary(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
-            std::vector<float> Ex = std::get<0>(EfieldXYZ);
-            std::vector<float> Ey = std::get<1>(EfieldXYZ);
-            std::vector<float> Ez = std::get<2>(EfieldXYZ);
-            std::vector<ThreeVector<float>> PositionX = std::get<3>(EfieldXYZ);
-            std::vector<ThreeVector<float>> PositionY = std::get<4>(EfieldXYZ);
-            std::vector<ThreeVector<float>> PositionZ = std::get<5>(EfieldXYZ);
+            int Mapsize = DetectorResolution[0] * DetectorResolution[1] * DetectorResolution[2];
+            float float_max = std::numeric_limits<float>::max();
+            ThreeVector<float> Empty = {float_max, float_max, float_max};
+            std::pair<ThreeVector<float>, ThreeVector<float>> PairIni = std::make_pair(Empty, Empty);
 
-            // Create mesh for Emap
-            std::cout << "Generate mesh for E field..." << std::endl;
-            xDelaunay EMeshX = Mesher(PositionX, Detector);
-            xDelaunay EMeshY = Mesher(PositionY, Detector);
-            xDelaunay EMeshZ = Mesher(PositionZ, Detector);
+            std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> DMap(Mapsize, PairIni);
+            std::vector<ThreeVector<float>> DMapMean(Mapsize);
+            std::vector<ThreeVector<float>> DMapStdDev(Mapsize);
+            // DMap Toy Throw (TT)
+            // NTT: number of toy throw = 200 (adjustable)
+            int NTT = 20;
+            std::vector<ThreeVector<float>> MapIni(Mapsize, Empty);
+            std::vector<std::vector<ThreeVector<float>>> DMapTT(NTT, MapIni);
+            std::vector<std::vector<ThreeVector<float>>> EMapTT(NTT, MapIni);
+            std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> EMap(Mapsize, PairIni);
 
-            // Interpolate E Map (regularly spaced grid)
-            std::cout << "Start interpolation the E field..." << std::endl;
-            std::vector<ThreeVector<float>> EMapXYZ = EcompInterpolateMap(Ex, PositionX, EMeshX,
-                                                                          Ey, PositionY, EMeshY,
-                                                                          Ez, PositionZ, EMeshZ,
-                                                                          Detector, EMapResolution);
+            TFile *InFile = new TFile(ss_Einfile.str().c_str(), "READ");
 
-            // Fill displacement map into TH3 histograms and write them to file
-            std::cout << "Write Emap to File ..." << std::endl;
-            WriteEmapRoot(EMapXYZ, Detector, EMapResolution, E0, ss_Eoutfile.str());
+            TH3F *Dx = (TH3F *) InFile->Get("Reco_Displacement_X");
+            TH3F *Dy = (TH3F *) InFile->Get("Reco_Displacement_Y");
+            TH3F *Dz = (TH3F *) InFile->Get("Reco_Displacement_Z");
 
-        }
-        else{
+            TH3F *DxErr = (TH3F *) InFile->Get("Reco_Displacement_X_Error");
+            TH3F *DyErr = (TH3F *) InFile->Get("Reco_Displacement_Y_Error");
+            TH3F *DzErr = (TH3F *) InFile->Get("Reco_Displacement_Z_Error");
+
+            for (unsigned Nx = 0; Nx < DetectorResolution[0]; Nx++) {
+                for (unsigned Ny = 0; Ny < DetectorResolution[1]; Ny++) {
+                    for (unsigned Nz = 0; Nz < DetectorResolution[2]; Nz++) {
+                        ThreeVector<float> Dxyz = {(float) Dx->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                                   (float) Dy->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                                   (float) Dz->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
+                        ThreeVector<float> DxyzErr = {(float) DxErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                                      (float) DyErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                                      (float) DzErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
+                        DMap[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = std::make_pair(Dxyz,
+                                                                                                                DxyzErr);
+                        DMapMean[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Dxyz;
+
+                        // produce Random generator which follows gaussian distribution in each bin
+                        // Mean and standard deviation are given by DMap
+                        std::default_random_engine generator;
+                        std::normal_distribution<float> BinDistributionX(Dxyz[0], DxyzErr[0]);
+                        std::normal_distribution<float> BinDistributionY(Dxyz[1], DxyzErr[1]);
+                        std::normal_distribution<float> BinDistributionZ(Dxyz[2], DxyzErr[2]);
+
+                        // NTT: number of toy throw = 200 (adjustable)
+                        for (int n = 0; n < NTT; n++) {
+
+                            float Xp = BinDistributionX(generator);
+                            float Yp = BinDistributionY(generator);
+                            float Zp = BinDistributionZ(generator);
+                            ThreeVector<float> Pt(Xp, Yp, Zp);
+                            DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Pt;
+
+                        }
+                    }
+                }
+            }
+
+            //////////////////////////////////////////////////////////
+            // Copy from downstairs
             // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
-            auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
-            std::vector<ThreeVector<float>> En = E_field.first;
-            std::vector<ThreeVector<float>> Position = E_field.second;
+//            std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
+//             E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
 
-            // Create mesh for Emap
-            std::cout << "Generate mesh for E field..." << std::endl;
-            xDelaunay EMesh = Mesher(Position, Detector);
+            for(int i = 0; i < NTT; i++){
+                auto E_field = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapTT[i]);
+                std::vector<ThreeVector<float>> En = E_field.first;
+                std::vector<ThreeVector<float>> Position = E_field.second;
 
-            // Interpolate E Map (regularly spaced grid)
-            std::cout << "Start interpolation the E field..." << std::endl;
-            std::vector<ThreeVector<float>> EMap = EInterpolateMap(En, Position, EMesh, Detector, EMapResolution);
+                // Create mesh for Emap
+                std::cout << "Generate mesh for E field..." << std::endl;
+                xDelaunay EMesh = Mesher(Position, Detector);
 
-            // Fill displacement map into TH3 histograms and write them to file
-            std::cout << "Write Emap to File ..." << std::endl;
-            WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
-            WriteTextFileEMap(EMap,ss_E_outtxt.str());
-        }
+                // Interpolate E Map (regularly spaced grid)
+                std::cout << "Start interpolation the E field..." << std::endl;
+                std::vector<ThreeVector<float>> EMap = EInterpolateMap(En, Position, EMesh, Detector, EMapResolution);
+                EMapTT[i] = EMap;
+            }
+
+            for(int binID = 0; binID < Mapsize; binID++){
+                // Ex,y,z[kV/cm], E0 = 0.273kV/cm
+                // Be careful to choose the bin number, bin size and the histogram range!
+                // This may affect the result of E most probable value (mode), especially with the number of toy throws
+                // 0.5 and 1.5 means 50% change
+                // Either use percentage or absolute value.
+                // However using absolute value requires more preliminary knowledge of Ebin distribution
+                TH1F *hx = new TH1F("hx","hx",100,0.5*E0,1.5*E0);
+                TH1F *hy = new TH1F("hy","hy",100,-0.5*E0,0.5*E0);
+                TH1F *hz = new TH1F("hz","hz",100,-0.5*E0,0.5*E0);
+
+                float meanX, sigmaX, meanY, sigmaY, meanZ, sigmaZ;
+
+                for(int ii = 0; ii < NTT; ii++){
+                    hx->Fill(EMapTT[ii][binID][0]);
+                    hy->Fill(EMapTT[ii][binID][1]);
+                    hz->Fill(EMapTT[ii][binID][2]);
+                    hx->Fit("gaus");
+                    hy->Fit("gaus");
+                    hz->Fit("gaus");
+                    TF1 *fx = hx->GetFunction("gaus");
+                    meanX  = fx->GetParameter(1);
+                    sigmaX = fx->GetParameter(2);
+                    TF1 *fy = hy->GetFunction("gaus");
+                    meanY  = fy->GetParameter(1);
+                    sigmaY = fy->GetParameter(2);
+                    TF1 *fz = hz->GetFunction("gaus");
+                    meanZ  = fz->GetParameter(1);
+                    sigmaZ = fz->GetParameter(2);
+                }
+
+                if(binID == 100){
+                    hx->Draw();
+                    hy->Draw();
+                    hz->Draw();
+                    std::cout<<"hx Mean: "<<hx->GetMean()<<"; fx Mean: "<<meanX<<"; hx sigma: "<<hx->GetStdDev()<<"; fx sigma: "<<sigmaX<<std::endl;
+                    std::cout<<"hy Mean: "<<hy->GetMean()<<"; fy Mean: "<<meanY<<"; hy sigma: "<<hy->GetStdDev()<<"; fy sigma: "<<sigmaY<<std::endl;
+                    std::cout<<"hz Mean: "<<hz->GetMean()<<"; fz Mean: "<<meanZ<<"; hz sigma: "<<hz->GetStdDev()<<"; fz sigma: "<<sigmaZ<<std::endl;
+
+                }
+
+            }
+
+
+//            // Fill displacement map into TH3 histograms and write them to file
+//            std::cout << "Write Emap to File ..." << std::endl;
+//            WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
+//            WriteTextFileEMap(EMap,ss_E_outtxt.str());
+            //////////////////////////////////////////////////////////
+
+
+            // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
+            if (EBoundary) {
+
+                auto EfieldXYZ = EfieldXYZwithBoundary(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
+                std::vector<float> Ex = std::get<0>(EfieldXYZ);
+                std::vector<float> Ey = std::get<1>(EfieldXYZ);
+                std::vector<float> Ez = std::get<2>(EfieldXYZ);
+                std::vector<ThreeVector<float>> PositionX = std::get<3>(EfieldXYZ);
+                std::vector<ThreeVector<float>> PositionY = std::get<4>(EfieldXYZ);
+                std::vector<ThreeVector<float>> PositionZ = std::get<5>(EfieldXYZ);
+
+                // Create mesh for Emap
+                std::cout << "Generate mesh for E field..." << std::endl;
+                xDelaunay EMeshX = Mesher(PositionX, Detector);
+                xDelaunay EMeshY = Mesher(PositionY, Detector);
+                xDelaunay EMeshZ = Mesher(PositionZ, Detector);
+
+                // Interpolate E Map (regularly spaced grid)
+                std::cout << "Start interpolation the E field..." << std::endl;
+                std::vector<ThreeVector<float>> EMapXYZ = EcompInterpolateMap(Ex, PositionX, EMeshX,
+                                                                              Ey, PositionY, EMeshY,
+                                                                              Ez, PositionZ, EMeshZ,
+                                                                              Detector, EMapResolution);
+
+                // Fill displacement map into TH3 histograms and write them to file
+                std::cout << "Write Emap to File ..." << std::endl;
+                WriteEmapRoot(EMapXYZ, Detector, EMapResolution, E0, ss_Eoutfile.str());
+                WriteTextFileEMap(EMapXYZ, ss_E_outtxt.str());
+
+            } else {
+                // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
+                auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
+//                auto E_field = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapMean);
+                std::vector<ThreeVector<float>> En = E_field.first;
+                std::vector<ThreeVector<float>> Position = E_field.second;
+
+                // Create mesh for Emap
+                std::cout << "Generate mesh for E field..." << std::endl;
+                xDelaunay EMesh = Mesher(Position, Detector);
+
+                // Interpolate E Map (regularly spaced grid)
+                std::cout << "Start interpolation the E field..." << std::endl;
+                std::vector<ThreeVector<float>> EMap = EInterpolateMap(En, Position, EMesh, Detector, EMapResolution);
+
+                // Fill displacement map into TH3 histograms and write them to file
+                std::cout << "Write Emap to File ..." << std::endl;
+                WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
+                WriteTextFileEMap(EMap, ss_E_outtxt.str());
+            }
+//        }
 
 
 

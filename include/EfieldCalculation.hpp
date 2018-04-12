@@ -17,6 +17,9 @@
 std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
 Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const char *root_name);
 
+std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
+EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, std::vector<ThreeVector<float>> DMapTT);
+
 std::tuple<std::vector<float >, std::vector<float >, std::vector<float >,
         std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
 EfieldXYZwithBoundary(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const char *root_name);
