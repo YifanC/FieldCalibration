@@ -186,56 +186,55 @@ int main(int argc, char **argv) {
 
     unsigned int n_files = 0;
 
-    for (int i = optind; i < argc; i++) {
-        std::string filename(argv[i]);
-        // check if file exists
-        std::ifstream f(filename.c_str());
-        if (!f.good()) {
-            throw std::runtime_error(std::string("file does not exist: ") + filename);
-        }
-
-        if(TwoSideIter){
-            TChain *tree = new TChain("lasers");
-            tree->Add(filename.c_str());
-            int side;
-            tree->SetBranchAddress("side", &side);
-            tree->Draw("side>>hside", "");
-            TH1F *hside = (TH1F *) gDirectory->Get("hside");
-            int LCS = hside->GetMean();
-            delete tree;
-
-            if (LCS == 1) {InputFiles1.push_back(filename); }
-            else if(LCS==2){InputFiles2.push_back(filename); }
-            else{ std::cerr << "The laser system is not labeled correctly." << std::endl; }
-        }
-        if(CosmicLaserIter){
-            // The following is very dangerous! if there is "laser" and "cosmic" in the filename (path to the file)
-            // The current version accept the file path contains "laser" but not "cosmic"
-            std::string slaser ("aser");
-            std::string scosmic ("osmic");
-            if(filename.find(scosmic) != std::string::npos){
-                std::cout<<"cosmic: "<<filename<<std::endl;
-                InputFiles2.push_back(filename);
+    if(DoCorr) {
+        for (int i = optind; i < argc; i++) {
+            std::string filename(argv[i]);
+            // check if file exists
+            std::ifstream f(filename.c_str());
+            if (!f.good()) {
+                throw std::runtime_error(std::string("file does not exist: ") + filename);
             }
-            else if(filename.find(slaser) != std::string::npos) {
-                std::cout<<"laser: "<<filename<<std::endl;
-                InputFiles1.push_back(filename);
-            }
-            else{ std::cerr << "Laser or Cosmic? Check the file name." << std::endl; }
-        }
-        if(InterlacedIter){
-            InputFiles.push_back(filename);
-        }
-    }
 
-    if (TwoSideIter || CosmicLaserIter) {
-        if(InputFiles1.empty() || InputFiles2.empty()){
-            std::cerr << "Please provide the laser input data from 2 sides." << std::endl;
+            if (TwoSideIter) {
+                TChain *tree = new TChain("lasers");
+                tree->Add(filename.c_str());
+                int side;
+                tree->SetBranchAddress("side", &side);
+                tree->Draw("side>>hside", "");
+                TH1F *hside = (TH1F *) gDirectory->Get("hside");
+                int LCS = hside->GetMean();
+                delete tree;
+
+                if (LCS == 1) { InputFiles1.push_back(filename); }
+                else if (LCS == 2) { InputFiles2.push_back(filename); }
+                else { std::cerr << "The laser system is not labeled correctly." << std::endl; }
+            }
+            if (CosmicLaserIter) {
+                // The following is very dangerous! if there is "laser" and "cosmic" in the filename (path to the file)
+                // The current version accept the file path contains "laser" but not "cosmic"
+                std::string slaser("aser");
+                std::string scosmic("osmic");
+                if (filename.find(scosmic) != std::string::npos) {
+                    std::cout << "cosmic: " << filename << std::endl;
+                    InputFiles2.push_back(filename);
+                } else if (filename.find(slaser) != std::string::npos) {
+                    std::cout << "laser: " << filename << std::endl;
+                    InputFiles1.push_back(filename);
+                } else { std::cerr << "Laser or Cosmic? Check the file name." << std::endl; }
+            }
+            if (InterlacedIter) {
+                InputFiles.push_back(filename);
+            }
         }
-    }
-    else{
-        if(InputFiles.empty()){
-            std::cerr << "Please provide laser input data." << std::endl;
+
+        if (TwoSideIter || CosmicLaserIter) {
+            if (InputFiles1.empty() || InputFiles2.empty()) {
+                std::cerr << "Please provide the laser input data from 2 sides." << std::endl;
+            }
+        } else {
+            if (InputFiles.empty()) {
+                std::cerr << "Please provide laser input data." << std::endl;
+            }
         }
     }
 
@@ -247,6 +246,10 @@ int main(int argc, char **argv) {
     TPCVolumeHandler Detector(DetectorSize, DetectorOffset, DetectorResolution);
 
     ThreeVector<unsigned long> EMapResolution = {21, 21, 81};
+
+    // The size of DMap and EMap if we store it as a vector
+    int DMapsize = DetectorResolution[0] * DetectorResolution[1] * DetectorResolution[2];
+    int EMapsize = EMapResolution[0] * EMapResolution[1] * EMapResolution[2];
 
     float cryoTemp = 89; // K
     float E0 = 0.273; // kV/cm
@@ -286,7 +289,7 @@ int main(int argc, char **argv) {
                     Einfile.assign(std::string(ent->d_name));
                     ss_Einfile <<Einfile;
                     ss_Eoutfile << "Emap-"<<Einfile.substr(9,Einfile.find_last_of(Einfile));
-                    ss_E_outtxt << "Emap-"<<Einfile.substr(9,Einfile.find_last_of(Einfile))<< ".txt";
+                    ss_E_outtxt << "Emap-"<<Einfile.substr(9,Einfile.find_last_of(Einfile)-5)<< ".txt";
                 }
             }
             closedir (dir);
@@ -570,45 +573,53 @@ int main(int argc, char **argv) {
 
 //        if(ToyThrow) {
 
-            int Mapsize = DetectorResolution[0] * DetectorResolution[1] * DetectorResolution[2];
-            float float_max = std::numeric_limits<float>::max();
-            ThreeVector<float> Empty = {float_max, float_max, float_max};
-            std::pair<ThreeVector<float>, ThreeVector<float>> PairIni = std::make_pair(Empty, Empty);
 
-            std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> DMap(Mapsize, PairIni);
-            std::vector<ThreeVector<float>> DMapMean(Mapsize);
-            std::vector<ThreeVector<float>> DMapStdDev(Mapsize);
-            // DMap Toy Throw (TT)
-            // NTT: number of toy throw = 200 (adjustable)
-            int NTT = 20;
-            std::vector<ThreeVector<float>> MapIni(Mapsize, Empty);
-            std::vector<std::vector<ThreeVector<float>>> DMapTT(NTT, MapIni);
-            std::vector<std::vector<ThreeVector<float>>> EMapTT(NTT, MapIni);
-            std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> EMap(Mapsize, PairIni);
+//            float float_max = std::numeric_limits<float>::max();
+//            ThreeVector<float> Empty = {float_max, float_max, float_max};
+        std::pair<ThreeVector<float>, ThreeVector<float>> PairIni = std::make_pair(Unknown, Unknown);
 
-            TFile *InFile = new TFile(ss_Einfile.str().c_str(), "READ");
+//        std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> DMap(DMapsize, PairIni);
+//        std::vector<ThreeVector<float>> DMapMean(DMapsize);
+//        std::vector<ThreeVector<float>> DMapStdDev(DMapsize);
+        // DMap Toy Throw (TT)
+        // NTT: number of toy throw = 200 (adjustable)
+        int NTT = 50;
+        std::vector<ThreeVector<float>> DMapIni(DMapsize, Unknown);
+        std::vector<std::vector<ThreeVector<float>>> DMapTT(NTT, DMapIni);
 
-            TH3F *Dx = (TH3F *) InFile->Get("Reco_Displacement_X");
-            TH3F *Dy = (TH3F *) InFile->Get("Reco_Displacement_Y");
-            TH3F *Dz = (TH3F *) InFile->Get("Reco_Displacement_Z");
+        std::vector<ThreeVector<float>> EMapIni(EMapsize, Unknown);
+        std::vector<std::vector<ThreeVector<float>>> EMapTT(NTT, EMapIni);
+//            std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> EMap(Mapsize, PairIni);
+        std::vector<ThreeVector<float>> EMap(EMapsize, Unknown);
 
-            TH3F *DxErr = (TH3F *) InFile->Get("Reco_Displacement_X_Error");
-            TH3F *DyErr = (TH3F *) InFile->Get("Reco_Displacement_Y_Error");
-            TH3F *DzErr = (TH3F *) InFile->Get("Reco_Displacement_Z_Error");
+        TFile *InFile = new TFile(ss_Einfile.str().c_str(), "READ");
 
-            for (unsigned Nx = 0; Nx < DetectorResolution[0]; Nx++) {
-                for (unsigned Ny = 0; Ny < DetectorResolution[1]; Ny++) {
-                    for (unsigned Nz = 0; Nz < DetectorResolution[2]; Nz++) {
-                        ThreeVector<float> Dxyz = {(float) Dx->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
-                                                   (float) Dy->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
-                                                   (float) Dz->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
-                        ThreeVector<float> DxyzErr = {(float) DxErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
-                                                      (float) DyErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
-                                                      (float) DzErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
-                        DMap[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = std::make_pair(Dxyz,
-                                                                                                                DxyzErr);
-                        DMapMean[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Dxyz;
+        TH3F *Dx = (TH3F *) InFile->Get("Reco_Displacement_X");
+        TH3F *Dy = (TH3F *) InFile->Get("Reco_Displacement_Y");
+        TH3F *Dz = (TH3F *) InFile->Get("Reco_Displacement_Z");
 
+        TH3F *DxErr = (TH3F *) InFile->Get("Reco_Displacement_X_Error");
+        TH3F *DyErr = (TH3F *) InFile->Get("Reco_Displacement_Y_Error");
+        TH3F *DzErr = (TH3F *) InFile->Get("Reco_Displacement_Z_Error");
+
+        for (unsigned Nx = 0; Nx < DetectorResolution[0]; Nx++) {
+            for (unsigned Ny = 0; Ny < DetectorResolution[1]; Ny++) {
+                for (unsigned Nz = 0; Nz < DetectorResolution[2]; Nz++) {
+                    ThreeVector<float> Dxyz = {(float) Dx->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                               (float) Dy->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                               (float) Dz->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
+                    ThreeVector<float> DxyzErr = {(float) DxErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                                  (float) DyErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                                  (float) DzErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
+//                    DMap[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = std::make_pair(Dxyz, DxyzErr);
+//                    DMapMean[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Dxyz;
+
+                    if(Dxyz==Unknown || DxyzErr==Unknown){
+                        for (int n = 0; n < NTT; n++) {
+                            DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Unknown;
+                        }
+                    }
+                    else {
                         // produce Random generator which follows gaussian distribution in each bin
                         // Mean and standard deviation are given by DMap
                         std::default_random_engine generator;
@@ -616,19 +627,30 @@ int main(int argc, char **argv) {
                         std::normal_distribution<float> BinDistributionY(Dxyz[1], DxyzErr[1]);
                         std::normal_distribution<float> BinDistributionZ(Dxyz[2], DxyzErr[2]);
 
-                        // NTT: number of toy throw = 200 (adjustable)
                         for (int n = 0; n < NTT; n++) {
 
-                            float Xp = BinDistributionX(generator);
-                            float Yp = BinDistributionY(generator);
-                            float Zp = BinDistributionZ(generator);
-                            ThreeVector<float> Pt(Xp, Yp, Zp);
-                            DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Pt;
+                            // generate distortion by random throw with gaussian distribution
+                            float dX = BinDistributionX(generator);
+                            float dY = BinDistributionY(generator);
+                            float dZ = BinDistributionZ(generator);
+
+//                            std::cout << "NTT: " << n << "; Nx: " << Nx << "; Ny: " << Ny << "; Nz: " << Nz
+//                                      << "; Dx: " << Dxyz[0] << "; Dy: " << Dxyz[1] << "; Dz: " << Dxyz[2]
+//                                      << "; dX: " << dX << "; dY: " << dY << "; dZ: " << dZ << std::endl;
+
+                            ThreeVector<float> Pt(dX, dY, dZ);
+//                            DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Pt;
+                            DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Dxyz;
 
                         }
                     }
                 }
             }
+        }
+
+        // Close input file and clean up
+        InFile->Close();
+        gDirectory->GetList()->Delete();
 
             //////////////////////////////////////////////////////////
             // Copy from downstairs
@@ -636,63 +658,79 @@ int main(int argc, char **argv) {
 //            std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
 //             E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
 
-            for(int i = 0; i < NTT; i++){
-                auto E_field = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapTT[i]);
-                std::vector<ThreeVector<float>> En = E_field.first;
-                std::vector<ThreeVector<float>> Position = E_field.second;
+        for(int n = 0; n < NTT; n++){
+            auto E_field = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapTT[n]);
+            std::vector<ThreeVector<float>> En = E_field.first;
+            std::vector<ThreeVector<float>> Position = E_field.second;
 
-                // Create mesh for Emap
-                std::cout << "Generate mesh for E field..." << std::endl;
-                xDelaunay EMesh = Mesher(Position, Detector);
+            // Create mesh for Emap
+            std::cout << "Generate mesh for E field..." << std::endl;
+            xDelaunay EMesh = Mesher(Position, Detector);
 
-                // Interpolate E Map (regularly spaced grid)
-                std::cout << "Start interpolation the E field..." << std::endl;
-                std::vector<ThreeVector<float>> EMap = EInterpolateMap(En, Position, EMesh, Detector, EMapResolution);
-                EMapTT[i] = EMap;
-            }
+            // Interpolate E Map (regularly spaced grid)
+            std::cout << "Start interpolation the E field..." << std::endl;
+            std::vector<ThreeVector<float>> EMap = EInterpolateMap(En, Position, EMesh, Detector, EMapResolution);
+            EMapTT[n] = EMap;
+        }
 
-            for(int binID = 0; binID < Mapsize; binID++){
-                // Ex,y,z[kV/cm], E0 = 0.273kV/cm
-                // Be careful to choose the bin number, bin size and the histogram range!
-                // This may affect the result of E most probable value (mode), especially with the number of toy throws
-                // 0.5 and 1.5 means 50% change
-                // Either use percentage or absolute value.
-                // However using absolute value requires more preliminary knowledge of Ebin distribution
-                TH1F *hx = new TH1F("hx","hx",100,0.5*E0,1.5*E0);
-                TH1F *hy = new TH1F("hy","hy",100,-0.5*E0,0.5*E0);
-                TH1F *hz = new TH1F("hz","hz",100,-0.5*E0,0.5*E0);
+        TH1F *hEx[EMapsize];
+        TH1F *hEy[EMapsize];
+        TH1F *hEz[EMapsize];
+
+        for(int binID = 0; binID < EMapsize; binID++){
+            // Ex,y,z[kV/cm], E0 = 0.273kV/cm
+            // Be careful to choose the bin number, bin size and the histogram range!
+            // This may affect the result of E most probable value (mode), especially with the number of toy throws
+            // 0.5 and 1.5 means 50% change
+            // Either use percentage or absolute value.
+            // However using absolute value requires more preliminary knowledge of Ebin distribution
+            std::string hExName = "hEx" + std::to_string(binID);
+            std::string hEyName = "hEy" + std::to_string(binID);
+            std::string hEzName = "hEz" + std::to_string(binID);
+            hEx[binID] = new TH1F(hExName.c_str(),hExName.c_str(),100,0.5*E0,1.5*E0);
+            hEy[binID] = new TH1F(hEyName.c_str(),hEyName.c_str(),100,-0.5*E0,0.5*E0);
+            hEz[binID] = new TH1F(hEzName.c_str(),hEzName.c_str(),100,-0.5*E0,0.5*E0);
 
                 float meanX, sigmaX, meanY, sigmaY, meanZ, sigmaZ;
 
                 for(int ii = 0; ii < NTT; ii++){
-                    hx->Fill(EMapTT[ii][binID][0]);
-                    hy->Fill(EMapTT[ii][binID][1]);
-                    hz->Fill(EMapTT[ii][binID][2]);
-                    hx->Fit("gaus");
-                    hy->Fit("gaus");
-                    hz->Fit("gaus");
-                    TF1 *fx = hx->GetFunction("gaus");
-                    meanX  = fx->GetParameter(1);
-                    sigmaX = fx->GetParameter(2);
-                    TF1 *fy = hy->GetFunction("gaus");
-                    meanY  = fy->GetParameter(1);
-                    sigmaY = fy->GetParameter(2);
-                    TF1 *fz = hz->GetFunction("gaus");
-                    meanZ  = fz->GetParameter(1);
-                    sigmaZ = fz->GetParameter(2);
-                }
-
-                if(binID == 100){
-                    hx->Draw();
-                    hy->Draw();
-                    hz->Draw();
-                    std::cout<<"hx Mean: "<<hx->GetMean()<<"; fx Mean: "<<meanX<<"; hx sigma: "<<hx->GetStdDev()<<"; fx sigma: "<<sigmaX<<std::endl;
-                    std::cout<<"hy Mean: "<<hy->GetMean()<<"; fy Mean: "<<meanY<<"; hy sigma: "<<hy->GetStdDev()<<"; fy sigma: "<<sigmaY<<std::endl;
-                    std::cout<<"hz Mean: "<<hz->GetMean()<<"; fz Mean: "<<meanZ<<"; hz sigma: "<<hz->GetStdDev()<<"; fz sigma: "<<sigmaZ<<std::endl;
+                    hEx[binID]->Fill(EMapTT[ii][binID][0]);
+                    hEy[binID]->Fill(EMapTT[ii][binID][1]);
+                    hEz[binID]->Fill(EMapTT[ii][binID][2]);
+//                    hx->Fit("gaus");
+//                    hy->Fit("gaus");
+//                    hz->Fit("gaus");
+//                    TF1 *fx = hx->GetFunction("gaus");
+//                    meanX  = fx->GetParameter(1);
+//                    sigmaX = fx->GetParameter(2);
+//                    TF1 *fy = hy->GetFunction("gaus");
+//                    meanY  = fy->GetParameter(1);
+//                    sigmaY = fy->GetParameter(2);
+//                    TF1 *fz = hz->GetFunction("gaus");
+//                    meanZ  = fz->GetParameter(1);
+//                    sigmaZ = fz->GetParameter(2);
+                    ThreeVector<float> Emean = {(float)hEx[binID]->GetMean(),(float)hEy[binID]->GetMean(),(float)hEz[binID]->GetMean()};
+                    EMap[binID] = Emean;
 
                 }
+
+
+
+//                if(binID == 100){
+//                    hx->Draw();
+//                    hy->Draw();
+//                    hz->Draw();
+//                    std::cout<<"hx Mean: "<<hx->GetMean()<<"; fx Mean: "<<meanX<<"; hx sigma: "<<hx->GetStdDev()<<"; fx sigma: "<<sigmaX<<std::endl;
+//                    std::cout<<"hy Mean: "<<hy->GetMean()<<"; fy Mean: "<<meanY<<"; hy sigma: "<<hy->GetStdDev()<<"; fy sigma: "<<sigmaY<<std::endl;
+//                    std::cout<<"hz Mean: "<<hz->GetMean()<<"; fz Mean: "<<meanZ<<"; hz sigma: "<<hz->GetStdDev()<<"; fz sigma: "<<sigmaZ<<std::endl;
+//
+//                }
 
             }
+            // Fill displacement map into TH3 histograms and write them to file
+            std::cout << "Write Emap to File ..." << std::endl;
+            WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
+            WriteTextFileEMap(EMap, ss_E_outtxt.str());
 
 
 //            // Fill displacement map into TH3 histograms and write them to file
@@ -702,55 +740,55 @@ int main(int argc, char **argv) {
             //////////////////////////////////////////////////////////
 
 
-            // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
-            if (EBoundary) {
-
-                auto EfieldXYZ = EfieldXYZwithBoundary(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
-                std::vector<float> Ex = std::get<0>(EfieldXYZ);
-                std::vector<float> Ey = std::get<1>(EfieldXYZ);
-                std::vector<float> Ez = std::get<2>(EfieldXYZ);
-                std::vector<ThreeVector<float>> PositionX = std::get<3>(EfieldXYZ);
-                std::vector<ThreeVector<float>> PositionY = std::get<4>(EfieldXYZ);
-                std::vector<ThreeVector<float>> PositionZ = std::get<5>(EfieldXYZ);
-
-                // Create mesh for Emap
-                std::cout << "Generate mesh for E field..." << std::endl;
-                xDelaunay EMeshX = Mesher(PositionX, Detector);
-                xDelaunay EMeshY = Mesher(PositionY, Detector);
-                xDelaunay EMeshZ = Mesher(PositionZ, Detector);
-
-                // Interpolate E Map (regularly spaced grid)
-                std::cout << "Start interpolation the E field..." << std::endl;
-                std::vector<ThreeVector<float>> EMapXYZ = EcompInterpolateMap(Ex, PositionX, EMeshX,
-                                                                              Ey, PositionY, EMeshY,
-                                                                              Ez, PositionZ, EMeshZ,
-                                                                              Detector, EMapResolution);
-
-                // Fill displacement map into TH3 histograms and write them to file
-                std::cout << "Write Emap to File ..." << std::endl;
-                WriteEmapRoot(EMapXYZ, Detector, EMapResolution, E0, ss_Eoutfile.str());
-                WriteTextFileEMap(EMapXYZ, ss_E_outtxt.str());
-
-            } else {
-                // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
-                auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
-//                auto E_field = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapMean);
-                std::vector<ThreeVector<float>> En = E_field.first;
-                std::vector<ThreeVector<float>> Position = E_field.second;
-
-                // Create mesh for Emap
-                std::cout << "Generate mesh for E field..." << std::endl;
-                xDelaunay EMesh = Mesher(Position, Detector);
-
-                // Interpolate E Map (regularly spaced grid)
-                std::cout << "Start interpolation the E field..." << std::endl;
-                std::vector<ThreeVector<float>> EMap = EInterpolateMap(En, Position, EMesh, Detector, EMapResolution);
-
-                // Fill displacement map into TH3 histograms and write them to file
-                std::cout << "Write Emap to File ..." << std::endl;
-                WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
-                WriteTextFileEMap(EMap, ss_E_outtxt.str());
-            }
+//            // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
+//            if (EBoundary) {
+//
+//                auto EfieldXYZ = EfieldXYZwithBoundary(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
+//                std::vector<float> Ex = std::get<0>(EfieldXYZ);
+//                std::vector<float> Ey = std::get<1>(EfieldXYZ);
+//                std::vector<float> Ez = std::get<2>(EfieldXYZ);
+//                std::vector<ThreeVector<float>> PositionX = std::get<3>(EfieldXYZ);
+//                std::vector<ThreeVector<float>> PositionY = std::get<4>(EfieldXYZ);
+//                std::vector<ThreeVector<float>> PositionZ = std::get<5>(EfieldXYZ);
+//
+//                // Create mesh for Emap
+//                std::cout << "Generate mesh for E field..." << std::endl;
+//                xDelaunay EMeshX = Mesher(PositionX, Detector);
+//                xDelaunay EMeshY = Mesher(PositionY, Detector);
+//                xDelaunay EMeshZ = Mesher(PositionZ, Detector);
+//
+//                // Interpolate E Map (regularly spaced grid)
+//                std::cout << "Start interpolation the E field..." << std::endl;
+//                std::vector<ThreeVector<float>> EMapXYZ = EcompInterpolateMap(Ex, PositionX, EMeshX,
+//                                                                              Ey, PositionY, EMeshY,
+//                                                                              Ez, PositionZ, EMeshZ,
+//                                                                              Detector, EMapResolution);
+//
+//                // Fill displacement map into TH3 histograms and write them to file
+//                std::cout << "Write Emap to File ..." << std::endl;
+//                WriteEmapRoot(EMapXYZ, Detector, EMapResolution, E0, ss_Eoutfile.str());
+//                WriteTextFileEMap(EMapXYZ, ss_E_outtxt.str());
+//
+//            } else {
+//                // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
+//                auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
+////                auto E_field = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapMean);
+//                std::vector<ThreeVector<float>> En = E_field.first;
+//                std::vector<ThreeVector<float>> Position = E_field.second;
+//
+//                // Create mesh for Emap
+//                std::cout << "Generate mesh for E field..." << std::endl;
+//                xDelaunay EMesh = Mesher(Position, Detector);
+//
+//                // Interpolate E Map (regularly spaced grid)
+//                std::cout << "Start interpolation the E field..." << std::endl;
+//                std::vector<ThreeVector<float>> EMap = EInterpolateMap(En, Position, EMesh, Detector, EMapResolution);
+//
+//                // Fill displacement map into TH3 histograms and write them to file
+//                std::cout << "Write Emap to File ..." << std::endl;
+//                WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
+//                WriteTextFileEMap(EMap, ss_E_outtxt.str());
+//            }
 //        }
 
 

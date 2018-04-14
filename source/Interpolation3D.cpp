@@ -470,7 +470,7 @@ ThreeVector<float> EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::ve
 
     // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
     // So if one of the coordinates is negative, terminate the function
-    float eps = 1E-7;
+    float eps = 1E-4;
     if (BaryCoord[0] <= 0.0 - eps || BaryCoord[0] >= 1.0 + eps || BaryCoord[1] <= 0.0 - eps || BaryCoord[1] >= 1.0 + eps ||
         BaryCoord[2] <= 0.0 - eps || BaryCoord[2] >= 1.0 + eps || BaryCoord[3] <= 0.0 - eps || BaryCoord[3] >= 1.0 + eps) {
         // Set E field to zero and end function immediately!
