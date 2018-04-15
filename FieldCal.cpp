@@ -583,7 +583,7 @@ int main(int argc, char **argv) {
 //        std::vector<ThreeVector<float>> DMapStdDev(DMapsize);
         // DMap Toy Throw (TT)
         // NTT: number of toy throw = 200 (adjustable)
-        int NTT = 50;
+        int NTT = 10;
         std::vector<ThreeVector<float>> DMapIni(DMapsize, Unknown);
         std::vector<std::vector<ThreeVector<float>>> DMapTT(NTT, DMapIni);
 
@@ -677,6 +677,8 @@ int main(int argc, char **argv) {
         TH1F *hEy[EMapsize];
         TH1F *hEz[EMapsize];
 
+        int count =0;
+
         for(int binID = 0; binID < EMapsize; binID++){
             // Ex,y,z[kV/cm], E0 = 0.273kV/cm
             // Be careful to choose the bin number, bin size and the histogram range!
@@ -691,12 +693,14 @@ int main(int argc, char **argv) {
             hEy[binID] = new TH1F(hEyName.c_str(),hEyName.c_str(),100,-0.5*E0,0.5*E0);
             hEz[binID] = new TH1F(hEzName.c_str(),hEzName.c_str(),100,-0.5*E0,0.5*E0);
 
-                float meanX, sigmaX, meanY, sigmaY, meanZ, sigmaZ;
+            float meanX, sigmaX, meanY, sigmaY, meanZ, sigmaZ;
 
-                for(int ii = 0; ii < NTT; ii++){
-                    hEx[binID]->Fill(EMapTT[ii][binID][0]);
-                    hEy[binID]->Fill(EMapTT[ii][binID][1]);
-                    hEz[binID]->Fill(EMapTT[ii][binID][2]);
+            for(int ii = 0; ii < NTT; ii++){
+                if(EMapTT[ii][binID]==Unknown)continue;
+
+                hEx[binID]->Fill(EMapTT[ii][binID][0]);
+                hEy[binID]->Fill(EMapTT[ii][binID][1]);
+                hEz[binID]->Fill(EMapTT[ii][binID][2]);
 //                    hx->Fit("gaus");
 //                    hy->Fit("gaus");
 //                    hz->Fit("gaus");
@@ -709,10 +713,17 @@ int main(int argc, char **argv) {
 //                    TF1 *fz = hz->GetFunction("gaus");
 //                    meanZ  = fz->GetParameter(1);
 //                    sigmaZ = fz->GetParameter(2);
-                    ThreeVector<float> Emean = {(float)hEx[binID]->GetMean(),(float)hEy[binID]->GetMean(),(float)hEz[binID]->GetMean()};
-                    EMap[binID] = Emean;
 
-                }
+            }
+
+            if(hEx[binID]->GetEntries()==0||hEx[binID]->GetEntries()==0||hEx[binID]->GetEntries()==0){
+                EMap[binID] = Unknown;
+                count++;
+            }
+            else {
+                ThreeVector<float> Emean = {(float) hEx[binID]->GetMean(), (float) hEy[binID]->GetMean(), (float) hEz[binID]->GetMean()};
+                EMap[binID] = Emean;
+            }
 
 
 
@@ -726,11 +737,14 @@ int main(int argc, char **argv) {
 //
 //                }
 
-            }
-            // Fill displacement map into TH3 histograms and write them to file
-            std::cout << "Write Emap to File ..." << std::endl;
-            WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
-            WriteTextFileEMap(EMap, ss_E_outtxt.str());
+        }
+
+        std::cout<<" Empty bins: "<<count<<std::endl;
+
+        // Fill displacement map into TH3 histograms and write them to file
+        std::cout << "Write Emap to File ..." << std::endl;
+        WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
+        WriteTextFileEMap(EMap, ss_E_outtxt.str());
 
 
 //            // Fill displacement map into TH3 histograms and write them to file

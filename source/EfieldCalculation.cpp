@@ -17,6 +17,9 @@
 std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
 Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const char *root_name) {
 
+    float float_max = std::numeric_limits<float>::max();
+    ThreeVector<float> Unknown = {float_max, float_max, float_max};
+
     TFile *InFile = new TFile(root_name, "READ");
 
     TH3F *Dx = (TH3F *) InFile->Get("Reco_Displacement_X");
@@ -45,6 +48,9 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
                 ThreeVector<float> Dxyz = {(float) Dx->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
                                            (float) Dy->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
                                            (float) Dz->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
+
+                if(Dxyz == Unknown) continue;
+
                 ThreeVector<float> True = RecoGrid + Dxyz;
 
                 ThreeVector<float> RecoGrid_next((Nx + 1) * DetectorReso[0],
@@ -53,6 +59,9 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
                 ThreeVector<float> Dxyz_next = {(float) Dx->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
                                                 (float) Dy->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
                                                 (float) Dz->GetBinContent(Nx + 2, Ny + 1, Nz + 1)};
+
+                if(Dxyz_next == Unknown) continue;
+
                 ThreeVector<float> True_next = RecoGrid_next + Dxyz_next;
 
                 ThreeVector<float> Rn = True_next - True;
@@ -90,6 +99,9 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
 //    TH3F *Dy = (TH3F *) InFile->Get("Reco_Displacement_Y");
 //    TH3F *Dz = (TH3F *) InFile->Get("Reco_Displacement_Z");
 
+    float float_max = std::numeric_limits<float>::max();
+    ThreeVector<float> Unknown = {float_max, float_max, float_max};
+
 
     ThreeVector<unsigned long> NrGrid = TPCVolume.GetDetectorResolution();
     ThreeVector<float> DetectorReso = {TPCVolume.GetDetectorSize()[0] / (NrGrid[0] - 1),
@@ -115,6 +127,8 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
 //                                           (float) Dz->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
                 ThreeVector<float> Dxyz = DMapTT[Nz + (NrGrid[2] * (Ny + NrGrid[1] * Nx))];
 
+                if(Dxyz == Unknown) continue;
+
                 ThreeVector<float> True = RecoGrid + Dxyz;
 
                 ThreeVector<float> RecoGrid_next((Nx + 1) * DetectorReso[0],
@@ -126,6 +140,8 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
 //                                                (float) Dz->GetBinContent(Nx + 2, Ny + 1, Nz + 1)};
 
                 ThreeVector<float> Dxyz_next = DMapTT[Nz + (NrGrid[2] * (Ny + NrGrid[1] * (Nx+1)))];
+
+                if(Dxyz_next == Unknown) continue;
 
                 ThreeVector<float> True_next = RecoGrid_next + Dxyz_next;
 
