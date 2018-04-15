@@ -578,7 +578,7 @@ int main(int argc, char **argv) {
 //            ThreeVector<float> Empty = {float_max, float_max, float_max};
         std::pair<ThreeVector<float>, ThreeVector<float>> PairIni = std::make_pair(Unknown, Unknown);
 
-//        std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> DMap(DMapsize, PairIni);
+        std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> DMap(DMapsize, PairIni);
 //        std::vector<ThreeVector<float>> DMapMean(DMapsize);
 //        std::vector<ThreeVector<float>> DMapStdDev(DMapsize);
         // DMap Toy Throw (TT)
@@ -611,39 +611,9 @@ int main(int argc, char **argv) {
                     ThreeVector<float> DxyzErr = {(float) DxErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
                                                   (float) DyErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
                                                   (float) DzErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
-//                    DMap[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = std::make_pair(Dxyz, DxyzErr);
+                    DMap[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = std::make_pair(Dxyz, DxyzErr);
 //                    DMapMean[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Dxyz;
 
-                    if(Dxyz==Unknown || DxyzErr==Unknown){
-                        for (int n = 0; n < NTT; n++) {
-                            DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Unknown;
-                        }
-                    }
-                    else {
-                        // produce Random generator which follows gaussian distribution in each bin
-                        // Mean and standard deviation are given by DMap
-                        std::default_random_engine generator;
-                        std::normal_distribution<float> BinDistributionX(Dxyz[0], DxyzErr[0]);
-                        std::normal_distribution<float> BinDistributionY(Dxyz[1], DxyzErr[1]);
-                        std::normal_distribution<float> BinDistributionZ(Dxyz[2], DxyzErr[2]);
-
-                        for (int n = 0; n < NTT; n++) {
-
-                            // generate distortion by random throw with gaussian distribution
-                            float dX = BinDistributionX(generator);
-                            float dY = BinDistributionY(generator);
-                            float dZ = BinDistributionZ(generator);
-
-//                            std::cout << "NTT: " << n << "; Nx: " << Nx << "; Ny: " << Ny << "; Nz: " << Nz
-//                                      << "; Dx: " << Dxyz[0] << "; Dy: " << Dxyz[1] << "; Dz: " << Dxyz[2]
-//                                      << "; dX: " << dX << "; dY: " << dY << "; dZ: " << dZ << std::endl;
-
-                            ThreeVector<float> Pt(dX, dY, dZ);
-//                            DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Pt;
-                            DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Dxyz;
-
-                        }
-                    }
                 }
             }
         }
@@ -652,9 +622,42 @@ int main(int argc, char **argv) {
         InFile->Close();
         gDirectory->GetList()->Delete();
 
-            //////////////////////////////////////////////////////////
-            // Copy from downstairs
-            // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
+        for (int n = 0; n < NTT; n++) {
+            for(int id = 0; id < DMapsize; id++) {
+                if (DMap[id].first == Unknown || DMap[id].second == Unknown) {
+                    DMapTT[n][id] = Unknown;
+                } else {
+                    // produce Random generator which follows gaussian distribution in each bin
+                    // Mean and standard deviation are given by DMap
+                    std::default_random_engine generator;
+                    std::normal_distribution<float> BinDistributionX(DMap[id].first[0], DMap[id].second[0]);
+                    std::normal_distribution<float> BinDistributionY(DMap[id].first[1], DMap[id].second[1]);
+                    std::normal_distribution<float> BinDistributionZ(DMap[id].first[2], DMap[id].second[2]);
+
+                    for (int n = 0; n < NTT; n++) {
+
+                        // generate distortion by random throw with gaussian distribution
+                        float dX = BinDistributionX(generator);
+                        float dY = BinDistributionY(generator);
+                        float dZ = BinDistributionZ(generator);
+
+//                            std::cout << "NTT: " << n << "; Nx: " << Nx << "; Ny: " << Ny << "; Nz: " << Nz
+//                                      << "; Dx: " << Dxyz[0] << "; Dy: " << Dxyz[1] << "; Dz: " << Dxyz[2]
+//                                      << "; dX: " << dX << "; dY: " << dY << "; dZ: " << dZ << std::endl;
+
+                        ThreeVector<float> Pt(dX, dY, dZ);
+//                            DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Pt;
+                        DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Dxyz;
+
+                    }
+                }
+            }
+        }
+
+
+        //////////////////////////////////////////////////////////
+        // Copy from downstairs
+        // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
 //            std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
 //             E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
 
@@ -724,6 +727,129 @@ int main(int argc, char **argv) {
                 ThreeVector<float> Emean = {(float) hEx[binID]->GetMean(), (float) hEy[binID]->GetMean(), (float) hEz[binID]->GetMean()};
                 EMap[binID] = Emean;
             }
+
+//        for (unsigned Nx = 0; Nx < DetectorResolution[0]; Nx++) {
+//            for (unsigned Ny = 0; Ny < DetectorResolution[1]; Ny++) {
+//                for (unsigned Nz = 0; Nz < DetectorResolution[2]; Nz++) {
+//                    ThreeVector<float> Dxyz = {(float) Dx->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+//                                               (float) Dy->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+//                                               (float) Dz->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
+//                    ThreeVector<float> DxyzErr = {(float) DxErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+//                                                  (float) DyErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+//                                                  (float) DzErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
+////                    DMap[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = std::make_pair(Dxyz, DxyzErr);
+////                    DMapMean[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Dxyz;
+//
+//                    if(Dxyz==Unknown || DxyzErr==Unknown){
+//                        for (int n = 0; n < NTT; n++) {
+//                            DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Unknown;
+//                        }
+//                    }
+//                    else {
+//                        // produce Random generator which follows gaussian distribution in each bin
+//                        // Mean and standard deviation are given by DMap
+//                        std::default_random_engine generator;
+//                        std::normal_distribution<float> BinDistributionX(Dxyz[0], DxyzErr[0]);
+//                        std::normal_distribution<float> BinDistributionY(Dxyz[1], DxyzErr[1]);
+//                        std::normal_distribution<float> BinDistributionZ(Dxyz[2], DxyzErr[2]);
+//
+//                        for (int n = 0; n < NTT; n++) {
+//
+//                            // generate distortion by random throw with gaussian distribution
+//                            float dX = BinDistributionX(generator);
+//                            float dY = BinDistributionY(generator);
+//                            float dZ = BinDistributionZ(generator);
+//
+////                            std::cout << "NTT: " << n << "; Nx: " << Nx << "; Ny: " << Ny << "; Nz: " << Nz
+////                                      << "; Dx: " << Dxyz[0] << "; Dy: " << Dxyz[1] << "; Dz: " << Dxyz[2]
+////                                      << "; dX: " << dX << "; dY: " << dY << "; dZ: " << dZ << std::endl;
+//
+//                            ThreeVector<float> Pt(dX, dY, dZ);
+////                            DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Pt;
+//                            DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Dxyz;
+//
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        // Close input file and clean up
+//        InFile->Close();
+//        gDirectory->GetList()->Delete();
+//
+//            //////////////////////////////////////////////////////////
+//            // Copy from downstairs
+//            // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
+////            std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
+////             E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
+//
+//        for(int n = 0; n < NTT; n++){
+//            auto E_field = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapTT[n]);
+//            std::vector<ThreeVector<float>> En = E_field.first;
+//            std::vector<ThreeVector<float>> Position = E_field.second;
+//
+//            // Create mesh for Emap
+//            std::cout << "Generate mesh for E field..." << std::endl;
+//            xDelaunay EMesh = Mesher(Position, Detector);
+//
+//            // Interpolate E Map (regularly spaced grid)
+//            std::cout << "Start interpolation the E field..." << std::endl;
+//            std::vector<ThreeVector<float>> EMap = EInterpolateMap(En, Position, EMesh, Detector, EMapResolution);
+//            EMapTT[n] = EMap;
+//        }
+//
+//        TH1F *hEx[EMapsize];
+//        TH1F *hEy[EMapsize];
+//        TH1F *hEz[EMapsize];
+//
+//        int count =0;
+//
+//        for(int binID = 0; binID < EMapsize; binID++){
+//            // Ex,y,z[kV/cm], E0 = 0.273kV/cm
+//            // Be careful to choose the bin number, bin size and the histogram range!
+//            // This may affect the result of E most probable value (mode), especially with the number of toy throws
+//            // 0.5 and 1.5 means 50% change
+//            // Either use percentage or absolute value.
+//            // However using absolute value requires more preliminary knowledge of Ebin distribution
+//            std::string hExName = "hEx" + std::to_string(binID);
+//            std::string hEyName = "hEy" + std::to_string(binID);
+//            std::string hEzName = "hEz" + std::to_string(binID);
+//            hEx[binID] = new TH1F(hExName.c_str(),hExName.c_str(),100,0.5*E0,1.5*E0);
+//            hEy[binID] = new TH1F(hEyName.c_str(),hEyName.c_str(),100,-0.5*E0,0.5*E0);
+//            hEz[binID] = new TH1F(hEzName.c_str(),hEzName.c_str(),100,-0.5*E0,0.5*E0);
+//
+//            float meanX, sigmaX, meanY, sigmaY, meanZ, sigmaZ;
+//
+//            for(int ii = 0; ii < NTT; ii++){
+//                if(EMapTT[ii][binID]==Unknown)continue;
+//
+//                hEx[binID]->Fill(EMapTT[ii][binID][0]);
+//                hEy[binID]->Fill(EMapTT[ii][binID][1]);
+//                hEz[binID]->Fill(EMapTT[ii][binID][2]);
+////                    hx->Fit("gaus");
+////                    hy->Fit("gaus");
+////                    hz->Fit("gaus");
+////                    TF1 *fx = hx->GetFunction("gaus");
+////                    meanX  = fx->GetParameter(1);
+////                    sigmaX = fx->GetParameter(2);
+////                    TF1 *fy = hy->GetFunction("gaus");
+////                    meanY  = fy->GetParameter(1);
+////                    sigmaY = fy->GetParameter(2);
+////                    TF1 *fz = hz->GetFunction("gaus");
+////                    meanZ  = fz->GetParameter(1);
+////                    sigmaZ = fz->GetParameter(2);
+//
+//            }
+//
+//            if(hEx[binID]->GetEntries()==0||hEx[binID]->GetEntries()==0||hEx[binID]->GetEntries()==0){
+//                EMap[binID] = Unknown;
+//                count++;
+//            }
+//            else {
+//                ThreeVector<float> Emean = {(float) hEx[binID]->GetMean(), (float) hEy[binID]->GetMean(), (float) hEz[binID]->GetMean()};
+//                EMap[binID] = Emean;
+//            }
 
 
 
