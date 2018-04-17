@@ -622,36 +622,44 @@ int main(int argc, char **argv) {
         InFile->Close();
         gDirectory->GetList()->Delete();
 
-        for (int n = 0; n < NTT; n++) {
-            for(int id = 0; id < DMapsize; id++) {
-                if (DMap[id].first == Unknown || DMap[id].second == Unknown) {
+        for(int id = 0; id < DMapsize; id++) {
+//            for(int n = 0; n < NTT; n++) {
+////            for(int id = 0; id < DMapsize; id++) {
+//                if (DMap[id].first == Unknown || DMap[id].second == Unknown) {
+//                    DMapTT[n][id] = Unknown;
+//                }
+            if (DMap[id].first == Unknown || DMap[id].second == Unknown) {
+                for(int n = 0; n < NTT; n++) {
+//            for(int id = 0; id < DMapsize; id++) {
                     DMapTT[n][id] = Unknown;
-                } else {
-                    // produce Random generator which follows gaussian distribution in each bin
-                    // Mean and standard deviation are given by DMap
-                    std::default_random_engine generator;
-                    std::normal_distribution<float> BinDistributionX(DMap[id].first[0], DMap[id].second[0]);
-                    std::normal_distribution<float> BinDistributionY(DMap[id].first[1], DMap[id].second[1]);
-                    std::normal_distribution<float> BinDistributionZ(DMap[id].first[2], DMap[id].second[2]);
+                }
+            }
+            else {
+                // produce Random generator which follows gaussian distribution in each bin
+                // Mean and standard deviation are given by DMap
+                std::default_random_engine generator;
+                std::normal_distribution<float> BinDistributionX(DMap[id].first[0], DMap[id].second[0]);
+                std::normal_distribution<float> BinDistributionY(DMap[id].first[1], DMap[id].second[1]);
+                std::normal_distribution<float> BinDistributionZ(DMap[id].first[2], DMap[id].second[2]);
 
-                    for (int n = 0; n < NTT; n++) {
+                for (int n = 0; n < NTT; n++) {
 
-                        // generate distortion by random throw with gaussian distribution
-                        float dX = BinDistributionX(generator);
-                        float dY = BinDistributionY(generator);
-                        float dZ = BinDistributionZ(generator);
+                    // generate distortion by random throw with gaussian distribution
+                    float dX = BinDistributionX(generator);
+                    float dY = BinDistributionY(generator);
+                    float dZ = BinDistributionZ(generator);
 
 //                            std::cout << "NTT: " << n << "; Nx: " << Nx << "; Ny: " << Ny << "; Nz: " << Nz
 //                                      << "; Dx: " << Dxyz[0] << "; Dy: " << Dxyz[1] << "; Dz: " << Dxyz[2]
 //                                      << "; dX: " << dX << "; dY: " << dY << "; dZ: " << dZ << std::endl;
 
-                        ThreeVector<float> Pt(dX, dY, dZ);
+                    ThreeVector<float> Pt(dX, dY, dZ);
 //                            DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Pt;
-                        DMapTT[n][Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Dxyz;
+                    DMapTT[n][id] = Pt;
 
-                    }
                 }
             }
+//              }
         }
 
 
@@ -662,6 +670,9 @@ int main(int argc, char **argv) {
 //             E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
 
         for(int n = 0; n < NTT; n++){
+
+            std::cout<<"---------Toy throw No. "<< n <<std::endl;
+
             auto E_field = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapTT[n]);
             std::vector<ThreeVector<float>> En = E_field.first;
             std::vector<ThreeVector<float>> Position = E_field.second;
@@ -683,6 +694,7 @@ int main(int argc, char **argv) {
         int count =0;
 
         for(int binID = 0; binID < EMapsize; binID++){
+
             // Ex,y,z[kV/cm], E0 = 0.273kV/cm
             // Be careful to choose the bin number, bin size and the histogram range!
             // This may affect the result of E most probable value (mode), especially with the number of toy throws

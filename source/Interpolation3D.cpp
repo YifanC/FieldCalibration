@@ -418,10 +418,12 @@ ThreeVector<float> EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::ve
     // Find cell in the mesh where the point is located
 //    xDelaunay::Cell_handle Cell =  Mesh.locate(xVectorToPoint(Location));
 
-    xDelaunay::Locate_type loc;
-    int li, lj;
-    xDelaunay::Cell_handle Cell = Mesh.locate(xVectorToPoint(Location), loc, li, lj);
+//    xDelaunay::Locate_type loc;
+//    int li, lj;
+//    xDelaunay::Cell_handle Cell = Mesh.locate(xVectorToPoint(Location), loc, li, lj);
 //    std::cout<<"loc: "<<loc<<"; li: "<<li<<"; lj: "<<lj<<std::endl;
+
+    xDelaunay::Cell_handle Cell = Mesh.locate(xVectorToPoint(Location));
 
     // Loop over all four vertex points of the cell of interest
     for (unsigned vertex_no = 0; vertex_no < Index.size(); vertex_no++) {
