@@ -429,6 +429,10 @@ ThreeVector<float> EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::ve
     for (unsigned vertex_no = 0; vertex_no < Index.size(); vertex_no++) {
         // Get vertex info "n" (the index of the Position vector [Attention! It must be corresponding to the index of En vector!])
         Index[vertex_no] = Cell->vertex(vertex_no)->info();
+        if(Index[vertex_no]<0 || Index[vertex_no]>Position.size()){
+            InterpolatedEfield = {float_max, float_max, float_max};
+            return InterpolatedEfield;
+        }
     }
 
     // Initialize matrix for Location transformation into barycentric coordinate system
