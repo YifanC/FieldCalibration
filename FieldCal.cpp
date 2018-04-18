@@ -80,12 +80,18 @@ void WriteTextFileDMap(std::vector<std::pair<ThreeVector<float >, ThreeVector<fl
 
 void WriteTextFileEMap(std::vector<ThreeVector<float >> &, std::string);
 
+void WriteTextFileEMapwErr(std::vector<ThreeVector<float>> &EfieldMean, std::vector<ThreeVector<float>> &EfieldErr,
+                           std::string OutputFilename);
+
 void LaserInterpThread(Laser &, const Laser &, const Delaunay &);
 
 std::vector<Laser> ReachedExitPoint(const Laser &, float);
 
 void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TPCVolume,
                    ThreeVector<unsigned long> Resolution, float E0, std::string);
+
+void WriteEmapRootwErr(std::vector<ThreeVector<float>> &EfieldMean, std::vector<ThreeVector<float>> &EfieldErr,
+                       TPCVolumeHandler &TPCVolume, ThreeVector<unsigned long> Resolution, float E0, std::string OutputFilename);
 
 // Set if the output displacement map is correction map (on reconstructed coordinate) or distortion map (on true coordinate)
 // By default set it as correction map so we could continue calculate the E field map
@@ -297,8 +303,8 @@ int main(int argc, char **argv) {
                     NEinfile++;
                     Einfile.assign(std::string(ent->d_name));
                     ss_Einfile <<Einfile;
-                    ss_Eoutfile << "Emap-"<<Einfile.substr(9,Einfile.find_last_of(Einfile));
-                    ss_E_outtxt << "Emap-"<<Einfile.substr(9,Einfile.find_last_of(Einfile)-5)<< ".txt";
+                    ss_Eoutfile << "Emap-NTT-"<<std::to_string(NTT)<<"-"<<Einfile.substr(9,Einfile.find_last_of(Einfile));
+                    ss_E_outtxt << "Emap-NTT-"<<std::to_string(NTT)<<"-"<<Einfile.substr(9,Einfile.find_last_of("."))<< ".txt";
                 }
             }
             closedir (dir);
@@ -678,7 +684,9 @@ int main(int argc, char **argv) {
             TH1F *hEz[EMapsize];
 
             // Save some histogram into the root file
-            TFile EbinPlotFile("EbinDistribution.root", "recreate");
+            std::string name;
+            name = "EbinDistribution-NTT"+std::to_string(NTT)+".root";
+            TFile EbinPlotFile(name.c_str(), "recreate");
 
             for (int binID = 0; binID < EMapsize; binID++) {
 
@@ -692,9 +700,9 @@ int main(int argc, char **argv) {
                 // Either use percentage or absolute value.
                 // However using absolute value requires more preliminary knowledge of Ebin distribution
                 // E0 is along x direction
-                hEx[binID] = new TH1F(hExName.c_str(), hExName.c_str(), 100, 0.5 * E0, 1.5 * E0);
-                hEy[binID] = new TH1F(hEyName.c_str(), hEyName.c_str(), 100, -0.5 * E0, 0.5 * E0);
-                hEz[binID] = new TH1F(hEzName.c_str(), hEzName.c_str(), 100, -0.5 * E0, 0.5 * E0);
+                hEx[binID] = new TH1F(hExName.c_str(), hExName.c_str(), 50, 0.1 * E0, 1.1 * E0);
+                hEy[binID] = new TH1F(hEyName.c_str(), hEyName.c_str(), 50, -0.1 * E0, 0.1 * E0);
+                hEz[binID] = new TH1F(hEzName.c_str(), hEzName.c_str(), 50, -0.1 * E0, 0.1 * E0);
 
 
 
@@ -714,7 +722,7 @@ int main(int argc, char **argv) {
 
                     float meanX, sigmaX, meanY, sigmaY, meanZ, sigmaZ;
 
-                    if(binID % 50 == 0){
+                    if(binID % 50 == 0 && (hEx[binID]->GetEntries()) > 5){
                         hEx[binID]->Fit("gaus");
                         hEy[binID]->Fit("gaus");
                         hEz[binID]->Fit("gaus");
@@ -751,8 +759,8 @@ int main(int argc, char **argv) {
 
             // Fill displacement map into TH3 histograms and write them to file
             std::cout << "Write Emap to File ..." << std::endl;
-            WriteEmapRoot(EMapMean, Detector, EMapResolution, E0, ss_Eoutfile.str());
-            WriteTextFileEMap(EMapMean, ss_E_outtxt.str());
+            WriteEmapRootwErr(EMapMean, EMapErr, Detector, EMapResolution, E0, ss_Eoutfile.str());
+            WriteTextFileEMapwErr(EMapMean, EMapErr, ss_E_outtxt.str());
         }
         if(NTT==1){
             //The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
@@ -1060,6 +1068,60 @@ void LaserInterpThread(Laser &LaserTrackSet, const Laser &InterpolationLaser, co
 // First entry of the return vector is tracks that reach the exit point, second is the ones that do not reach it.
 
 // Write Emap into TH3 and store in root file
+void WriteEmapRootwErr(std::vector<ThreeVector<float>> &EfieldMean, std::vector<ThreeVector<float>> &EfieldErr,
+                   TPCVolumeHandler &TPCVolume, ThreeVector<unsigned long> Resolution, float E0, std::string OutputFilename) {
+    // Store TPC properties which are important for the TH3 generation
+    float float_max = std::numeric_limits<float>::max();
+    ThreeVector<float> MinimumCoord = TPCVolume.GetMapMinimum();
+    ThreeVector<float> MaximumCoord = TPCVolume.GetMapMaximum();
+    ThreeVector<float> Unit = {TPCVolume.GetDetectorSize()[0] / (Resolution[0] - 1),
+                               TPCVolume.GetDetectorSize()[1] / (Resolution[1] - 1),
+                               TPCVolume.GetDetectorSize()[2] / (Resolution[2] - 1)};
+
+    // Initialize all TH3F
+    std::vector<TH3F> EFieldDisplacement(6, TH3F("EField_Displacement", "EField Displacement",
+                                               Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
+                                               Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
+                                               Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
+
+    EFieldDisplacement[0].SetNameTitle("EField_Displacement_X", "EField Displacement X");
+    EFieldDisplacement[1].SetNameTitle("EField_Displacement_Y", "EField Displacement Y");
+    EFieldDisplacement[2].SetNameTitle("EField_Displacement_Z", "EField Displacement Z");
+    EFieldDisplacement[3].SetNameTitle("EField_Displacement_X_Error", "EField Deviation of Displacement X");
+    EFieldDisplacement[4].SetNameTitle("EField_Displacement_Y_Error", "EField Deviation of Displacement X");
+    EFieldDisplacement[5].SetNameTitle("EField_Displacement_Z_Error", "EField Deviation of Displacement X");
+
+    // the loop should be consistent to the one in the EInterpolateMap()
+    for (unsigned xbin = 0; xbin < Resolution[0]; xbin++) {
+        for (unsigned ybin = 0; ybin < Resolution[1]; ybin++) {
+            for (unsigned zbin = 0; zbin < Resolution[2]; zbin++) {
+                // Loop over all coordinates dx,dy,dz
+                for (unsigned coord = 0; coord < 3; coord++) {
+                    // Fill interpolated grid points into histograms. bin=0 is underflow, bin = nbin+1 is overflow
+                    EFieldDisplacement[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
+                                                            EfieldMean[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]);
+                    EFieldDisplacement[coord+3].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
+                                                              EfieldErr[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))][coord]);
+                } // end coordinate loop
+            } // end zbin loop
+        } // end ybin loop
+    } // end zbin loop
+
+    // Open and recreate output file
+    TFile OutputFile(OutputFilename.c_str(), "recreate");
+
+    // Loop over space coordinates
+    for (unsigned coord = 0; coord < EFieldDisplacement.size(); coord++) {
+        // Write every TH3 map into file
+        EFieldDisplacement[coord].Write();
+    }
+
+    // Close output file and clean up
+    OutputFile.Close();
+    gDirectory->GetList()->Delete();
+}
+
+// Write Emap into TH3 and store in root file
 void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TPCVolume,
                    ThreeVector<unsigned long> Resolution, float E0, std::string OutputFilename) {
     // Store TPC properties which are important for the TH3 generation
@@ -1107,12 +1169,12 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
 //                    Emap[2].SetBinContent(xbin + 1, ybin + 1, zbin + 1, -999);
 //                }
 //                else{
-                    // Loop over all coordinates dx,dy,dz
-                    for (unsigned coord = 0; coord < 3; coord++) {
-                        // Fill interpolated grid points into histograms. bin=0 is underflow, bin = nbin+1 is overflow
-                        Emap[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
-                                                  Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]);
-                    } // end coordinate loop
+                // Loop over all coordinates dx,dy,dz
+                for (unsigned coord = 0; coord < 3; coord++) {
+                    // Fill interpolated grid points into histograms. bin=0 is underflow, bin = nbin+1 is overflow
+                    Emap[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
+                                              Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]);
+                } // end coordinate loop
 //                }
             } // end zbin loop
         } // end ybin loop
@@ -1153,4 +1215,34 @@ void WriteTextFileEMap(std::vector<ThreeVector<float>> &Efield,
 
     // Close file
     OutputFile.close();
+} // WriteRootFile
+
+//Write E map in txt file
+void WriteTextFileEMapwErr(std::vector<ThreeVector<float>> &EfieldMean, std::vector<ThreeVector<float>> &EfieldErr,
+                       std::string OutputFilename) {
+
+    if(EfieldErr.size() == EfieldMean.size()) {
+        // Initialize stream to file
+        std::ofstream OutputFile;
+
+        // Open output file
+        OutputFile.open(OutputFilename.c_str(), std::ios::out);
+
+        // Loop over all interpolated data points
+        for (unsigned entry = 0; entry < EfieldMean.size(); entry++) {
+
+            // Write every point into a seperate line
+            OutputFile << entry << "\t"
+                       << EfieldMean[entry][0] << "\t" << EfieldMean[entry][1] << "\t"
+                       << EfieldMean[entry][2] << "\t"
+                       << EfieldErr[entry][0] << "\t" << EfieldErr[entry][1] << "\t"
+                       << EfieldErr[entry][2] << std::endl;
+        }
+
+        // Close file
+        OutputFile.close();
+    }
+    else{
+        std::cerr<<"The size of E-field Mean and standard deviation do not match."<<std::endl;
+    }
 } // WriteRootFile
