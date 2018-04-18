@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
     // TODO:give better options
     // Lets handle all options
     int c;
-    while((c = getopt(argc, argv, ":d:j:N:itoABCWDE")) != -1){
+    while((c = getopt(argc, argv, ":d:j:N:M:itoABCWDE")) != -1){
         switch(c){
             case 'd':
                 n_split = atoi(optarg);
@@ -286,6 +286,7 @@ int main(int argc, char **argv) {
     // Name the input and output file name of E field calculation
     //TODO: name output EMap in a better way
     if(DoEmap){
+        std::cout<<"NTT: "<<NTT<<std::endl;
         int NEinfile = 0;
         std::string Einfile;
         DIR *dir;
@@ -676,6 +677,9 @@ int main(int argc, char **argv) {
             TH1F *hEy[EMapsize];
             TH1F *hEz[EMapsize];
 
+            // Save some histogram into the root file
+            TFile EbinPlotFile("EbinDistribution.root", "recreate");
+
             for (int binID = 0; binID < EMapsize; binID++) {
 
                 std::string hExName = "hEx" + std::to_string(binID);
@@ -703,40 +707,33 @@ int main(int argc, char **argv) {
 
                 }
 
-                // Save some histogram into the root file
-                TFile EbinPlotFile("EbinDistribution.root", "recreate");
-
-                float meanX, sigmaX, meanY, sigmaY, meanZ, sigmaZ;
-
-                if(binID % 50 == 0){
-                    hEx[binID]->Fit("gaus");
-                    hEy[binID]->Fit("gaus");
-                    hEz[binID]->Fit("gaus");
-                    TF1 *fx = hEx[binID]->GetFunction("gaus");
-                    meanX  = fx->GetParameter(1);
-                    sigmaX = fx->GetParameter(2);
-                    TF1 *fy = hEy[binID]->GetFunction("gaus");
-                    meanY  = fy->GetParameter(1);
-                    sigmaY = fy->GetParameter(2);
-                    TF1 *fz = hEz[binID]->GetFunction("gaus");
-                    meanZ  = fz->GetParameter(1);
-                    sigmaZ = fz->GetParameter(2);
-                    std::cout<<"Ebin ID: "<<binID<<"; hist mean X: "<< hEx[binID]->GetMean()<<"; gaus mean X: "<<meanX
-                                                 <<"; hist mean Y: "<< hEy[binID]->GetMean()<<"; gaus mean Y: "<<meanY
-                                                 <<"; hist mean Z: "<< hEz[binID]->GetMean()<<"; gaus mean Z: "<<meanZ <<std::endl;
-                    hEx[binID]->Write();
-                    hEy[binID]->Write();
-                    hEz[binID]->Write();
-                }
-
-                // Close output file and clean up
-                EbinPlotFile.Close();
-                gDirectory->GetList()->Delete();
-
                 if (hEx[binID]->GetEntries() == 0 || hEx[binID]->GetEntries() == 0 || hEx[binID]->GetEntries() == 0) {
                     EMapMean[binID] = Unknown;
                     EMapErr[binID] = Unknown;
                 } else {
+
+                    float meanX, sigmaX, meanY, sigmaY, meanZ, sigmaZ;
+
+                    if(binID % 50 == 0){
+                        hEx[binID]->Fit("gaus");
+                        hEy[binID]->Fit("gaus");
+                        hEz[binID]->Fit("gaus");
+                        TF1 *fx = hEx[binID]->GetFunction("gaus");
+                        meanX  = fx->GetParameter(1);
+                        sigmaX = fx->GetParameter(2);
+                        TF1 *fy = hEy[binID]->GetFunction("gaus");
+                        meanY  = fy->GetParameter(1);
+                        sigmaY = fy->GetParameter(2);
+                        TF1 *fz = hEz[binID]->GetFunction("gaus");
+                        meanZ  = fz->GetParameter(1);
+                        sigmaZ = fz->GetParameter(2);
+                        std::cout<<"Ebin ID: "<<binID<<"; hist mean X: "<< hEx[binID]->GetMean()<<"; gaus mean X: "<<meanX
+                                 <<"; hist mean Y: "<< hEy[binID]->GetMean()<<"; gaus mean Y: "<<meanY
+                                 <<"; hist mean Z: "<< hEz[binID]->GetMean()<<"; gaus mean Z: "<<meanZ <<std::endl;
+                        hEx[binID]->Write();
+                        hEy[binID]->Write();
+                        hEz[binID]->Write();
+                    }
 
                     ThreeVector<float> Emean = {(float) hEx[binID]->GetMean(), (float) hEy[binID]->GetMean(),
                                                 (float) hEz[binID]->GetMean()};
@@ -747,6 +744,10 @@ int main(int argc, char **argv) {
                     EMapErr[binID] = EStdDev;
                 }
             }
+
+            // Close output file and clean up
+            EbinPlotFile.Close();
+            gDirectory->GetList()->Delete();
 
             // Fill displacement map into TH3 histograms and write them to file
             std::cout << "Write Emap to File ..." << std::endl;
