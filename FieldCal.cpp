@@ -258,7 +258,7 @@ int main(int argc, char **argv) {
     // Create the detector volume
     TPCVolumeHandler Detector(DetectorSize, DetectorOffset, DetectorResolution);
 
-    ThreeVector<unsigned long> EMapResolution = {26, 26, 101};
+    ThreeVector<unsigned long> EMapResolution = {21, 21, 81};
 
     // The size of DMap and EMap if we store it as a vector
     int DMapsize = DetectorResolution[0] * DetectorResolution[1] * DetectorResolution[2];
@@ -700,9 +700,9 @@ int main(int argc, char **argv) {
                 // Either use percentage or absolute value.
                 // However using absolute value requires more preliminary knowledge of Ebin distribution
                 // E0 is along x direction
-                hEx[binID] = new TH1F(hExName.c_str(), hExName.c_str(), 50, 0.1 * E0, 1.1 * E0);
-                hEy[binID] = new TH1F(hEyName.c_str(), hEyName.c_str(), 50, -0.1 * E0, 0.1 * E0);
-                hEz[binID] = new TH1F(hEzName.c_str(), hEzName.c_str(), 50, -0.1 * E0, 0.1 * E0);
+                hEx[binID] = new TH1F(hExName.c_str(), hExName.c_str(), 200, 0.1 * E0, 1.1 * E0);
+                hEy[binID] = new TH1F(hEyName.c_str(), hEyName.c_str(), 200, -0.1 * E0, 0.1 * E0);
+                hEz[binID] = new TH1F(hEzName.c_str(), hEzName.c_str(), 200, -0.1 * E0, 0.1 * E0);
 
 
 
@@ -720,28 +720,28 @@ int main(int argc, char **argv) {
                     EMapErr[binID] = Unknown;
                 } else {
 
-                    float meanX, sigmaX, meanY, sigmaY, meanZ, sigmaZ;
-
-                    if(binID % 50 == 0 && (hEx[binID]->GetEntries()) > 5){
-                        hEx[binID]->Fit("gaus");
-                        hEy[binID]->Fit("gaus");
-                        hEz[binID]->Fit("gaus");
-                        TF1 *fx = hEx[binID]->GetFunction("gaus");
-                        meanX  = fx->GetParameter(1);
-                        sigmaX = fx->GetParameter(2);
-                        TF1 *fy = hEy[binID]->GetFunction("gaus");
-                        meanY  = fy->GetParameter(1);
-                        sigmaY = fy->GetParameter(2);
-                        TF1 *fz = hEz[binID]->GetFunction("gaus");
-                        meanZ  = fz->GetParameter(1);
-                        sigmaZ = fz->GetParameter(2);
-                        std::cout<<"Ebin ID: "<<binID<<"; hist mean X: "<< hEx[binID]->GetMean()<<"; gaus mean X: "<<meanX
-                                 <<"; hist mean Y: "<< hEy[binID]->GetMean()<<"; gaus mean Y: "<<meanY
-                                 <<"; hist mean Z: "<< hEz[binID]->GetMean()<<"; gaus mean Z: "<<meanZ <<std::endl;
-                        hEx[binID]->Write();
-                        hEy[binID]->Write();
-                        hEz[binID]->Write();
-                    }
+//                    float meanX, sigmaX, meanY, sigmaY, meanZ, sigmaZ;
+//
+//                    if(binID % 50 == 0 && (hEx[binID]->GetEntries()) > 20){
+//                        hEx[binID]->Fit("gaus");
+//                        hEy[binID]->Fit("gaus");
+//                        hEz[binID]->Fit("gaus");
+//                        TF1 *fx = hEx[binID]->GetFunction("gaus");
+//                        meanX  = fx->GetParameter(1);
+//                        sigmaX = fx->GetParameter(2);
+//                        TF1 *fy = hEy[binID]->GetFunction("gaus");
+//                        meanY  = fy->GetParameter(1);
+//                        sigmaY = fy->GetParameter(2);
+//                        TF1 *fz = hEz[binID]->GetFunction("gaus");
+//                        meanZ  = fz->GetParameter(1);
+//                        sigmaZ = fz->GetParameter(2);
+//                        std::cout<<"Ebin ID: "<<binID<<"; hist mean X: "<< hEx[binID]->GetMean()<<"; gaus mean X: "<<meanX
+//                                 <<"; hist mean Y: "<< hEy[binID]->GetMean()<<"; gaus mean Y: "<<meanY
+//                                 <<"; hist mean Z: "<< hEz[binID]->GetMean()<<"; gaus mean Z: "<<meanZ <<std::endl;
+//                        hEx[binID]->Write();
+//                        hEy[binID]->Write();
+//                        hEz[binID]->Write();
+//                    }
 
                     ThreeVector<float> Emean = {(float) hEx[binID]->GetMean(), (float) hEy[binID]->GetMean(),
                                                 (float) hEz[binID]->GetMean()};
