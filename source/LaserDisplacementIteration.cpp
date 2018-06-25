@@ -19,9 +19,13 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
 
         std::cout << "Processing correction step N " << n << " ... " << std::endl;
 
-        // the direction of displacement is same as correction vector (reco to true)
-        LaserSet1.CalcDisplacement(LaserTrack::ClosestPoint, Nstep - n);
-        LaserSet2.CalcDisplacement(LaserTrack::ClosestPoint, Nstep - n);
+        // calculate the displacement vector (correction vector: reco to true),for temporary sign
+        // SetDisplacement() is the function to set the direction
+//        LaserSet1.CalcDisplacement(LaserTrack::ClosestPoint, Nstep - n);
+//        LaserSet2.CalcDisplacement(LaserTrack::ClosestPoint, Nstep - n);
+
+        LaserSet1.CalcDisplacement(LaserTrack::LinearStretch, Nstep - n);
+        LaserSet2.CalcDisplacement(LaserTrack::LinearStretch, Nstep - n);
 
         // At the last step, the biased track points should end on the true track lines
         if (n == (Nstep - 1)) {
@@ -79,7 +83,7 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
     std::pair<Laser, Laser> LaserWithDisplacement;
 
     if(CorrMapFlag){
-        // Set correction vectors on reconstructed track for distortion map
+        // Set correction vectors on reconstructed track for correction map
         LaserRecoOrigin1.SetDisplacement(LaserSet1);
         LaserRecoOrigin2.SetDisplacement(LaserSet2);
         LaserWithDisplacement = std::make_pair(LaserRecoOrigin1,LaserRecoOrigin2);
@@ -92,20 +96,6 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
     }
 
     return LaserWithDisplacement;
-
-
-//    std::pair<Laser, Laser> LaserWithDisplacement;
-//    LaserWithDisplacement = std::make_pair(LaserSet1,LaserSet2);
-//
-//    return LaserWithDisplacement;
-
-//    LaserSet1.SetDisplacement(LaserRecoOrigin1, CorrMapFlag);
-//    LaserSet2.SetDisplacement(LaserRecoOrigin2, CorrMapFlag);
-//
-//    std::pair<Laser, Laser> LaserWithDisplacement;
-//    LaserWithDisplacement = std::make_pair(LaserSet1,LaserSet2);
-//
-//    return LaserWithDisplacement;
 
 }
 

@@ -43,7 +43,7 @@ private:
 //    void ClosestPointDisplAlgo(bool CorrMapFlag, int Nstep);
     void ClosestPointDisplAlgo(int Nstep);
 
-    void LinearStretchDisplAlgo(bool CorrMapFlag);
+    void LinearStretchDisplAlgo(int Nstep);
 
     bool CorrMapFlag;//For ClosestPointDisplAlgo
 

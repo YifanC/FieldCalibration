@@ -109,6 +109,7 @@ bool ToyThrow = false;
 // Main function
 int main(int argc, char **argv) {
 
+
     // Start timer, just because it's nice to know how long shit takes
     time_t timer;
     std::time(&timer);
