@@ -877,7 +877,7 @@ Laser ReadRecoTracks(std::vector<std::string> InputFiles) {
             // For closestpoint method, it doesn't matter, while to derivative method yes
             // But for the moment, when reconstruction has a big problem, it is not encouraged to use derivative method
 
-            /*
+
             // This here sorts the tracks by their distance to the EntryPoint. The algorithm uses a lambda
             // It will compare the distance to the EntryPoint of two vector entries A & B
             std::sort(TrackSamples.begin(), TrackSamples.end(), [&EntryPoint](TVector3 A, TVector3 B) {
@@ -887,7 +887,7 @@ Laser ReadRecoTracks(std::vector<std::string> InputFiles) {
                           return A.Mag2() > B.Mag2();
                       }
             );
-            */
+
 
             // This step will erase all double entries. First std::unique shifts every double to the end
             // of the vector and gives back the new end point of the data set. After that we erase the HistRange
