@@ -884,7 +884,7 @@ Laser ReadRecoTracks(std::vector<std::string> InputFiles) {
                           A -= EntryPoint;
                           B -= EntryPoint;
                           // Here only the squared distance was used to avoid costly sqrt operations
-                          return A.Mag2() > B.Mag2();
+                          return A.Mag2() < B.Mag2();
                       }
             );
 
