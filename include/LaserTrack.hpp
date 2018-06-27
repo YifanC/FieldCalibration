@@ -120,6 +120,8 @@ public:
 
     std::vector<ThreeVector<float>> GetReco();
 
+    std::vector<ThreeVector<float>> GetTrackDisp();
+
     static void DistortTracks(std::vector<LaserTrack> &, const std::string &, const TPCVolumeHandler &);
 };
 

@@ -337,27 +337,38 @@ int main(int argc, char **argv) {
         Laser TracksSample1;
         Laser TracksSample2;
 
-        std::vector<Laser> LaserSets1;
-        std::vector<Laser> LaserSets2;
-
-
         if (TwoSideIter || CosmicLaserIter) {
             // Read the laser data from file to 'Laser'. The laser data from 2 sides are sperated
             TracksSample1 = ReadRecoTracks(InputFiles1);
             TracksSample2 = ReadRecoTracks(InputFiles2);
-            // Split laser iteration samples into subsamples
-            LaserSets1 = SplitTrackSet(TracksSample1, n_split);
-            LaserSets2 = SplitTrackSet(TracksSample2, n_split);
         } else {
             // Read the laser data from file to 'Laser'.
             Laser FullTracks = ReadRecoTracks(InputFiles);
             // Seperate laser iteration sample
             TracksSample1 = InterlacedIterTrackSamples(FullTracks)[0];
             TracksSample2 = InterlacedIterTrackSamples(FullTracks)[1];
-            // Split laser iteration samples into subsamples
-            LaserSets1 = SplitTrackSet(TracksSample1, n_split);
-            LaserSets2 = SplitTrackSet(TracksSample2, n_split);
         }
+
+//        std::vector<Laser> LaserSets1;
+//        std::vector<Laser> LaserSets2;
+//
+//        if (TwoSideIter || CosmicLaserIter) {
+//            // Read the laser data from file to 'Laser'. The laser data from 2 sides are sperated
+//            TracksSample1 = ReadRecoTracks(InputFiles1);
+//            TracksSample2 = ReadRecoTracks(InputFiles2);
+//            // Split laser iteration samples into subsamples
+//            LaserSets1 = SplitTrackSet(TracksSample1, n_split);
+//            LaserSets2 = SplitTrackSet(TracksSample2, n_split);
+//        } else {
+//            // Read the laser data from file to 'Laser'.
+//            Laser FullTracks = ReadRecoTracks(InputFiles);
+//            // Seperate laser iteration sample
+//            TracksSample1 = InterlacedIterTrackSamples(FullTracks)[0];
+//            TracksSample2 = InterlacedIterTrackSamples(FullTracks)[1];
+//            // Split laser iteration samples into subsamples
+//            LaserSets1 = SplitTrackSet(TracksSample1, n_split);
+//            LaserSets2 = SplitTrackSet(TracksSample2, n_split);
+//        }
 
         int Mapsize = DetectorResolution[0] * DetectorResolution[1] * DetectorResolution[2];
 //        std::pair<ThreeVector<float >, ThreeVector<float>>
@@ -399,125 +410,185 @@ int main(int argc, char **argv) {
 
         if(!WeightAverage) {
 
-            // Now we loop over each individual set and compute the displacement vectors.
+//
+//            Laser LaserRecoOrigin1 = TracksSample1;
+//            Laser LaserRecoOrigin2 = TracksSample2;
 
+            // If CorrMapFlag, LaserWithDisp are made of reconstructed tracks
+            // If !CorrMapFlag, LaserWithDisp are made of true tracks
+            std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, TracksSample1, TracksSample2,
+                                                                       CorrMapFlag);
+
+            std::cout << "Time after N-step iteration" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+
+            // Possibility to merge this two tracksamples before split. The effect is unknown
+            std::vector<Laser> LaserSets1;
+            std::vector<Laser> LaserSets2;
+
+            // Split laser iteration samples with displacement into subsamples
+            LaserSets1 = SplitTrackSetDisp(LaserWithDisp.first, n_split);
+            LaserSets2 = SplitTrackSetDisp(LaserWithDisp.second, n_split);
+
+            // Now we loop over each individual set and do the interpolation for Displacement map.
             #pragma omp parallel for
-
             for (unsigned int set = 0; set < n_split; set++) {
 
-                // The disadvantage is the LaserRecoOrigin will be discard after the calculation of this set
-                Laser LaserRecoOrigin1 = LaserSets1[set];
-                Laser LaserRecoOrigin2 = LaserSets2[set];
+                std::cout << "----Processing subset " << set << "/" << n_split << " for interpolation... " << std::endl;
 
-                std::cout << "Processing subset " << set << "/" << n_split << "... " << std::endl;
+                Laser Laser1;
+                Laser Laser2;
 
-                // Calculate track displacement
-                std::cout << " [" << set << "] Find track displacements... " << std::endl;
-
-                // If CorrMapFlag, LaserWithDisp contains reconstructed tracks
-                // If !CorrMapFlag, LaserWithDisp contains true tracks
-                std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, LaserSets1[set], LaserSets2[set],
-                                                                           CorrMapFlag);
-
-                std::cout << "Time after N-step iteration" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
-
-//            // Merge 2 Laser samples with displacement vector for mesh and iteration
-//            Laser LaserRecoOrigin = MergeLaser(LaserRecoOrigin1, LaserRecoOrigin2);
-//            Laser LaserCorrected = MergeLaser(LaserWithDisp.first, LaserWithDisp.second);
-
-                //Add anode information (no distortion) into Laser track sets
-//            LaserRecoOrigin.AppendTrack(Anode(Detector));
-//            LaserCorrected.AppendTrack(Anode(Detector));
+                Laser1 = LaserSets1[set];
+                Laser2 = LaserSets2[set];
 
                 if (DBoundary) {
-                    LaserRecoOrigin1.AppendTrack(Anode(Detector));
-                    LaserRecoOrigin2.AppendTrack(Anode(Detector));
-                    LaserWithDisp.first.AppendTrack(Anode(Detector));
-                    LaserWithDisp.second.AppendTrack(Anode(Detector));
+                    Laser1.AppendTrack(Anode(Detector));
+                    Laser2.AppendTrack(Anode(Detector));
                 }
 
-
-                std::cout << " [" << set << "] Generate mesh..." << std::endl;
-
-//            Delaunay MeshMap;
+                std::cout << " [" << set << "/" << n_split << "] Generating mesh..." << std::endl;
                 Delaunay MeshMap1;
                 Delaunay MeshMap2;
+                MeshMap1 = TrackMesher(Laser1.GetTrackSet());
+                MeshMap2 = TrackMesher(Laser2.GetTrackSet());
 
-//                 // The correction map is built on the mesh of reconstructed position which is the origin LaserSets
-//                if (CorrMapFlag) {
-//                    MeshMap1 = TrackMesher(LaserRecoOrigin1.GetTrackSet());
-//                    MeshMap2 = TrackMesher(LaserRecoOrigin2.GetTrackSet());
-//                }
-//
-//                    // The distortion map is built on the mesh of true position which is moved LaserSets
-//                else {
-//                    MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
-//                    MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
-//                }
-
-                MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
-                MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
-
-                std::cout << "Time after mesh " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+                std::cout << "[" << set << "/" << n_split << "] Time after mesh " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
                 // Interpolate Displacement Map (regularly spaced grid)
-                std::cout << "Start interpolation..." << std::endl;
-                // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
-
-//                // The correction map is based on reco space coord
-//                if (CorrMapFlag) {
-//                    DisplMapsHolder.push_back(
-//                            InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1,
-//                                           Detector));
-//                    DisplMapsHolder.push_back(
-//                            InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserRecoOrigin2.GetTrackSet(), MeshMap2,
-//                                           Detector));
-//                }
-//
-//                    // The distortion map is based on true space coord
-//                else {
-//                    DisplMapsHolder.push_back(
-//                            InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(),
-//                                           MeshMap1, Detector));
-//                    DisplMapsHolder.push_back(
-//                            InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserWithDisp.second.GetTrackSet(),
-//                                           MeshMap2, Detector));
-//                }
+                std::cout << "[" << set << "/" << n_split << "] Start interpolation..." << std::endl;
 
                 // Calculate Displacement map in the form of vector
                 // CorrMapFlag decided if it is distortion or correction map already based on the LaserWithDisp
                 DisplMapsHolder.push_back(
-                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), MeshMap1, Detector));
+                        InterpolateMap(Laser1.GetTrackSet(), MeshMap1, Detector));
                 DisplMapsHolder.push_back(
-                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), MeshMap2, Detector));
+                        InterpolateMap(Laser2.GetTrackSet(), MeshMap2, Detector));
 
                 std::cout << "Time after interpolation " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+
             }
 
-//            // Now we go on to create an unified displacement map
-//            std::vector<ThreeVector<float>> DisplacementMapD(DisplMapsHolder.front().size(), ThreeVector<float>(0., 0., 0.));
-//            std::vector<float> Nvalid(DisplMapsHolder.front().size(), 0.);
+
 //
-//            for (auto &SubMap: DisplMapsHolder) {
-//                for (unsigned int idx = 0; idx < DisplacementMapD.size(); idx++) {
-//                    if (SubMap[idx] != Empty) {
-////                        DisplacementMap[idx].first = DisplacementMap[idx].first + SubMap[idx];
-//                        DisplacementMapD[idx] = DisplacementMapD[idx] + SubMap[idx];
-//                        Nvalid[idx]++;
-//                    }
+//            /////////////////////////////////////////////////////////
+//
+//            // Now we loop over each individual set and compute the displacement vectors.
+//
+//            #pragma omp parallel for
+//
+//            for (unsigned int set = 0; set < n_split; set++) {
+//
+//                // The LaserRecoOrigin will be discard after the calculation of this set
+//                Laser LaserRecoOrigin1 = LaserSets1[set];
+//                Laser LaserRecoOrigin2 = LaserSets2[set];
+//
+//                std::cout << "Processing subset " << set << "/" << n_split << "... " << std::endl;
+//
+//                // Calculate track displacement
+//                std::cout << " [" << set << "] Find track displacements... " << std::endl;
+//
+//                // If CorrMapFlag, LaserWithDisp contains reconstructed tracks
+//                // If !CorrMapFlag, LaserWithDisp contains true tracks
+//                std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, LaserSets1[set], LaserSets2[set],
+//                                                                           CorrMapFlag);
+//
+//                std::cout << "Time after N-step iteration" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+//
+////            // Merge 2 Laser samples with displacement vector for mesh and iteration
+////            Laser LaserRecoOrigin = MergeLaser(LaserRecoOrigin1, LaserRecoOrigin2);
+////            Laser LaserCorrected = MergeLaser(LaserWithDisp.first, LaserWithDisp.second);
+//
+//                //Add anode information (no distortion) into Laser track sets
+////            LaserRecoOrigin.AppendTrack(Anode(Detector));
+////            LaserCorrected.AppendTrack(Anode(Detector));
+//
+//                if (DBoundary) {
+//                    LaserWithDisp.first.AppendTrack(Anode(Detector));
+//                    LaserWithDisp.second.AppendTrack(Anode(Detector));
 //                }
+//
+//
+//                std::cout << " [" << set << "] Generate mesh..." << std::endl;
+//
+////            Delaunay MeshMap;
+//                Delaunay MeshMap1;
+//                Delaunay MeshMap2;
+//
+////                 // The correction map is built on the mesh of reconstructed position which is the origin LaserSets
+////                if (CorrMapFlag) {
+////                    MeshMap1 = TrackMesher(LaserRecoOrigin1.GetTrackSet());
+////                    MeshMap2 = TrackMesher(LaserRecoOrigin2.GetTrackSet());
+////                }
+////
+////                    // The distortion map is built on the mesh of true position which is moved LaserSets
+////                else {
+////                    MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
+////                    MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
+////                }
+//
+//                MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
+//                MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
+//
+//                std::cout << "Time after mesh " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
+//
+//                // Interpolate Displacement Map (regularly spaced grid)
+//                std::cout << "Start interpolation..." << std::endl;
+//                // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
+//
+////                // The correction map is based on reco space coord
+////                if (CorrMapFlag) {
+////                    DisplMapsHolder.push_back(
+////                            InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1,
+////                                           Detector));
+////                    DisplMapsHolder.push_back(
+////                            InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserRecoOrigin2.GetTrackSet(), MeshMap2,
+////                                           Detector));
+////                }
+////
+////                    // The distortion map is based on true space coord
+////                else {
+////                    DisplMapsHolder.push_back(
+////                            InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(),
+////                                           MeshMap1, Detector));
+////                    DisplMapsHolder.push_back(
+////                            InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserWithDisp.second.GetTrackSet(),
+////                                           MeshMap2, Detector));
+////                }
+//
+//                // Calculate Displacement map in the form of vector
+//                // CorrMapFlag decided if it is distortion or correction map already based on the LaserWithDisp
+//                DisplMapsHolder.push_back(
+//                        InterpolateMap(LaserWithDisp.first.GetTrackSet(), MeshMap1, Detector));
+//                DisplMapsHolder.push_back(
+//                        InterpolateMap(LaserWithDisp.second.GetTrackSet(), MeshMap2, Detector));
+//
+//                std::cout << "Time after interpolation " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 //            }
 //
-//            for (unsigned int idx = 0; idx < DisplacementMap.size(); idx++) {
-//                if (Nvalid[idx] == 0) {
-//                    // Set those bin with non valid number into float max again
-////                    DisplacementMap[idx].first = {float_max, float_max, float_max};
-//                    DisplacementMapD[idx] = Empty;
-//                } else {
-////                    DisplacementMap[idx].first = DisplacementMap[idx].first / Nvalid[idx];
-//                    DisplacementMapD[idx] = DisplacementMapD[idx] / Nvalid[idx];
-//                }
-//            }
+////            // Now we go on to create an unified displacement map
+////            std::vector<ThreeVector<float>> DisplacementMapD(DisplMapsHolder.front().size(), ThreeVector<float>(0., 0., 0.));
+////            std::vector<float> Nvalid(DisplMapsHolder.front().size(), 0.);
+////
+////            for (auto &SubMap: DisplMapsHolder) {
+////                for (unsigned int idx = 0; idx < DisplacementMapD.size(); idx++) {
+////                    if (SubMap[idx] != Empty) {
+//////                        DisplacementMap[idx].first = DisplacementMap[idx].first + SubMap[idx];
+////                        DisplacementMapD[idx] = DisplacementMapD[idx] + SubMap[idx];
+////                        Nvalid[idx]++;
+////                    }
+////                }
+////            }
+////
+////            for (unsigned int idx = 0; idx < DisplacementMap.size(); idx++) {
+////                if (Nvalid[idx] == 0) {
+////                    // Set those bin with non valid number into float max again
+//////                    DisplacementMap[idx].first = {float_max, float_max, float_max};
+////                    DisplacementMapD[idx] = Empty;
+////                } else {
+//////                    DisplacementMap[idx].first = DisplacementMap[idx].first / Nvalid[idx];
+////                    DisplacementMapD[idx] = DisplacementMapD[idx] / Nvalid[idx];
+////                }
+////            }
 
 
             // Loop the displacement map in the form of vector

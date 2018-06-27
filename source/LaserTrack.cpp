@@ -541,8 +541,6 @@ void LaserTrack::DistortTracks(std::vector<LaserTrack> &LaserTracks, const std::
                         LaserTracks[track_no].LaserReco[segment][1] - TPCVolume.GetDetectorOffset().at(1),
                         LaserTracks[track_no].LaserReco[segment][2] - TPCVolume.GetDetectorOffset().at(2)
                 );
-// 	  std::cout << LaserTracks[track_no].LaserTrue[segment][coord] << " " << LaserTracks[track_no].LaserReco[segment][coord] << " ";
-// 	  std::cout << DistortMap[coord]->Interpolate(LaserTracks[track_no].LaserTrue[segment][0],LaserTracks[track_no].LaserTrue[segment][1]+DetectorSize[1]/(float)2.0,LaserTracks[track_no].LaserTrue[segment][2]) << " ";
             }
         }
 //       std::cout << std::endl;
@@ -554,6 +552,10 @@ void LaserTrack::DistortTracks(std::vector<LaserTrack> &LaserTracks, const std::
     FieldFile->Close();
     delete FieldFile;
     gDirectory->GetList()->Delete();
+}
+
+std::vector<ThreeVector<float>> LaserTrack::GetTrackDisp() {
+    return LaserDisplacement;
 }
 
 std::vector<ThreeVector<float>> LaserTrack::GetReco() {

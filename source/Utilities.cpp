@@ -56,6 +56,38 @@ std::vector<Laser> SplitTrackSet(const Laser &LaserSet, unsigned int Downsample)
     return Sets;
 }
 
+std::vector<Laser> SplitTrackSetDisp(const Laser &LaserSet, unsigned int Downsample) {
+    /*
+     * This function separates the laser track set into multiple smaller data sets,
+     * the number of produced set is specified by the Downsample value.
+     * The laser set can be corrected or raw reco track sets.
+     */
+    std::vector<Laser> Sets;
+    Sets.resize(Downsample);
+
+    for (auto &Track : LaserSet.GetTrackSet()) {
+
+        auto SourceTrack = Track.GetReco();
+        auto SourceDisp = Track.GetTrackDisp();
+
+        for (unsigned long offset = 0; offset < Downsample; offset++) {
+            std::vector<ThreeVector<float>> TrackSample;
+            std::vector<ThreeVector<float>> SampleDisp;
+
+            for (unsigned long idx = offset; idx < SourceTrack.size(); idx += Downsample) {
+                TrackSample.push_back(SourceTrack[idx]);
+                SampleDisp.push_back(SourceDisp[idx]);
+            }
+            LaserTrack SampledTrack(TrackSample, SampleDisp);
+            Sets[offset].AppendTrack(SampledTrack);
+
+            TrackSample.clear();
+            SampleDisp.clear();
+
+        }
+    }
+    return Sets;
+}
 
 std::vector<Laser> InterlacedIterTrackSamples(const Laser &LaserSet) {
     // This function separates the input laser data set into 2 data subsamples for iterated correction.

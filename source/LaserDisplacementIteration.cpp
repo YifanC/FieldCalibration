@@ -17,7 +17,7 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
 
     for (int n = 0; n < Nstep; n++) {
 
-        std::cout << "Processing correction step N " << n << " ... " << std::endl;
+        std::cout << "Processing correction step N " << n << "/"<< Nstep << "..." << std::endl;
 
         // calculate the displacement vector (correction vector: reco to true),for temporary sign
         // SetDisplacement() is the function to set the direction
