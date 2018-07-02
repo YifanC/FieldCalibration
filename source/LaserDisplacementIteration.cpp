@@ -24,8 +24,11 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
 //        LaserSet1.CalcDisplacement(LaserTrack::ClosestPoint, Nstep - n);
 //        LaserSet2.CalcDisplacement(LaserTrack::ClosestPoint, Nstep - n);
 
-        LaserSet1.CalcDisplacement(LaserTrack::LinearStretch, Nstep - n);
-        LaserSet2.CalcDisplacement(LaserTrack::LinearStretch, Nstep - n);
+//        LaserSet1.CalcDisplacement(LaserTrack::LinearStretch, Nstep - n);
+//        LaserSet2.CalcDisplacement(LaserTrack::LinearStretch, Nstep - n);
+
+        LaserSet1.CalcDisplacement(LaserTrack::ClosestNStretch, Nstep - n);
+        LaserSet2.CalcDisplacement(LaserTrack::ClosestNStretch, Nstep - n);
 
         // At the last step, the biased track points should end on the true track lines
         if (n == (Nstep - 1)) {

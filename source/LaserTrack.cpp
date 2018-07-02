@@ -241,9 +241,99 @@ void LaserTrack::ClosestPointDisplAlgo(int Nstep = 1) {
     }
 }
 
+// This algorithm uses first the closest point displacement algorithm.
+// Then it shifts the reco points linearly along the true track to equalize the reco and truth track length
+// It is important to order the reconstruction samples (Entry -> Exit)
+void LaserTrack::LinearStretchDisplAlgo(int Nstep = 1) {
+
+    // Vector which points from entry to exit point
+    ThreeVector<float> TrueTrack = ExitPoint - EntryPoint;
+    float TrueLength = TrueTrack.GetNorm();
+
+    // Proportion vector for every reco sample gap
+    std::vector<float> GapLength;
+    GapLength.resize(GetNumberOfSamples()-1);
+
+    float RecoLength = 0; // Initialize the total reconstructed track length
+
+    // Calculate the total reconstructed track length
+    for (unsigned long Ngap = 0; Ngap < GetNumberOfSamples()-1; Ngap++) {
+        GapLength[Ngap] = (LaserReco[Ngap+1] - LaserReco[Ngap]).GetNorm();
+        RecoLength += GapLength[Ngap];
+    }
+
+    float StepRecoLength = 0; // Initialize the reconstructed track length until the specific sample
+
+    // Calculate displacement
+    // The displacement vector is correction vector now, but the sign can be changed later. Reco -> True
+    for (unsigned long sample_no = 0; sample_no < LaserReco.size(); sample_no++){
+
+        if (sample_no == 0){
+            LaserDisplacement[sample_no] = EntryPoint - LaserReco[sample_no];
+        } else{
+            StepRecoLength += GapLength[sample_no-1];
+            LaserDisplacement[sample_no] = (EntryPoint - LaserReco[sample_no]) + StepRecoLength / RecoLength *(ExitPoint- EntryPoint);
+        }
+
+        LaserDisplacement[sample_no] /= Nstep;
+
+    }
+}
+
+// This algorithm uses first the closest point displacement algorithm. Then it shifts the reco points linearly along the true track to equalize the reco and truth track length
+void LaserTrack::ClosestNStretchDisplAlgo(int Nstep = 1) {
+
+    // Vector which points from entry to exit point
+    ThreeVector<float> TrueTrack = ExitPoint - EntryPoint;
+    float TrueLength = TrueTrack.GetNorm();
+
+    // Proportion vector for every reco sample gap
+    std::vector<float> GapLength;
+    GapLength.resize(GetNumberOfSamples()-1);
+
+    float RecoLength = 0; // Initialize the total reconstructed track length
+
+    // Calculate the total reconstructed track length
+    for (unsigned long Ngap = 0; Ngap < GetNumberOfSamples()-1; Ngap++) {
+        GapLength[Ngap] = (LaserReco[Ngap+1] - LaserReco[Ngap]).GetNorm();
+        RecoLength += GapLength[Ngap];
+    }
+
+    float StepRecoLength = 0; // Initialize the reconstructed track length until the specific sample
+    float TrueTrackPara = 0; // Initialize scaling parameter for point on true laser beam
+
+    // Calculate displacement
+    // The displacement vector is correction vector now, but the sign can be changed later. Reco -> True
+    // If the StepRecoLength is within 100cm to Entry point, use linearstretch. Otherwise, use closestpoint.
+    //
+    for (unsigned long sample_no = 0; sample_no < LaserReco.size(); sample_no++){
+
+        if(StepRecoLength < 100){
+
+            if (sample_no == 0){
+                LaserDisplacement[sample_no] = EntryPoint - LaserReco[sample_no];
+            } else{
+                StepRecoLength += GapLength[sample_no-1];
+                LaserDisplacement[sample_no] = (EntryPoint - LaserReco[sample_no]) + StepRecoLength / RecoLength *(ExitPoint- EntryPoint);
+            }
+
+        } else{
+            // Calculate parameter corresponding to the closest distance between true track and reco track sample
+            TrueTrackPara = ThreeVector<float>::DotProduct(LaserReco[sample_no] - EntryPoint, TrueTrack) /
+                            ThreeVector<float>::DotProduct(TrueTrack, TrueTrack);
+
+            LaserDisplacement[sample_no] = (EntryPoint + TrueTrackPara * TrueTrack) - LaserReco[sample_no];
+
+        }
+
+        LaserDisplacement[sample_no] /= Nstep;
+
+    }
+}
+
 /*
 // Warning: There's some problem with this algorithm...
-// This algorithm uses first the closest point displacement algorithm. Then it shifts the reco points linearly along the true track to equalize the reco and truth track length 
+// This algorithm uses first the closest point displacement algorithm. Then it shifts the reco points linearly along the true track to equalize the reco and truth track length
 void LaserTrack::LinearStretchDisplAlgo(bool CorrMapFlag = true) {
     // Execute closest point algorithm
     ClosestPointDisplAlgo();
@@ -284,51 +374,6 @@ void LaserTrack::LinearStretchDisplAlgo(bool CorrMapFlag = true) {
 
 }
 */
-
-
-// This algorithm uses first the closest point displacement algorithm. Then it shifts the reco points linearly along the true track to equalize the reco and truth track length
-void LaserTrack::LinearStretchDisplAlgo(int Nstep = 1) {
-
-    // Vector which points from entry to exit point
-    ThreeVector<float> TrueTrack = ExitPoint - EntryPoint;
-    float TrueLength = TrueTrack.GetNorm();
-
-
-    // Proportion vector for every reco sample gap
-    std::vector<float> GapLength;
-    GapLength.resize(GetNumberOfSamples()-1);
-
-    float RecoLength = 0;
-
-    // Loop over all samples of corrected
-    for (unsigned long Ngap = 0; Ngap < GetNumberOfSamples()-1; Ngap++) {
-
-        GapLength[Ngap] = (LaserReco[Ngap+1] - LaserReco[Ngap]).GetNorm();
-        RecoLength += GapLength[Ngap];
-
-    }
-
-    float StepRecoLength = 0;
-
-    // Calculate displacement
-    // The displacement vector is correction vector now, but the sign can be changed later. Reco -> True
-    for (unsigned long sample_no = 0; sample_no < LaserReco.size(); sample_no++){
-
-        if (sample_no == 0){
-            LaserDisplacement[sample_no] = EntryPoint - LaserReco[sample_no];
-        } else{
-            StepRecoLength += GapLength[sample_no-1];
-            LaserDisplacement[sample_no] = (EntryPoint - LaserReco[sample_no]) + StepRecoLength / RecoLength *(ExitPoint- EntryPoint);
-        }
-
-        LaserDisplacement[sample_no] /= Nstep;
-//        LaserDisplacement[sample_no] = (EntryPoint - LaserReco[sample_no]) + StepRecoLength / RecoLength *(ExitPoint- EntryPoint);
-//        StepRecoLength += GapLength[sample_no];
-
-    }
-
-}
-
 
 void LaserTrack::DistortTrack(std::string MapFileName, const TPCVolumeHandler &TPCVolume) {
     float epsilon_abs = 1e-6;
@@ -377,17 +422,14 @@ void LaserTrack::CalcDisplacement(const DisplacementAlgo &Algo, int Nstep) {
         case TrackDerivative :
             DerivativeDisplAlgo();
             break;
-//        case ClosestPointCorr :
-//            ClosestPointDisplAlgo(true, Nstep);
-//            break;
-//        case ClosestPointDist :
-//            ClosestPointDisplAlgo(false);
-//            break;
         case ClosestPoint :
             ClosestPointDisplAlgo(Nstep);
             break;
         case LinearStretch :
-            LinearStretchDisplAlgo();
+            LinearStretchDisplAlgo(Nstep);
+            break;
+        case ClosestNStretch :
+            ClosestNStretchDisplAlgo(Nstep);
             break;
         default :
             ClosestPointDisplAlgo(Nstep);
