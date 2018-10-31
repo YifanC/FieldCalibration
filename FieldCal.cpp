@@ -78,19 +78,21 @@ void WriteRootFileMeanStd(std::vector<std::pair<ThreeVector<float >, ThreeVector
 
 void WriteTextFileDMap(std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> &, std::string);
 
-void WriteTextFileEMap(std::vector<ThreeVector<float >> &, std::string);
+void WriteTextFileEMap(std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>> &vn_EnMap, std::string);
 
-void WriteTextFileEMapwErr(std::vector<ThreeVector<float>> &EfieldMean, std::vector<ThreeVector<float>> &EfieldErr,
+void WriteTextFileEMapwErr(std::vector<ThreeVector<float>> &vMean, std::vector<ThreeVector<float>> &vErr,
+                           std::vector<ThreeVector<float>> &EfieldMean, std::vector<ThreeVector<float>> &EfieldErr,
                            std::string OutputFilename);
 
 void LaserInterpThread(Laser &, const Laser &, const Delaunay &);
 
 std::vector<Laser> ReachedExitPoint(const Laser &, float);
 
-void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TPCVolume,
+void WriteEmapRoot(std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>> &vn_EnMap, TPCVolumeHandler &TPCVolume,
                    ThreeVector<unsigned long> Resolution, float E0, std::string);
 
-void WriteEmapRootwErr(std::vector<ThreeVector<float>> &EfieldMean, std::vector<ThreeVector<float>> &EfieldErr,
+void WriteEmapRootwErr(std::vector<ThreeVector<float>> &vMean, std::vector<ThreeVector<float>> &vErr,
+                       std::vector<ThreeVector<float>> &EfieldMean, std::vector<ThreeVector<float>> &EfieldErr,
                        TPCVolumeHandler &TPCVolume, ThreeVector<unsigned long> Resolution, float E0, std::string OutputFilename);
 
 // Set if the output displacement map is correction map (on reconstructed coordinate) or distortion map (on true coordinate)
@@ -258,7 +260,7 @@ int main(int argc, char **argv) {
     // Create the detector volume
     TPCVolumeHandler Detector(DetectorSize, DetectorOffset, DetectorResolution);
 
-    ThreeVector<unsigned long> EMapResolution = {21, 21, 81};
+    ThreeVector<unsigned long> EMapResolution = {26, 26, 101};
 
     // The size of DMap and EMap if we store it as a vector
     int DMapsize = DetectorResolution[0] * DetectorResolution[1] * DetectorResolution[2];
@@ -595,11 +597,18 @@ int main(int argc, char **argv) {
 //        std::vector<ThreeVector<float>> DMapIni(DMapsize, Unknown);
         std::vector<std::vector<ThreeVector<float>>> DMapTT(NTT, DMapMean);
 
+        // Emap and vmap should have the same size to make this version work
         std::vector<ThreeVector<float>> EMapIni(EMapsize, Unknown);
         std::vector<std::vector<ThreeVector<float>>> EMapTT(NTT, EMapIni);
         std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> EMap(EMapsize, PairIni);
         std::vector<ThreeVector<float>> EMapMean(EMapsize, Unknown);
         std::vector<ThreeVector<float>> EMapErr(EMapsize, Unknown);
+
+        std::vector<ThreeVector<float>> vMapIni(EMapsize, Unknown);
+        std::vector<std::vector<ThreeVector<float>>> vMapTT(NTT, vMapIni);
+        std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> vMap(EMapsize, PairIni);
+        std::vector<ThreeVector<float>> vMapMean(EMapsize, Unknown);
+        std::vector<ThreeVector<float>> vMapErr(EMapsize, Unknown);
 
         TFile *InFile = new TFile(ss_Einfile.str().c_str(), "READ");
 
@@ -664,10 +673,11 @@ int main(int argc, char **argv) {
 
                 std::cout << "---------Toy throw No. " << n << std::endl;
 
-                auto E_field = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapTT[n]);
-                // The vector of Position and En must have the exactly the same structure to make the interpolation (EInterpolateMap()) work
-                std::vector<ThreeVector<float>> En = E_field.first;
-                std::vector<ThreeVector<float>> Position = E_field.second;
+                auto vn_En = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapTT[n]);
+                // The vector of Position and En, vn must have the exactly the same structure to make the interpolation (EInterpolateMap()) work
+                std::vector<ThreeVector<float>> vn = std::get<0>(vn_En);
+                std::vector<ThreeVector<float>> En = std::get<1>(vn_En);
+                std::vector<ThreeVector<float>> Position = std::get<2>(vn_En);
 
                 // Create mesh for Emap
                 std::cout << "Generate mesh for E field..." << std::endl;
@@ -675,20 +685,36 @@ int main(int argc, char **argv) {
 
                 // Interpolate E Map (regularly spaced grid)
                 std::cout << "Start interpolation the E field..." << std::endl;
-                std::vector<ThreeVector<float>> EMap = EInterpolateMap(En, Position, EMesh, Detector, EMapResolution);
-                EMapTT[n] = EMap;
+                auto vEMap = EInterpolateMap(vn, En, Position, EMesh, Detector, EMapResolution);
+                vMapTT[n] = vEMap.first;
+                EMapTT[n] = vEMap.second;
             }
 
-            TH1F *hEx[EMapsize];
-            TH1F *hEy[EMapsize];
-            TH1F *hEz[EMapsize];
+            // Emap and vmap should have same size in this version
+            TH1F *hvx[EMapsize]; TH1F *hvy[EMapsize]; TH1F *hvz[EMapsize];
+            TH1F *hEx[EMapsize]; TH1F *hEy[EMapsize]; TH1F *hEz[EMapsize];
 
             // Save some histogram into the root file
             std::string name;
-            name = "EbinDistribution-NTT"+std::to_string(NTT)+".root";
-            TFile EbinPlotFile(name.c_str(), "recreate");
+            name = "vEbinDistribution-NTT"+std::to_string(NTT)+".root";
+            TFile vEbinPlotFile(name.c_str(), "recreate");
 
             for (int binID = 0; binID < EMapsize; binID++) {
+
+                std::string hvxName = "hvx" + std::to_string(binID);
+                std::string hvyName = "hvy" + std::to_string(binID);
+                std::string hvzName = "hvz" + std::to_string(binID);
+                // v0 = 1.11436 mm/us, because of the fit of drift velocity as function of E field, while the LArSoft unit is cm/us
+                // Be careful to choose the bin number, bin size and the histogram range!
+                // This may affect the result of E most probable value (mode), especially with the number of toy throws
+                // 0.5 and 1.5 means 50% change
+                // Either use percentage or absolute value.
+                // However using absolute value requires more preliminary knowledge of Ebin distribution
+                // v0 is along x direction
+                hvx[binID] = new TH1F(hvxName.c_str(), hvxName.c_str(), 200, 0.5 * v0, 1.5 * v0);
+                hvy[binID] = new TH1F(hvyName.c_str(), hvyName.c_str(), 200, -0.5 * v0, 0.5 * v0);
+                hvz[binID] = new TH1F(hvzName.c_str(), hvzName.c_str(), 200, -0.5 * v0, 0.5 * v0);
+
 
                 std::string hExName = "hEx" + std::to_string(binID);
                 std::string hEyName = "hEy" + std::to_string(binID);
@@ -700,14 +726,16 @@ int main(int argc, char **argv) {
                 // Either use percentage or absolute value.
                 // However using absolute value requires more preliminary knowledge of Ebin distribution
                 // E0 is along x direction
-                hEx[binID] = new TH1F(hExName.c_str(), hExName.c_str(), 200, 0.1 * E0, 1.1 * E0);
-                hEy[binID] = new TH1F(hEyName.c_str(), hEyName.c_str(), 200, -0.1 * E0, 0.1 * E0);
-                hEz[binID] = new TH1F(hEzName.c_str(), hEzName.c_str(), 200, -0.1 * E0, 0.1 * E0);
-
-
+                hEx[binID] = new TH1F(hExName.c_str(), hExName.c_str(), 200, 0.5 * E0, 1.5 * E0);
+                hEy[binID] = new TH1F(hEyName.c_str(), hEyName.c_str(), 200, -0.5 * E0, 0.5 * E0);
+                hEz[binID] = new TH1F(hEzName.c_str(), hEzName.c_str(), 200, -0.5 * E0, 0.5 * E0);
 
                 for (int n = 0; n < NTT; n++) {
-                    if (EMapTT[n][binID] == Unknown)continue;
+                    if (vMapTT[n][binID] == Unknown || EMapTT[n][binID] == Unknown)continue;
+
+                    hvx[binID]->Fill(vMapTT[n][binID][0]);
+                    hvy[binID]->Fill(vMapTT[n][binID][1]);
+                    hvz[binID]->Fill(vMapTT[n][binID][2]);
 
                     hEx[binID]->Fill(EMapTT[n][binID][0]);
                     hEy[binID]->Fill(EMapTT[n][binID][1]);
@@ -743,6 +771,14 @@ int main(int argc, char **argv) {
 //                        hEz[binID]->Write();
 //                    }
 
+                    ThreeVector<float> vmean = {(float) hvx[binID]->GetMean(), (float) hvy[binID]->GetMean(),
+                                                (float) hvz[binID]->GetMean()};
+                    vMapMean[binID] = vmean;
+
+                    ThreeVector<float> vStdDev = {(float) hvx[binID]->GetStdDev(), (float) hvy[binID]->GetStdDev(),
+                                                  (float) hvz[binID]->GetStdDev()};
+                    vMapErr[binID] = vStdDev;
+
                     ThreeVector<float> Emean = {(float) hEx[binID]->GetMean(), (float) hEy[binID]->GetMean(),
                                                 (float) hEz[binID]->GetMean()};
                     EMapMean[binID] = Emean;
@@ -754,33 +790,39 @@ int main(int argc, char **argv) {
             }
 
             // Close output file and clean up
-            EbinPlotFile.Close();
+            vEbinPlotFile.Close();
             gDirectory->GetList()->Delete();
 
             // Fill displacement map into TH3 histograms and write them to file
-            std::cout << "Write Emap to File ..." << std::endl;
-            WriteEmapRootwErr(EMapMean, EMapErr, Detector, EMapResolution, E0, ss_Eoutfile.str());
-            WriteTextFileEMapwErr(EMapMean, EMapErr, ss_E_outtxt.str());
+            std::cout << "Write vmap and Emap to File ..." << std::endl;
+            WriteEmapRootwErr(vMapMean, vMapErr, EMapMean, EMapErr, Detector, EMapResolution, E0, ss_Eoutfile.str());
+            WriteTextFileEMapwErr(vMapMean, vMapErr, EMapMean, EMapErr, ss_E_outtxt.str());
         }
         if(NTT==1){
-            //The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
+            //The vector of Position and En, vn must have the exactly the same index to make the interpolation (EInterpolateMap()) work
 //            auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
-            auto E_field = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapMean);
-            std::vector<ThreeVector<float>> En = E_field.first;
-            std::vector<ThreeVector<float>> Position = E_field.second;
+            auto vn_En = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapMean);
+            std::vector<ThreeVector<float>> vn = std::get<0>(vn_En);
+            std::vector<ThreeVector<float>> En = std::get<1>(vn_En);
+            std::vector<ThreeVector<float>> Position = std::get<2>(vn_En);
 
             // Create mesh for Emap
             std::cout << "Generate mesh for E field..." << std::endl;
             xDelaunay EMesh = Mesher(Position, Detector);
 
-            // Interpolate E Map (regularly spaced grid)
+            // Interpolate E-field to make E Map (regularly spaced grid)
             std::cout << "Start interpolation the E field..." << std::endl;
-            EMapMean = EInterpolateMap(En, Position, EMesh, Detector, EMapResolution);
+            auto vn_EnMap = EInterpolateMap(vn, En, Position, EMesh, Detector, EMapResolution);
+//            vMapMean = vn_EnMap.first;
+//            EMapMean = vn_EnMap.second;
 
             // Fill displacement map into TH3 histograms and write them to file
-            std::cout << "Write Emap to File ..." << std::endl;
-            WriteEmapRoot(EMapMean, Detector, EMapResolution, E0, ss_Eoutfile.str());
-            WriteTextFileEMap(EMapMean, ss_E_outtxt.str());
+            std::cout << "Write vmap and Emap to File ..." << std::endl;
+//            WriteEmapRoot(vMapMean, Detector, EMapResolution, E0, ss_Eoutfile.str());
+//            WriteTextFileEMap(EMapMean, ss_E_outtxt.str());
+
+            WriteEmapRoot(vn_EnMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
+            WriteTextFileEMap(vn_EnMap, ss_E_outtxt.str());
 
         }
 
@@ -994,8 +1036,8 @@ void WriteRootFileMeanStd(std::vector<std::pair<ThreeVector<float >, ThreeVector
     RecoDisplacement[1].SetNameTitle("Reco_Displacement_Y", "Reco Displacement Y");
     RecoDisplacement[2].SetNameTitle("Reco_Displacement_Z", "Reco Displacement Z");
     RecoDisplacement[3].SetNameTitle("Reco_Displacement_X_Error", "Reco Deviation of Displacement X");
-    RecoDisplacement[4].SetNameTitle("Reco_Displacement_Y_Error", "Reco Deviation of Displacement X");
-    RecoDisplacement[5].SetNameTitle("Reco_Displacement_Z_Error", "Reco Deviation of Displacement X");
+    RecoDisplacement[4].SetNameTitle("Reco_Displacement_Y_Error", "Reco Deviation of Displacement Y");
+    RecoDisplacement[5].SetNameTitle("Reco_Displacement_Z_Error", "Reco Deviation of Displacement Z");
     
     // Loop over all xbins
     for (unsigned xbin = 0; xbin < Resolution[0] ; xbin++) {
@@ -1068,7 +1110,8 @@ void LaserInterpThread(Laser &LaserTrackSet, const Laser &InterpolationLaser, co
 // First entry of the return vector is tracks that reach the exit point, second is the ones that do not reach it.
 
 // Write Emap into TH3 and store in root file
-void WriteEmapRootwErr(std::vector<ThreeVector<float>> &EfieldMean, std::vector<ThreeVector<float>> &EfieldErr,
+void WriteEmapRootwErr(std::vector<ThreeVector<float>> &vMean, std::vector<ThreeVector<float>> &vErr,
+                       std::vector<ThreeVector<float>> &EfieldMean, std::vector<ThreeVector<float>> &EfieldErr,
                    TPCVolumeHandler &TPCVolume, ThreeVector<unsigned long> Resolution, float E0, std::string OutputFilename) {
     // Store TPC properties which are important for the TH3 generation
     float float_max = std::numeric_limits<float>::max();
@@ -1079,17 +1122,23 @@ void WriteEmapRootwErr(std::vector<ThreeVector<float>> &EfieldMean, std::vector<
                                TPCVolume.GetDetectorSize()[2] / (Resolution[2] - 1)};
 
     // Initialize all TH3F
-    std::vector<TH3F> EFieldDisplacement(6, TH3F("EField_Displacement", "EField Displacement",
+    std::vector<TH3F> Distorted_vE(12, TH3F("Distorted_vE", "Distorted velocity and E-field",
                                                Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
                                                Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
                                                Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
 
-    EFieldDisplacement[0].SetNameTitle("EField_Displacement_X", "EField Displacement X");
-    EFieldDisplacement[1].SetNameTitle("EField_Displacement_Y", "EField Displacement Y");
-    EFieldDisplacement[2].SetNameTitle("EField_Displacement_Z", "EField Displacement Z");
-    EFieldDisplacement[3].SetNameTitle("EField_Displacement_X_Error", "EField Deviation of Displacement X");
-    EFieldDisplacement[4].SetNameTitle("EField_Displacement_Y_Error", "EField Deviation of Displacement X");
-    EFieldDisplacement[5].SetNameTitle("EField_Displacement_Z_Error", "EField Deviation of Displacement X");
+    Distorted_vE[0].SetNameTitle("Distorted_v_X", "Distorted drift velocity X");
+    Distorted_vE[1].SetNameTitle("Distorted_v_Y", "Distorted drift velocity Y");
+    Distorted_vE[2].SetNameTitle("Distorted_v_Z", "Distorted drift velocity Z");
+    Distorted_vE[3].SetNameTitle("Distorted_v_X_Error", "Std dev of distorted drift velocity X");
+    Distorted_vE[4].SetNameTitle("Distorted_v_Y_Error", "Std dev of distorted drift velocity Y");
+    Distorted_vE[5].SetNameTitle("Distorted_v_Z_Error", "Std dev of distorted drift velocity Z");
+    Distorted_vE[6].SetNameTitle("Distorted_EField_X", "Disotrted EField X");
+    Distorted_vE[7].SetNameTitle("Distorted_EField_Y", "Disotrted EField Y");
+    Distorted_vE[8].SetNameTitle("Distorted_EField_Z", "Disotrted EField Z");
+    Distorted_vE[9].SetNameTitle("Distorted_EField_X_Error", "Std dev of EField X");
+    Distorted_vE[10].SetNameTitle("Distorted_EField_Y_Error", "Std dev of EField Y");
+    Distorted_vE[11].SetNameTitle("Distorted_EField_Z_Error", "Std dev of EField Z");
 
     // the loop should be consistent to the one in the EInterpolateMap()
     for (unsigned xbin = 0; xbin < Resolution[0]; xbin++) {
@@ -1098,9 +1147,13 @@ void WriteEmapRootwErr(std::vector<ThreeVector<float>> &EfieldMean, std::vector<
                 // Loop over all coordinates dx,dy,dz
                 for (unsigned coord = 0; coord < 3; coord++) {
                     // Fill interpolated grid points into histograms. bin=0 is underflow, bin = nbin+1 is overflow
-                    EFieldDisplacement[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
+                    Distorted_vE[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
+                                                      vMean[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]);
+                    Distorted_vE[coord+3].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
+                                                        vErr[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))][coord]);
+                    Distorted_vE[coord+6].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
                                                             EfieldMean[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]);
-                    EFieldDisplacement[coord+3].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
+                    Distorted_vE[coord+9].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
                                                               EfieldErr[zbin + (Resolution[2] * (ybin + Resolution[1] * xbin))][coord]);
                 } // end coordinate loop
             } // end zbin loop
@@ -1111,9 +1164,9 @@ void WriteEmapRootwErr(std::vector<ThreeVector<float>> &EfieldMean, std::vector<
     TFile OutputFile(OutputFilename.c_str(), "recreate");
 
     // Loop over space coordinates
-    for (unsigned coord = 0; coord < EFieldDisplacement.size(); coord++) {
+    for (unsigned nTH3 = 0; nTH3 < Distorted_vE.size(); nTH3++) {
         // Write every TH3 map into file
-        EFieldDisplacement[coord].Write();
+        Distorted_vE[nTH3].Write();
     }
 
     // Close output file and clean up
@@ -1122,7 +1175,7 @@ void WriteEmapRootwErr(std::vector<ThreeVector<float>> &EfieldMean, std::vector<
 }
 
 // Write Emap into TH3 and store in root file
-void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TPCVolume,
+void WriteEmapRoot(std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>> &v_E, TPCVolumeHandler &TPCVolume,
                    ThreeVector<unsigned long> Resolution, float E0, std::string OutputFilename) {
     // Store TPC properties which are important for the TH3 generation
     float float_max = std::numeric_limits<float>::max();
@@ -1133,16 +1186,30 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
                                TPCVolume.GetDetectorSize()[2] / (Resolution[2] - 1)};
 
     // Initialize all TH3F
+    std::vector<TH3F> vmap;
+    vmap.push_back(TH3F("Distorted_v_X", "Distorted drift velocity X",
+                        Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
+                        Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
+                        Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
+    vmap.push_back(TH3F("Distorted_v_Y", "Distorted drift velocity Y",
+                        Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
+                        Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
+                        Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
+    vmap.push_back(TH3F("Distorted_v_Z", "Distorted drift velocity Z",
+                        Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
+                        Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
+                        Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
+
     std::vector<TH3F> Emap;
-    Emap.push_back(TH3F("Emap_X", "E field map X",
+    Emap.push_back(TH3F("Distorted_EField_X", "Disotrted EField X",
                         Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
                         Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
                         Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
-    Emap.push_back(TH3F("Emap_Y", "E field map Y",
+    Emap.push_back(TH3F("Distorted_EField_Y", "Disotrted EField Y",
                         Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
                         Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
                         Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
-    Emap.push_back(TH3F("Emap_Z", "E field map Z",
+    Emap.push_back(TH3F("Distorted_EField_Z", "Disotrted EField Z",
                         Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
                         Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
                         Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
@@ -1172,8 +1239,10 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
                 // Loop over all coordinates dx,dy,dz
                 for (unsigned coord = 0; coord < 3; coord++) {
                     // Fill interpolated grid points into histograms. bin=0 is underflow, bin = nbin+1 is overflow
+                    vmap[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
+                                              v_E.first[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]);
                     Emap[coord].SetBinContent(xbin + 1, ybin + 1, zbin + 1,
-                                              Efield[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]);
+                                              v_E.second[zbin + ybin * Resolution[2] + xbin * Resolution[2] * Resolution[1]][coord]);
                 } // end coordinate loop
 //                }
             } // end zbin loop
@@ -1186,6 +1255,7 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
     // Loop over space coordinates
     for (unsigned coord = 0; coord < Emap.size(); coord++) {
         // Write every TH3 map into file
+        vmap[coord].Write();
         Emap[coord].Write();
     }
 
@@ -1195,7 +1265,7 @@ void WriteEmapRoot(std::vector<ThreeVector<float>> &Efield, TPCVolumeHandler &TP
 }
 
 //Write E map in txt file
-void WriteTextFileEMap(std::vector<ThreeVector<float>> &Efield,
+void WriteTextFileEMap(std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>> &v_E,
                        std::string OutputFilename) {
 
     // Initialize stream to file
@@ -1205,12 +1275,17 @@ void WriteTextFileEMap(std::vector<ThreeVector<float>> &Efield,
     OutputFile.open(OutputFilename.c_str(), std::ios::out);
 
     // Loop over all interpolated data points
-    for (unsigned entry = 0; entry < Efield.size(); entry++) {
+    if(v_E.first.size()==v_E.second.size()){
+        for (unsigned entry = 0; entry < v_E.first.size(); entry++) {
 
-        // Write every point into a seperate line
-        OutputFile << entry <<"\t"
-                   << Efield[entry][0] <<"\t" << Efield[entry][1] <<"\t"
-                   << Efield[entry][2] <<std::endl;
+            auto v = v_E.first[entry];
+            auto E = v_E.second[entry];
+
+            // Write every point into a seperate line
+            OutputFile << entry <<"\t"
+                       << v[0] <<"\t" << v[1] <<"\t" << v[2] <<"\t"
+                       << E[0] <<"\t" << E[1] <<"\t" << E[2]<<std::endl;
+        }
     }
 
     // Close file
@@ -1218,10 +1293,11 @@ void WriteTextFileEMap(std::vector<ThreeVector<float>> &Efield,
 } // WriteRootFile
 
 //Write E map in txt file
-void WriteTextFileEMapwErr(std::vector<ThreeVector<float>> &EfieldMean, std::vector<ThreeVector<float>> &EfieldErr,
-                       std::string OutputFilename) {
+void WriteTextFileEMapwErr(std::vector<ThreeVector<float>> &vMean, std::vector<ThreeVector<float>> &vErr,
+                           std::vector<ThreeVector<float>> &EfieldMean, std::vector<ThreeVector<float>> &EfieldErr,
+                           std::string OutputFilename) {
 
-    if(EfieldErr.size() == EfieldMean.size()) {
+    if(EfieldErr.size() == EfieldMean.size() && vErr.size() == vMean.size() && vMean.size() == EfieldMean.size()) {
         // Initialize stream to file
         std::ofstream OutputFile;
 
@@ -1233,6 +1309,10 @@ void WriteTextFileEMapwErr(std::vector<ThreeVector<float>> &EfieldMean, std::vec
 
             // Write every point into a seperate line
             OutputFile << entry << "\t"
+                       << vMean[entry][0] << "\t" << vMean[entry][1] << "\t"
+                       << vMean[entry][2] << "\t"
+                       << vErr[entry][0] << "\t" << vErr[entry][1] << "\t"
+                       << vErr[entry][2] << "\t"
                        << EfieldMean[entry][0] << "\t" << EfieldMean[entry][1] << "\t"
                        << EfieldMean[entry][2] << "\t"
                        << EfieldErr[entry][0] << "\t" << EfieldErr[entry][1] << "\t"

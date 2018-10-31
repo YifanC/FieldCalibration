@@ -89,8 +89,8 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
 }
 
 // Same as Efield, just take vector as input instead of the root file
-// pair<En,Position>
-std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
+// tuple<vn, En,Position>
+std::tuple<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
 EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, std::vector<ThreeVector<float>> DMapTT) {
 
 //    TFile *InFile = new TFile(root_name, "READ");
@@ -109,6 +109,7 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
                                        TPCVolume.GetDetectorSize()[2] / (NrGrid[2] - 1)};
     float Delta_x = DetectorReso[0]; //cm
 
+    std::vector<ThreeVector<float>> Velocity;
     std::vector<ThreeVector<float>> En;
     std::vector<ThreeVector<float>> Position;
 
@@ -153,6 +154,9 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
 
                 // Only include the valid calculated Efield (which is not float_max) in the pre-mesh
                 if (searchE(vn, cryoTemp, E0) < 0.5 * std::numeric_limits<float>::max()) {
+                    // the drift velocity as a vector has the same direction of Rn (vector) in each gap
+                    // v mm/us
+                    Velocity.push_back(vn / Rn.GetNorm() * Rn);
                     // the E field as a vector has the same direction of Rn (vector) in each gap
                     // E kV/cm
                     En.push_back(searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn);
@@ -163,10 +167,11 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
         }
     }
 
-    std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>> field;
-    field = std::make_pair(En,Position);
+//    std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>> field;
+//    field = std::make_pair(En,Position);
+    auto vnE = std::make_tuple(Velocity, En, Position);
 
-    return field;
+    return vnE;
 }
 
 

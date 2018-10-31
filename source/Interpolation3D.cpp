@@ -400,17 +400,21 @@ InterpolateMap(const std::vector<LaserTrack> &LaserTrackSet, const Delaunay &Mes
 ////Position refers to the true points which are deduced from the reconstructed grid of Correction Map
 ////Mesh refers to the result of Mesher()
 ////Location is the new grid point(true space coordinate)
-ThreeVector<float> EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::vector<ThreeVector<float>> &Position,
-                                    const xDelaunay &Mesh, ThreeVector<float> Location, const TPCVolumeHandler &TPC) {
+std::pair<ThreeVector<float>, ThreeVector<float>>
+EInterpolateCGAL(std::vector<ThreeVector<float>> &vn, std::vector<ThreeVector<float>> &En,
+                 std::vector<ThreeVector<float>> &Position, const xDelaunay &Mesh, ThreeVector<float> Location,
+                 const TPCVolumeHandler &TPC) {
     float float_max = std::numeric_limits<float>::max();
+    ThreeVector<float> Unknown = {float_max, float_max, float_max};
 
     ThreeVector<unsigned long> Reso = TPC.GetDetectorResolution();
 
     // Create a array which contains the info of all 4 vertices of a cell
     std::array<int, 4> Index;
 
-    // Initialize a displacement vector with zero
+    // Initialize Efield and drift velocity vectors with zeros
     ThreeVector<float> InterpolatedEfield = {0.0, 0.0, 0.0};
+    ThreeVector<float> InterpolatedVelocity = {0.0, 0.0, 0.0};
 
     // Initialize Barycentric coordinate system (it will have 4 dimensions)
     std::vector<float> BaryCoord;
@@ -430,8 +434,8 @@ ThreeVector<float> EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::ve
         // Get vertex info "n" (the index of the Position vector [Attention! It must be corresponding to the index of En vector!])
         Index[vertex_no] = Cell->vertex(vertex_no)->info();
         if(Index[vertex_no]<0 || Index[vertex_no]>Position.size()){
-            InterpolatedEfield = {float_max, float_max, float_max};
-            return InterpolatedEfield;
+//            InterpolatedEfield = {float_max, float_max, float_max};
+            return std::make_pair(Unknown, Unknown);
         }
     }
 
@@ -469,9 +473,9 @@ ThreeVector<float> EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::ve
         // Set E field to zero and end function immediately!
 //        std::cout<<"The transition matrix for this E grid point is not invertable. "<<std::endl;
 //        InterpolatedEfield = {273.0,0.0,0.0};
-        InterpolatedEfield = {float_max, float_max, float_max};
+//        InterpolatedEfield = {float_max, float_max, float_max};
 //        InterpolatedEfield = {-99,-99,-99};
-        return InterpolatedEfield;
+        return std::make_pair(Unknown, Unknown);
     }
 
     // Also barycentric coordinates need to be positive numbers (else the coordinate is outside of the cell).
@@ -483,8 +487,8 @@ ThreeVector<float> EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::ve
 //        std::cout<<"There is negative barycentric coordinate at this E grid point! "<<std::endl;
 //        InterpolatedEfield = {273.0,0.0,0.0};
 //            std::cout<<"loc: "<<loc<<"; li: "<<li<<"; lj: "<<lj<<std::endl;
-        InterpolatedEfield = {float_max, float_max, float_max};
-        return InterpolatedEfield;
+//        InterpolatedEfield = {float_max, float_max, float_max};
+        return std::make_pair(Unknown, Unknown);
     }
 
     // If the function is still alive, loop over all barycentric coordinates
@@ -492,11 +496,15 @@ ThreeVector<float> EInterpolateCGAL(std::vector<ThreeVector<float>> &En, std::ve
         // Use the barycentric coordinates as a weight for the correction stored at this vertex in order to get the interpolated displacement
         // Adding up the barycoord components as a whole vector of (x1,y1,z1) instead of x1,x2,x3....
         // BaryCoord[vertex_no] is a number
+        InterpolatedVelocity += vn[Index[vertex_no]] * BaryCoord[vertex_no];
         InterpolatedEfield += En[Index[vertex_no]] * BaryCoord[vertex_no];
+
     }
 
+
     // Return interpolated E field
-    return InterpolatedEfield;
+    auto result = std::make_pair(InterpolatedVelocity, InterpolatedEfield);
+    return result;
 }
 
 //////Position refers to the true points which are deduced from the reconstructed grid of Correction Map
@@ -598,10 +606,11 @@ float EcompInterpolateCGAL(std::vector<float> &En_comp, std::vector<ThreeVector<
 //TODO
 //// This part can be reduced with template maybe..
 //// This function interpolates regularly spaced grid points of the TPC and stores them in a std::vector (can later be used in the WriteRootFile function)
-std::vector<ThreeVector<float>>
-EInterpolateMap(std::vector<ThreeVector<float>> &En, std::vector<ThreeVector<float>> &Position, const xDelaunay &Mesh,
+std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
+EInterpolateMap(std::vector<ThreeVector<float>> &vn, std::vector<ThreeVector<float>> &En, std::vector<ThreeVector<float>> &Position, const xDelaunay &Mesh,
                 const TPCVolumeHandler &TPC, ThreeVector<unsigned long> EReso) {
     // Initialize output data structure
+    std::vector<ThreeVector<float>> vMap;
     std::vector<ThreeVector<float>> EMap;
 
     // Initialize temporary location vector
@@ -628,12 +637,14 @@ EInterpolateMap(std::vector<ThreeVector<float>> &En, std::vector<ThreeVector<flo
                         TPC.GetDetectorOffset()[2] + TPC.GetDetectorSize()[2] / static_cast<float>(EReso[2] - 1) * zbin;
 
                 // Fill displacement map
-                EMap.push_back(EInterpolateCGAL(En, Position, Mesh, Location, TPC));
+                auto vn_En = EInterpolateCGAL(vn, En, Position, Mesh, Location, TPC);
+                vMap.push_back(vn_En.first);
+                EMap.push_back(vn_En.second);
             } // end zbin loop
         } // end ybin loop
     } // end xbin loop
 
-    return EMap;
+    return std::make_pair(vMap,EMap);
 }
 
 
