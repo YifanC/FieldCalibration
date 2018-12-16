@@ -405,6 +405,13 @@ int main(int argc, char **argv) {
             #pragma omp parallel for
 
             for (unsigned int set = 0; set < n_split; set++) {
+                //Add anode information (no distortion) into Laser track sets
+                std::cout<<"Before anode LaserSets1[set] track number: "<<LaserSets1[set].GetNumberOfTracks()<<std::endl;
+                if (DBoundary) {
+                    LaserSets1[set].AppendTrack(Anode(Detector));
+                    LaserSets2[set].AppendTrack(Anode(Detector));
+                }
+                std::cout<<"After anode LaserSets1[set] track number: "<<LaserSets1[set].GetNumberOfTracks()<<std::endl;
 
                 // The disadvantage is the LaserRecoOrigin will be discard after the calculation of this set
                 Laser LaserRecoOrigin1 = LaserSets1[set];
@@ -430,12 +437,15 @@ int main(int argc, char **argv) {
 //            LaserRecoOrigin.AppendTrack(Anode(Detector));
 //            LaserCorrected.AppendTrack(Anode(Detector));
 
-                if (DBoundary) {
-                    LaserRecoOrigin1.AppendTrack(Anode(Detector));
-                    LaserRecoOrigin2.AppendTrack(Anode(Detector));
-                    LaserWithDisp.first.AppendTrack(Anode(Detector));
-                    LaserWithDisp.second.AppendTrack(Anode(Detector));
-                }
+//                //Add anode information (no distortion) into Laser track sets
+//                if (DBoundary) {
+//                    LaserRecoOrigin1.AppendTrack(Anode(Detector));
+//                    LaserRecoOrigin2.AppendTrack(Anode(Detector));
+//                    LaserWithDisp.first.AppendTrack(Anode(Detector));
+//                    LaserWithDisp.second.AppendTrack(Anode(Detector));
+//                }
+
+
 
 
                 std::cout << " [" << set << "] Generate mesh..." << std::endl;
@@ -588,6 +598,7 @@ int main(int argc, char **argv) {
     // The Emap calculation works when the input is correction map
     if (DoEmap) {
 
+
         std::pair<ThreeVector<float>, ThreeVector<float>> PairIni = std::make_pair(Unknown, Unknown);
 
 //        std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> DMap(DMapsize, PairIni);
@@ -612,13 +623,22 @@ int main(int argc, char **argv) {
 
         TFile *InFile = new TFile(ss_Einfile.str().c_str(), "READ");
 
+
         TH3F *Dx = (TH3F *) InFile->Get("Reco_Displacement_X");
         TH3F *Dy = (TH3F *) InFile->Get("Reco_Displacement_Y");
         TH3F *Dz = (TH3F *) InFile->Get("Reco_Displacement_Z");
 
-        TH3F *DxErr = (TH3F *) InFile->Get("Reco_Displacement_X_Error");
-        TH3F *DyErr = (TH3F *) InFile->Get("Reco_Displacement_Y_Error");
-        TH3F *DzErr = (TH3F *) InFile->Get("Reco_Displacement_Z_Error");
+        TH3F *DxErr;
+        TH3F *DyErr;
+        TH3F *DzErr;
+
+        if(NTT>1){
+            DxErr = (TH3F *) InFile->Get("Reco_Displacement_X_Error");
+            DyErr = (TH3F *) InFile->Get("Reco_Displacement_Y_Error");
+            DzErr = (TH3F *) InFile->Get("Reco_Displacement_Z_Error");
+        }
+
+
 
         for (unsigned Nx = 0; Nx < DetectorResolution[0]; Nx++) {
             for (unsigned Ny = 0; Ny < DetectorResolution[1]; Ny++) {
@@ -626,12 +646,18 @@ int main(int argc, char **argv) {
                     ThreeVector<float> Dxyz = {(float) Dx->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
                                                (float) Dy->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
                                                (float) Dz->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
-                    ThreeVector<float> DxyzErr = {(float) DxErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
-                                                  (float) DyErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
-                                                  (float) DzErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
+
 //                    DMap[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = std::make_pair(Dxyz, DxyzErr);
                     DMapMean[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Dxyz;
-                    DMapErr[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = DxyzErr;
+
+
+                    if(NTT>1){
+                        ThreeVector<float> DxyzErr = {(float) DxErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                                      (float) DyErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                                      (float) DzErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
+                        DMapErr[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = DxyzErr;
+                    }
+
 
                 }
             }
@@ -805,6 +831,11 @@ int main(int argc, char **argv) {
             std::vector<ThreeVector<float>> vn = std::get<0>(vn_En);
             std::vector<ThreeVector<float>> En = std::get<1>(vn_En);
             std::vector<ThreeVector<float>> Position = std::get<2>(vn_En);
+
+            std::cout<<"vn size: "<<vn.size()<<std::endl;
+            std::cout<<"En size: "<<En.size()<<std::endl;
+            std::cout<<"Position size: "<<Position.size()<<std::endl;
+
 
             // Create mesh for Emap
             std::cout << "Generate mesh for E field..." << std::endl;
