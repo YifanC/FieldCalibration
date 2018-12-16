@@ -74,8 +74,8 @@ float searchE(float v_drift, float cryoTemp, float E0) {
     float Emin = E0 * (1 - 1); // The distortion of E field reaches 100%
     float Emax = E0 * (1 + 1); // The distortion of E field reaches 100%, the two side is not exactly the same
 
-    // the values of HalfTolerance and Nmax are tricky, the precision of v may not go over 1E-3
-    float HalfTolerance = 1E-3; // This Tolerence could/should have the same order as the error size from the fitting model
+    // the values of HalfTolerance and Nmax are tricky, the precision of v may not go over 1E-5
+    float HalfTolerance = 1E-5; // kV/cm This Tolerence could/should have the same order as the error size from the fitting model
     const int Nmax = 20;
     int n = 0; // count on the dividing steps, in case of dead loop 2^20 ~ 1E6
 
