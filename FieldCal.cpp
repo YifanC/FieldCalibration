@@ -405,13 +405,13 @@ int main(int argc, char **argv) {
             #pragma omp parallel for
 
             for (unsigned int set = 0; set < n_split; set++) {
-                //Add anode information (no distortion) into Laser track sets
-                std::cout<<"Before anode LaserSets1[set] track number: "<<LaserSets1[set].GetNumberOfTracks()<<std::endl;
-                if (DBoundary) {
-                    LaserSets1[set].AppendTrack(Anode(Detector));
-                    LaserSets2[set].AppendTrack(Anode(Detector));
-                }
-                std::cout<<"After anode LaserSets1[set] track number: "<<LaserSets1[set].GetNumberOfTracks()<<std::endl;
+//                //Add anode information (no distortion) into Laser track sets
+//                std::cout<<"Before anode LaserSets1[set] track number: "<<LaserSets1[set].GetNumberOfTracks()<<std::endl;
+//                if (DBoundary) {
+//                    LaserSets1[set].AppendTrack(Anode(Detector));
+//                    LaserSets2[set].AppendTrack(Anode(Detector));
+//                }
+//                std::cout<<"After anode LaserSets1[set] track number: "<<LaserSets1[set].GetNumberOfTracks()<<std::endl;
 
                 // The disadvantage is the LaserRecoOrigin will be discard after the calculation of this set
                 Laser LaserRecoOrigin1 = LaserSets1[set];
@@ -437,13 +437,13 @@ int main(int argc, char **argv) {
 //            LaserRecoOrigin.AppendTrack(Anode(Detector));
 //            LaserCorrected.AppendTrack(Anode(Detector));
 
-//                //Add anode information (no distortion) into Laser track sets
-//                if (DBoundary) {
+                //Add anode information (no distortion) into Laser track sets
+                if (DBoundary) {
 //                    LaserRecoOrigin1.AppendTrack(Anode(Detector));
 //                    LaserRecoOrigin2.AppendTrack(Anode(Detector));
-//                    LaserWithDisp.first.AppendTrack(Anode(Detector));
-//                    LaserWithDisp.second.AppendTrack(Anode(Detector));
-//                }
+                    LaserWithDisp.first.AppendTrack(Anode(Detector));
+                    LaserWithDisp.second.AppendTrack(Anode(Detector));
+                }
 
 
 
