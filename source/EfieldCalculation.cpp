@@ -89,7 +89,7 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
 }
 
 // Same as Efield, just take vector as input instead of the root file
-// tuple<vn, En,Position>
+// tuple<vn, En, Position>
 std::tuple<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>>
 EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, std::vector<ThreeVector<float>> DMapTT) {
 
@@ -115,13 +115,18 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
 
     for (unsigned Nz = 0; Nz < NrGrid[2]; Nz++) {
         for (unsigned Ny = 0; Ny < NrGrid[1]; Ny++) {
+            // To save the En, vn from last calculation step, initiate the containers and the flags
+            ThreeVector<float> Elast;
+            bool AvgLast = false;
+            bool AvgThis = false;
+
             // Since the E field calculation is based on the gap of the D map,
             // the number of x loop is one less than Resolution of the displacement map
             for (unsigned Nx = 0; Nx < (NrGrid[0] - 1); Nx++) {
                 //x = 0 (anode); x = Nx (cathode)
-                ThreeVector<float> RecoGrid(Nx * DetectorReso[0],
+                ThreeVector<float> RecoGrid(Nx * DetectorReso[0] + TPCVolume.GetDetectorOffset()[0],
                                             Ny * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
-                                            Nz * DetectorReso[2]);
+                                            Nz * DetectorReso[2] + TPCVolume.GetDetectorOffset()[2]);
 
 //                ThreeVector<float> Dxyz = {(float) Dx->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
 //                                           (float) Dy->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
@@ -132,9 +137,9 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
 
                 ThreeVector<float> True = RecoGrid + Dxyz;
 
-                ThreeVector<float> RecoGrid_next((Nx + 1) * DetectorReso[0],
+                ThreeVector<float> RecoGrid_next((Nx + 1) * DetectorReso[0] + TPCVolume.GetDetectorOffset()[0],
                                                  Ny * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
-                                                 Nz * DetectorReso[2]);
+                                                 Nz * DetectorReso[2] + TPCVolume.GetDetectorOffset()[2]);
 
 //                ThreeVector<float> Dxyz_next = {(float) Dx->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
 //                                                (float) Dy->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
@@ -151,18 +156,60 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
                 // mm/us, the magnitude of the drift velocity at the local gap
                 // Be very careful that Rn.GetNorm() and Delta_x are in the unit of cm, not mm
                 float vn = Rn.GetNorm() / Delta_x * v0;
+                AvgThis = false;
 
                 // Only include the valid calculated Efield (which is not float_max) in the pre-mesh
                 if (searchE(vn, cryoTemp, E0) < 0.5 * std::numeric_limits<float>::max()) {
+
+                    AvgThis = true;
+
                     // the drift velocity as a vector has the same direction of Rn (vector) in each gap
                     // v mm/us
                     Velocity.push_back(vn / Rn.GetNorm() * Rn);
                     // the E field as a vector has the same direction of Rn (vector) in each gap
                     // E kV/cm
-                    En.push_back(searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn);
+                    ThreeVector<float> Ethis = searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn;
+                    En.push_back(Ethis);
                     // Set the local E field (E field from each gap) at the middle of the gap
                     Position.push_back(True + (float) 0.5 * Rn);
+
+//                    if(Nx == 0){
+//                        Velocity.push_back(vn / Rn.GetNorm() * Rn);
+//                        En.push_back(searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn);
+//                        Position.push_back(True);
+//                    }
+
+                    //Fill the boundary as inner value
+                    if(Nx == NrGrid[0] - 2){
+                        Velocity.push_back(vn / Rn.GetNorm() * Rn);
+                        En.push_back(searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn);
+                        Position.push_back(True_next);
+                    }
+                    //If the previous step has invalid value or Nx==0, just fill the joint with result from the current step
+                    if(!AvgLast){
+                        Velocity.push_back(vn / Rn.GetNorm() * Rn);
+                        En.push_back(Ethis);
+                        Position.push_back(True);
+                    }
+                    //Fill the joint with average E-field and corresponding drift v
+                    if(Nx > 0 && AvgLast){
+                        // If AvgLast is true, Elast exists with correct value
+                        ThreeVector<float> Eaverage = (float)0.5 * (Ethis + Elast);
+                        Velocity.push_back(ElectronDriftVelocity(cryoTemp, Eaverage.GetNorm()) / Eaverage.GetNorm() * Eaverage);
+                        En.push_back(Eaverage);
+                        Position.push_back(True);
+
+//                        std::cout<<"------"<<std::endl;
+//                        std::cout<<"Last Ex: "<<Elast[0]<<", Ey: "<<Elast[1]<<", Ez: "<<Elast[2]<<std::endl;
+//                        std::cout<<"This Ex: "<<Ethis[0]<<", Ey: "<<Ethis[1]<<", Ez: "<<Ethis[2]<<std::endl;
+//                        std::cout<<"Average Ex: "<<Eaverage[0]<<", Ey: "<<Eaverage[1]<<", Ez: "<<Eaverage[2]<<std::endl;
+//                        std::cout<<"drift v: "<< ElectronDriftVelocity(cryoTemp, Eaverage.GetNorm())<<std::endl;
+                    }
+
+                    // store E-field vector for next calculation step
+                    Elast = searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn;
                 }
+                AvgLast = AvgThis;
             }
         }
     }
