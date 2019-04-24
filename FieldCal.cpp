@@ -409,13 +409,6 @@ int main(int argc, char **argv) {
             #pragma omp parallel for
 
             for (unsigned int set = 0; set < n_split; set++) {
-//                //Add anode information (no distortion) into Laser track sets
-//                std::cout<<"Before anode LaserSets1[set] track number: "<<LaserSets1[set].GetNumberOfTracks()<<std::endl;
-//                if (DBoundary) {
-//                    LaserSets1[set].AppendTrack(Anode(Detector));
-//                    LaserSets2[set].AppendTrack(Anode(Detector));
-//                }
-//                std::cout<<"After anode LaserSets1[set] track number: "<<LaserSets1[set].GetNumberOfTracks()<<std::endl;
 
                 // The disadvantage is the LaserRecoOrigin will be discard after the calculation of this set
                 Laser LaserRecoOrigin1 = LaserSets1[set];
@@ -433,14 +426,6 @@ int main(int argc, char **argv) {
 
                 std::cout << "Time after N-step iteration" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
-//            // Merge 2 Laser samples with displacement vector for mesh and iteration
-//            Laser LaserRecoOrigin = MergeLaser(LaserRecoOrigin1, LaserRecoOrigin2);
-//            Laser LaserCorrected = MergeLaser(LaserWithDisp.first, LaserWithDisp.second);
-
-                //Add anode information (no distortion) into Laser track sets
-//            LaserRecoOrigin.AppendTrack(Anode(Detector));
-//            LaserCorrected.AppendTrack(Anode(Detector));
-
                 //Add anode information (no distortion) into Laser track sets
                 if (DBoundary) {
 //                    LaserRecoOrigin1.AppendTrack(Anode(Detector));
@@ -454,21 +439,10 @@ int main(int argc, char **argv) {
 
                 std::cout << " [" << set << "] Generate mesh..." << std::endl;
 
-//            Delaunay MeshMap;
                 Delaunay MeshMap1;
                 Delaunay MeshMap2;
 
-//                 // The correction map is built on the mesh of reconstructed position which is the origin LaserSets
-//                if (CorrMapFlag) {
-//                    MeshMap1 = TrackMesher(LaserRecoOrigin1.GetTrackSet());
-//                    MeshMap2 = TrackMesher(LaserRecoOrigin2.GetTrackSet());
-//                }
-//
-//                    // The distortion map is built on the mesh of true position which is moved LaserSets
-//                else {
-//                    MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
-//                    MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
-//                }
+
 
                 MeshMap1 = TrackMesher(LaserWithDisp.first.GetTrackSet());
                 MeshMap2 = TrackMesher(LaserWithDisp.second.GetTrackSet());
@@ -479,25 +453,6 @@ int main(int argc, char **argv) {
                 std::cout << "Start interpolation..." << std::endl;
                 // LaserSets are now sitting on the true position, LaserRecoOrigin are sitting on the reco position
 
-//                // The correction map is based on reco space coord
-//                if (CorrMapFlag) {
-//                    DisplMapsHolder.push_back(
-//                            InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserRecoOrigin1.GetTrackSet(), MeshMap1,
-//                                           Detector));
-//                    DisplMapsHolder.push_back(
-//                            InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserRecoOrigin2.GetTrackSet(), MeshMap2,
-//                                           Detector));
-//                }
-//
-//                    // The distortion map is based on true space coord
-//                else {
-//                    DisplMapsHolder.push_back(
-//                            InterpolateMap(LaserWithDisp.first.GetTrackSet(), LaserWithDisp.first.GetTrackSet(),
-//                                           MeshMap1, Detector));
-//                    DisplMapsHolder.push_back(
-//                            InterpolateMap(LaserWithDisp.second.GetTrackSet(), LaserWithDisp.second.GetTrackSet(),
-//                                           MeshMap2, Detector));
-//                }
 
                 // Calculate Displacement map in the form of vector
                 // CorrMapFlag decided if it is distortion or correction map already based on the LaserWithDisp
@@ -508,31 +463,6 @@ int main(int argc, char **argv) {
 
                 std::cout << "Time after interpolation " << std::difftime(std::time(NULL), timer) << " s" << std::endl;
             }
-
-//            // Now we go on to create an unified displacement map
-//            std::vector<ThreeVector<float>> DisplacementMapD(DisplMapsHolder.front().size(), ThreeVector<float>(0., 0., 0.));
-//            std::vector<float> Nvalid(DisplMapsHolder.front().size(), 0.);
-//
-//            for (auto &SubMap: DisplMapsHolder) {
-//                for (unsigned int idx = 0; idx < DisplacementMapD.size(); idx++) {
-//                    if (SubMap[idx] != Empty) {
-////                        DisplacementMap[idx].first = DisplacementMap[idx].first + SubMap[idx];
-//                        DisplacementMapD[idx] = DisplacementMapD[idx] + SubMap[idx];
-//                        Nvalid[idx]++;
-//                    }
-//                }
-//            }
-//
-//            for (unsigned int idx = 0; idx < DisplacementMap.size(); idx++) {
-//                if (Nvalid[idx] == 0) {
-//                    // Set those bin with non valid number into float max again
-////                    DisplacementMap[idx].first = {float_max, float_max, float_max};
-//                    DisplacementMapD[idx] = Empty;
-//                } else {
-////                    DisplacementMap[idx].first = DisplacementMap[idx].first / Nvalid[idx];
-//                    DisplacementMapD[idx] = DisplacementMapD[idx] / Nvalid[idx];
-//                }
-//            }
 
 
             // Loop the displacement map in the form of vector
@@ -778,28 +708,6 @@ int main(int argc, char **argv) {
                     EMapErr[binID] = Unknown;
                 } else {
 
-//                    float meanX, sigmaX, meanY, sigmaY, meanZ, sigmaZ;
-//
-//                    if(binID % 50 == 0 && (hEx[binID]->GetEntries()) > 20){
-//                        hEx[binID]->Fit("gaus");
-//                        hEy[binID]->Fit("gaus");
-//                        hEz[binID]->Fit("gaus");
-//                        TF1 *fx = hEx[binID]->GetFunction("gaus");
-//                        meanX  = fx->GetParameter(1);
-//                        sigmaX = fx->GetParameter(2);
-//                        TF1 *fy = hEy[binID]->GetFunction("gaus");
-//                        meanY  = fy->GetParameter(1);
-//                        sigmaY = fy->GetParameter(2);
-//                        TF1 *fz = hEz[binID]->GetFunction("gaus");
-//                        meanZ  = fz->GetParameter(1);
-//                        sigmaZ = fz->GetParameter(2);
-//                        std::cout<<"Ebin ID: "<<binID<<"; hist mean X: "<< hEx[binID]->GetMean()<<"; gaus mean X: "<<meanX
-//                                 <<"; hist mean Y: "<< hEy[binID]->GetMean()<<"; gaus mean Y: "<<meanY
-//                                 <<"; hist mean Z: "<< hEz[binID]->GetMean()<<"; gaus mean Z: "<<meanZ <<std::endl;
-//                        hEx[binID]->Write();
-//                        hEy[binID]->Write();
-//                        hEz[binID]->Write();
-//                    }
 
                     ThreeVector<float> vmean = {(float) hvx[binID]->GetMean(), (float) hvy[binID]->GetMean(),
                                                 (float) hvz[binID]->GetMean()};
@@ -860,45 +768,6 @@ int main(int argc, char **argv) {
             WriteTextFileEMap(vn_EnMap, ss_E_outtxt.str());
 
         }
-
-
-//            // Fill displacement map into TH3 histograms and write them to file
-//            std::cout << "Write Emap to File ..." << std::endl;
-//            WriteEmapRoot(EMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
-//            WriteTextFileEMap(EMap,ss_E_outtxt.str());
-            //////////////////////////////////////////////////////////
-
-
-//            // The vector of Position and En must have the exactly the same index to make the interpolation (EInterpolateMap()) work
-//            if (EBoundary) {
-//
-//                auto EfieldXYZ = EfieldXYZwithBoundary(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
-//                std::vector<float> Ex = std::get<0>(EfieldXYZ);
-//                std::vector<float> Ey = std::get<1>(EfieldXYZ);
-//                std::vector<float> Ez = std::get<2>(EfieldXYZ);
-//                std::vector<ThreeVector<float>> PositionX = std::get<3>(EfieldXYZ);
-//                std::vector<ThreeVector<float>> PositionY = std::get<4>(EfieldXYZ);
-//                std::vector<ThreeVector<float>> PositionZ = std::get<5>(EfieldXYZ);
-//
-//                // Create mesh for Emap
-//                std::cout << "Generate mesh for E field..." << std::endl;
-//                xDelaunay EMeshX = Mesher(PositionX, Detector);
-//                xDelaunay EMeshY = Mesher(PositionY, Detector);
-//                xDelaunay EMeshZ = Mesher(PositionZ, Detector);
-//
-//                // Interpolate E Map (regularly spaced grid)
-//                std::cout << "Start interpolation the E field..." << std::endl;
-//                std::vector<ThreeVector<float>> EMapXYZ = EcompInterpolateMap(Ex, PositionX, EMeshX,
-//                                                                              Ey, PositionY, EMeshY,
-//                                                                              Ez, PositionZ, EMeshZ,
-//                                                                              Detector, EMapResolution);
-//
-//                // Fill displacement map into TH3 histograms and write them to file
-//                std::cout << "Write Emap to File ..." << std::endl;
-//                WriteEmapRoot(EMapXYZ, Detector, EMapResolution, E0, ss_Eoutfile.str());
-//                WriteTextFileEMap(EMapXYZ, ss_E_outtxt.str());
-//
-//            }
 
     }
 

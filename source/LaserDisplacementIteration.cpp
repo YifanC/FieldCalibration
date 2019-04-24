@@ -46,11 +46,10 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
                 std::vector<ThreeVector<float>> CorrPart1(NrSamples1, ThreeVector<float>(float_max, float_max, float_max));
 
                 // Loop over data points (samples) of each track
-                // TODO CorrPart is filled to 0 Threevector when the interpolation is failed !!!!! This is also a problem
+                //TODO CorrPart is filled to 0 Threevector when the interpolation is failed !!!!! This is also a problem
 
                 for (unsigned long sample = 0; sample < NrSamples1; sample++) {
-//                    CorrPart1[sample] = InterpolateCGAL(LaserSet2.GetTrackSet(), LaserSet2.GetTrackSet(), Mesh2,
-//                                                        LaserSet1.GetTrackSet()[track].GetSamplePosition(sample));
+
                     CorrPart1[sample] = InterpolateCGAL(LaserSet2.GetTrackSet(), Mesh2,
                                                         LaserSet1.GetTrackSet()[track].GetSamplePosition(sample));
                 }
@@ -66,8 +65,7 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
 
                 // Loop over data points (samples) of each track
                 for (unsigned long sample = 0; sample < NrSamples2; sample++) {
-//                    CorrPart2[sample] = InterpolateCGAL(LaserSet1.GetTrackSet(), LaserSet1.GetTrackSet(), Mesh1,
-//                                                        LaserSet2.GetTrackSet()[track].GetSamplePosition(sample));
+
                     CorrPart2[sample] = InterpolateCGAL(LaserSet1_stepCopy, Mesh1,
                                                         LaserSet2.GetTrackSet()[track].GetSamplePosition(sample));
                 }
@@ -94,18 +92,6 @@ DispLaserIteration(unsigned Nstep, Laser LaserSet1, Laser LaserSet2, bool CorrMa
     return LaserWithDisplacement;
 
 
-//    std::pair<Laser, Laser> LaserWithDisplacement;
-//    LaserWithDisplacement = std::make_pair(LaserSet1,LaserSet2);
-//
-//    return LaserWithDisplacement;
-
-//    LaserSet1.SetDisplacement(LaserRecoOrigin1, CorrMapFlag);
-//    LaserSet2.SetDisplacement(LaserRecoOrigin2, CorrMapFlag);
-//
-//    std::pair<Laser, Laser> LaserWithDisplacement;
-//    LaserWithDisplacement = std::make_pair(LaserSet1,LaserSet2);
-//
-//    return LaserWithDisplacement;
 
 }
 
