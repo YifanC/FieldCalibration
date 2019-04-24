@@ -261,6 +261,7 @@ int main(int argc, char **argv) {
     // Create the detector volume
     TPCVolumeHandler Detector(DetectorSize, DetectorOffset, DetectorResolution);
 
+//    ThreeVector<unsigned long> EMapResolution = {21, 21, 81};
     ThreeVector<unsigned long> EMapResolution = {26, 26, 101};
 
     // The size of DMap and EMap if we store it as a vector
@@ -268,7 +269,7 @@ int main(int argc, char **argv) {
     int EMapsize = EMapResolution[0] * EMapResolution[1] * EMapResolution[2];
 
     float cryoTemp = 89; // K
-//    float E0 = 0.273; // kV/cm
+//    float E0 = 0.2739; // kV/cm
     float E0 = 0.265545; // kV/cm
     float v0 = 1.098; // mm/us, because of the fit of drift velocity as function of E field, while the LArSoft unit is cm/us
 //    float v0 = 1.11436 * 0.5; // mm/us, because of the fit of drift velocity as function of E field, while the LArSoft unit is cm/us
@@ -971,8 +972,8 @@ Laser ReadRecoTracks(std::vector<std::string> InputFiles) {
 
             // Add new track to Laser TrackSelection
             for(Size_t NTrackPoint = 0; NTrackPoint < TrackSamples.size(); NTrackPoint ++){
-                TrackSamples[NTrackPoint][0] = TrackSamples[NTrackPoint][0];
-//                TrackSamples[NTrackPoint][0] = TrackSamples[NTrackPoint][0] * 1.098 / 1.11436;
+//                TrackSamples[NTrackPoint][0] = TrackSamples[NTrackPoint][0];
+                TrackSamples[NTrackPoint][0] = TrackSamples[NTrackPoint][0] * 1.098 / 1.11436;
             }
             TrackSelection.AppendTrack(LaserTrack(EntryPoint, ExitPoint, TrackSamples));
         }

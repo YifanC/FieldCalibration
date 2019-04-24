@@ -59,6 +59,9 @@ float elecDriftVelHelper(float T, float E, int whichFit) {
     }
 
     float results;
+    // 273.9 V/cm correspond to drift v 1.11669 mm/us with current parameterization, while we expect 1.098 mm/us
+    // 1.098 - 1.11669 = 0.01869 is the shift of the drift speed vs. E-field curvature
+    // results = (1 + p1 * (T - t0)) * (p3 * E * log(1 + fabs(p4) / E) + p5 * std::pow(E, p6)) + p2 * (T - t0) - 0.01869;
     results = (1 + p1 * (T - t0)) * (p3 * E * log(1 + fabs(p4) / E) + p5 * std::pow(E, p6)) + p2 * (T - t0);
 
     return results;
@@ -101,14 +104,7 @@ float searchE(float v_drift, float cryoTemp, float E0) {
         }
     }
 
-    if (Eresult != (Emin + Emax) * 0.5) {
-//        // Something is very very very wrong
-//        std::cout << "With drift velocity: " << v_drift
-//                  << "(mm/us), this function failed to find corresponding E field in the given condition. E: "
-//                  << 0.5 * (Emin + Emax)
-//                  << ", the v calculated is " << ElectronDriftVelocity(cryoTemp, 0.5 * (Emin + Emax))
-//                  << " and the nstep is " << n << std::endl;
-    }
+
 
     return Eresult;
 }
