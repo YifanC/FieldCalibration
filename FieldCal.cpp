@@ -298,36 +298,48 @@ int main(int argc, char **argv) {
     // Name the input and output file name of E field calculation
     //TODO: name output EMap in a better way
     if(DoEmap){
-        std::cout<<"NTT: "<<NTT<<std::endl;
-        int NEinfile = 0;
-        std::string Einfile;
-        DIR *dir;
-        struct dirent *ent;
-        if ((dir = opendir (".")) != NULL) {
-            while ((ent = readdir (dir)) != NULL) {
-                if(std::string(ent->d_name).compare(0,8,"RecoCorr")==0){
-                    NEinfile++;
-                    Einfile.assign(std::string(ent->d_name));
-                    ss_Einfile <<Einfile;
-                    ss_Eoutfile << "Emap-NTT-"<<std::to_string(NTT)<<"-"<<Einfile.substr(9,Einfile.find_last_of(Einfile));
-                    ss_E_outtxt << "Emap-NTT-"<<std::to_string(NTT)<<"-"<<Einfile.substr(9,Einfile.find_last_of("."))<< ".txt";
-                }
+        for (int i = optind; i < argc; i++) {
+            std::string filename(argv[i]);
+            // check if file exists
+            std::ifstream f(filename.c_str());
+            if (!f.good()) {
+                throw std::runtime_error(std::string("file does not exist: ") + filename);
             }
-            closedir (dir);
-        } else {
-            std::cerr << "Local directory is not accessible." << std::endl;
         }
 
-        if(NEinfile==1){
-            std::ifstream ifile(ss_Einfile.str().c_str());
-            if(ifile){
-                std::cout<<"E field input file exists."<<std::endl;
-            } else{
-                std::cerr << "Please make sure there is one and only one 'RecoCorr*.root' file for E field calculation." << std::endl;
-            }
-        } else{
-            std::cerr << "Please make sure there is one and only one 'RecoCorr*.root' file for E field calculation." << std::endl;
-        }
+        ss_Eoutfile << "Emap-NTT-"<<std::to_string(NTT)<<"-"<<filename.c_str());
+        ss_E_outtxt << "Emap-NTT-"<<std::to_string(NTT)<<"-"<<filename.substr(0,filename.find_last_of("."))<< ".txt";
+
+//        std::cout<<"NTT: "<<NTT<<std::endl;
+//        int NEinfile = 0;
+//        std::string Einfile;
+//        DIR *dir;
+//        struct dirent *ent;
+//        if ((dir = opendir (".")) != NULL) {
+//            while ((ent = readdir (dir)) != NULL) {
+//                if(std::string(ent->d_name).compare(0,8,"RecoCorr")==0){
+//                    NEinfile++;
+//                    Einfile.assign(std::string(ent->d_name));
+//                    ss_Einfile <<Einfile;
+//                    ss_Eoutfile << "Emap-NTT-"<<std::to_string(NTT)<<"-"<<Einfile.substr(9,Einfile.find_last_of(Einfile));
+//                    ss_E_outtxt << "Emap-NTT-"<<std::to_string(NTT)<<"-"<<Einfile.substr(9,Einfile.find_last_of("."))<< ".txt";
+//                }
+//            }
+//            closedir (dir);
+//        } else {
+//            std::cerr << "Local directory is not accessible." << std::endl;
+//        }
+//
+//        if(NEinfile==1){
+//            std::ifstream ifile(ss_Einfile.str().c_str());
+//            if(ifile){
+//                std::cout<<"E field input file exists."<<std::endl;
+//            } else{
+//                std::cerr << "Please make sure there is one and only one 'RecoCorr*.root' file for E field calculation." << std::endl;
+//            }
+//        } else{
+//            std::cerr << "Please make sure there is one and only one 'RecoCorr*.root' file for E field calculation." << std::endl;
+//        }
     }
 
     if (DoCorr) {
@@ -365,24 +377,17 @@ int main(int argc, char **argv) {
         }
 
         int Mapsize = DetectorResolution[0] * DetectorResolution[1] * DetectorResolution[2];
-//        std::pair<ThreeVector<float >, ThreeVector<float>>
-//                PairIni = std::make_pair(ThreeVector<float>(0., 0., 0.),ThreeVector<float>(0., 0., 0.));
+
         std::pair<ThreeVector<float>, ThreeVector<float>>
                 PairIni = std::make_pair(Empty, Empty);
 
         std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> DisplacementMap(Mapsize, PairIni);
 
 
-//        std::vector<std::pair<ThreeVector<float >, ThreeVector<float>>> DisplacementMap;
-//        DisplacementMap.reserve(Mapsize);
-
-//        std::vector<ThreeVector<float>> DisplacementMap(DisplMapsHolder.front().size(),
-//                                                        ThreeVector<float>(0., 0., 0.));
         if(WeightAverage){
 
             // Calculate track displacement
             std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, TracksSample1, TracksSample2, CorrMapFlag);
-//            std::pair<Laser, Laser> LaserWithDisp = DispLaserIteration(Nstep, LaserSets1[0], LaserSets2[0], CorrMapFlag);
 
             std::cout << "Time after N-step correction" << std::difftime(std::time(NULL), timer) << " s" << std::endl;
 
@@ -428,8 +433,6 @@ int main(int argc, char **argv) {
 
                 //Add anode information (no distortion) into Laser track sets
                 if (DBoundary) {
-//                    LaserRecoOrigin1.AppendTrack(Anode(Detector));
-//                    LaserRecoOrigin2.AppendTrack(Anode(Detector));
                     LaserWithDisp.first.AppendTrack(Anode(Detector));
                     LaserWithDisp.second.AppendTrack(Anode(Detector));
                 }
@@ -535,11 +538,9 @@ int main(int argc, char **argv) {
 
         std::pair<ThreeVector<float>, ThreeVector<float>> PairIni = std::make_pair(Unknown, Unknown);
 
-//        std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> DMap(DMapsize, PairIni);
         std::vector<ThreeVector<float>> DMapMean(DMapsize, Unknown);
         std::vector<ThreeVector<float>> DMapErr(DMapsize, Unknown);
 
-//        std::vector<ThreeVector<float>> DMapIni(DMapsize, Unknown);
         std::vector<std::vector<ThreeVector<float>>> DMapTT(NTT, DMapMean);
 
         // Emap and vmap should have the same size to make this version work
@@ -581,7 +582,6 @@ int main(int argc, char **argv) {
                                                (float) Dy->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
                                                (float) Dz->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
 
-//                    DMap[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = std::make_pair(Dxyz, DxyzErr);
                     DMapMean[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Dxyz;
 
 
