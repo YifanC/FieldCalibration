@@ -296,8 +296,8 @@ int main(int argc, char **argv) {
     }
 
     // Name the input and output file name of E field calculation
-    //TODO: name output EMap in a better way
     if(DoEmap){
+        std::vector<std::string> E_InputFiles;
         for (int i = optind; i < argc; i++) {
             std::string filename(argv[i]);
             // check if file exists
@@ -305,10 +305,20 @@ int main(int argc, char **argv) {
             if (!f.good()) {
                 throw std::runtime_error(std::string("file does not exist: ") + filename);
             }
+            E_InputFiles.push_back(filename);
         }
 
-        ss_Eoutfile << "Emap-NTT-"<<std::to_string(NTT)<<"-"<<filename.c_str());
-        ss_E_outtxt << "Emap-NTT-"<<std::to_string(NTT)<<"-"<<filename.substr(0,filename.find_last_of("."))<< ".txt";
+        if(E_InputFiles.size()==1){
+            ss_Einfile << E_InputFiles[0];
+        }
+        else{
+            throw std::runtime_error(std::string("Only one file is desired for E-field calculation"));
+        }
+
+        ss_Eoutfile << "Emap-NTT-"<<std::to_string(NTT)<<".root";
+        ss_E_outtxt << "Emap-NTT-"<<std::to_string(NTT)<<".txt";
+
+        // Old file reading and naming fashions with more details
 
 //        std::cout<<"NTT: "<<NTT<<std::endl;
 //        int NEinfile = 0;
@@ -340,6 +350,7 @@ int main(int argc, char **argv) {
 //        } else{
 //            std::cerr << "Please make sure there is one and only one 'RecoCorr*.root' file for E field calculation." << std::endl;
 //        }
+
     }
 
     if (DoCorr) {
