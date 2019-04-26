@@ -23,9 +23,9 @@ $ ./FieldCal -E -T -M [number of toy throw]
 
 >>// "-M": number of toy throw (number of generated displacement map)
 
->>// Input file name has to be "RecoCorr-*.root" 
+>>// Input TH3(s) from the root file are expected to be called "Reco_Displacement_X", "Reco_Displacement_Y", "Reco_Displacement_Z"
 
 
 One may improve the way of command line execution experience for the users of the code.
 
-To get the latest working version, please check out "develop" branch, commit 435820db4bb4f7695a2c6d8b7b8d1ef54e428499
+To get the latest working version, please check out "develop" branch
