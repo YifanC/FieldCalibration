@@ -318,38 +318,6 @@ int main(int argc, char **argv) {
         ss_Eoutfile << "Emap-NTT-"<<std::to_string(NTT)<<".root";
         ss_E_outtxt << "Emap-NTT-"<<std::to_string(NTT)<<".txt";
 
-        // Old file reading and naming fashions with more details
-
-//        std::cout<<"NTT: "<<NTT<<std::endl;
-//        int NEinfile = 0;
-//        std::string Einfile;
-//        DIR *dir;
-//        struct dirent *ent;
-//        if ((dir = opendir (".")) != NULL) {
-//            while ((ent = readdir (dir)) != NULL) {
-//                if(std::string(ent->d_name).compare(0,8,"RecoCorr")==0){
-//                    NEinfile++;
-//                    Einfile.assign(std::string(ent->d_name));
-//                    ss_Einfile <<Einfile;
-//                    ss_Eoutfile << "Emap-NTT-"<<std::to_string(NTT)<<"-"<<Einfile.substr(9,Einfile.find_last_of(Einfile));
-//                    ss_E_outtxt << "Emap-NTT-"<<std::to_string(NTT)<<"-"<<Einfile.substr(9,Einfile.find_last_of("."))<< ".txt";
-//                }
-//            }
-//            closedir (dir);
-//        } else {
-//            std::cerr << "Local directory is not accessible." << std::endl;
-//        }
-//
-//        if(NEinfile==1){
-//            std::ifstream ifile(ss_Einfile.str().c_str());
-//            if(ifile){
-//                std::cout<<"E field input file exists."<<std::endl;
-//            } else{
-//                std::cerr << "Please make sure there is one and only one 'RecoCorr*.root' file for E field calculation." << std::endl;
-//            }
-//        } else{
-//            std::cerr << "Please make sure there is one and only one 'RecoCorr*.root' file for E field calculation." << std::endl;
-//        }
 
     }
 
