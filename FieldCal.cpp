@@ -525,7 +525,7 @@ int main(int argc, char **argv) {
         OutputFile.Close();
 
         for(int Set_id = 0; Set_id < nr_set; Set_id++) {
-            std::cout<<"Set id: "<<Set_id<<std::endl;
+            std::cout<<"-------This is Nr. "<< Set_id << " input corrction maps (TH3) for E-field calculation"<<std::endl;
 
 
             std::pair<ThreeVector<float>, ThreeVector<float>> PairIni = std::make_pair(Unknown, Unknown);
@@ -548,23 +548,14 @@ int main(int argc, char **argv) {
             std::vector<ThreeVector<float>> vMapMean(EMapsize, Unknown);
             std::vector<ThreeVector<float>> vMapErr(EMapsize, Unknown);
 
-            std::cout<<"Checkpoint 0 "<<std::endl;
-
-
             std::string TH3_name_X = "Reco_Displacement_X_"+std::to_string(Set_id);
             std::string TH3_name_Y = "Reco_Displacement_Y_"+std::to_string(Set_id);
             std::string TH3_name_Z = "Reco_Displacement_Z_"+std::to_string(Set_id);
-
-            std::cout<<TH3_name_X<<std::endl;
-            std::cout<<TH3_name_Y<<std::endl;
-            std::cout<<TH3_name_Z<<std::endl;
-
 
             TH3F *Dx = (TH3F *) InFile->Get(TH3_name_X.c_str());
             TH3F *Dy = (TH3F *) InFile->Get(TH3_name_Y.c_str());
             TH3F *Dz = (TH3F *) InFile->Get(TH3_name_Z.c_str());
 
-            std::cout<<"Checkpoint 1 "<<std::endl;
 
             TH3F *DxErr;
             TH3F *DyErr;
@@ -575,9 +566,6 @@ int main(int argc, char **argv) {
                 DyErr = (TH3F *) InFile->Get("Reco_Displacement_Y_Error");
                 DzErr = (TH3F *) InFile->Get("Reco_Displacement_Z_Error");
             }
-
-            std::cout<<"Checkpoint 2 "<<std::endl;
-
 
             for (unsigned Nx = 0; Nx < DetectorResolution[0]; Nx++) {
                 for (unsigned Ny = 0; Ny < DetectorResolution[1]; Ny++) {
@@ -600,10 +588,6 @@ int main(int argc, char **argv) {
                     }
                 }
             }
-
-            std::cout<<"Checkpoint 3 "<<std::endl;
-
-
 
             if (NTT > 1) {
 
@@ -744,20 +728,14 @@ int main(int argc, char **argv) {
                 std::cout << "Write vmap and Emap to File ..." << std::endl;
                 WriteEmapRootwErr(vMapMean, vMapErr, EMapMean, EMapErr, Detector, EMapResolution, E0,
                                   ss_Eoutfile.str(), Set_id);
-                WriteTextFileEMapwErr(vMapMean, vMapErr, EMapMean, EMapErr, ss_E_outtxt.str());
+//                WriteTextFileEMapwErr(vMapMean, vMapErr, EMapMean, EMapErr, ss_E_outtxt.str());
             }
             if (NTT == 1) {
                 //The vector of Position and En, vn must have the exactly the same index to make the interpolation (EInterpolateMap()) work
-//            auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
                 auto vn_En = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapMean);
                 std::vector<ThreeVector<float>> vn = std::get<0>(vn_En);
                 std::vector<ThreeVector<float>> En = std::get<1>(vn_En);
                 std::vector<ThreeVector<float>> Position = std::get<2>(vn_En);
-
-                std::cout << "vn size: " << vn.size() << std::endl;
-                std::cout << "En size: " << En.size() << std::endl;
-                std::cout << "Position size: " << Position.size() << std::endl;
-
 
                 // Create mesh for Emap
                 std::cout << "Generate mesh for E field..." << std::endl;
@@ -771,7 +749,7 @@ int main(int argc, char **argv) {
                 std::cout << "Write vmap and Emap to File ..." << std::endl;
 
                 WriteEmapRoot(vn_EnMap, Detector, EMapResolution, E0, ss_Eoutfile.str(), Set_id);
-                WriteTextFileEMap(vn_EnMap, ss_E_outtxt.str());
+//                WriteTextFileEMap(vn_EnMap, ss_E_outtxt.str());
 
             }
         }
