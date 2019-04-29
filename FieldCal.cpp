@@ -43,6 +43,7 @@
 #include "TChain.h"
 #include "TVector3.h"
 #include "TTreeReader.h"
+#include "TKey.h"
 #include "TTreeReaderValue.h"
 
 
@@ -89,11 +90,11 @@ void LaserInterpThread(Laser &, const Laser &, const Delaunay &);
 std::vector<Laser> ReachedExitPoint(const Laser &, float);
 
 void WriteEmapRoot(std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>> &vn_EnMap, TPCVolumeHandler &TPCVolume,
-                   ThreeVector<unsigned long> Resolution, float E0, std::string);
+                   ThreeVector<unsigned long> Resolution, float E0, std::string, int id);
 
 void WriteEmapRootwErr(std::vector<ThreeVector<float>> &vMean, std::vector<ThreeVector<float>> &vErr,
                        std::vector<ThreeVector<float>> &EfieldMean, std::vector<ThreeVector<float>> &EfieldErr,
-                       TPCVolumeHandler &TPCVolume, ThreeVector<unsigned long> Resolution, float E0, std::string OutputFilename);
+                       TPCVolumeHandler &TPCVolume, ThreeVector<unsigned long> Resolution, float E0, std::string OutputFilename, int id);
 
 // Set if the output displacement map is correction map (on reconstructed coordinate) or distortion map (on true coordinate)
 // By default set it as correction map so we could continue calculate the E field map
@@ -124,6 +125,8 @@ int main(int argc, char **argv) {
     unsigned int Nstep = 1;
     // Specify the number of toy throws for Emap calculation
     unsigned int NTT = 1;
+    // Specify the number of input histogram set for E-field calculation
+    unsigned int nr_set = 1;
 
 
     // If there are to few input arguments, abort!
@@ -138,7 +141,7 @@ int main(int argc, char **argv) {
     // TODO:give better options
     // Lets handle all options
     int c;
-    while((c = getopt(argc, argv, ":d:j:N:M:itoABCWDE")) != -1){
+    while((c = getopt(argc, argv, ":d:j:N:M:S:itoABCWDE")) != -1){
         switch(c){
             case 'd':
                 n_split = atoi(optarg);
@@ -151,6 +154,9 @@ int main(int argc, char **argv) {
                 break;
             case 'M':
                 NTT = atoi(optarg);
+                break;
+            case 'S':
+                nr_set = atoi(optarg);
                 break;
             case 'i':
                 InterlacedIter = true;
@@ -474,7 +480,6 @@ int main(int argc, char **argv) {
 
                 if(Nvalid ==0){
                     DisplacementMap[idx] = std::make_pair(Empty,Empty);
-//                    continue;
                 }
                 else{
 
@@ -514,239 +519,266 @@ int main(int argc, char **argv) {
     // The Emap calculation works when the input is correction map
     if (DoEmap) {
 
-
-        std::pair<ThreeVector<float>, ThreeVector<float>> PairIni = std::make_pair(Unknown, Unknown);
-
-        std::vector<ThreeVector<float>> DMapMean(DMapsize, Unknown);
-        std::vector<ThreeVector<float>> DMapErr(DMapsize, Unknown);
-
-        std::vector<std::vector<ThreeVector<float>>> DMapTT(NTT, DMapMean);
-
-        // Emap and vmap should have the same size to make this version work
-        std::vector<ThreeVector<float>> EMapIni(EMapsize, Unknown);
-        std::vector<std::vector<ThreeVector<float>>> EMapTT(NTT, EMapIni);
-        std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> EMap(EMapsize, PairIni);
-        std::vector<ThreeVector<float>> EMapMean(EMapsize, Unknown);
-        std::vector<ThreeVector<float>> EMapErr(EMapsize, Unknown);
-
-        std::vector<ThreeVector<float>> vMapIni(EMapsize, Unknown);
-        std::vector<std::vector<ThreeVector<float>>> vMapTT(NTT, vMapIni);
-        std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> vMap(EMapsize, PairIni);
-        std::vector<ThreeVector<float>> vMapMean(EMapsize, Unknown);
-        std::vector<ThreeVector<float>> vMapErr(EMapsize, Unknown);
-
+        //Load input file
         TFile *InFile = new TFile(ss_Einfile.str().c_str(), "READ");
+        TFile OutputFile(ss_Eoutfile.str().c_str(), "recreate");
+        OutputFile.Close();
+
+        for(int Set_id = 0; Set_id < nr_set; Set_id++) {
+            std::cout<<"Set id: "<<Set_id<<std::endl;
 
 
-        TH3F *Dx = (TH3F *) InFile->Get("Reco_Displacement_X");
-        TH3F *Dy = (TH3F *) InFile->Get("Reco_Displacement_Y");
-        TH3F *Dz = (TH3F *) InFile->Get("Reco_Displacement_Z");
+            std::pair<ThreeVector<float>, ThreeVector<float>> PairIni = std::make_pair(Unknown, Unknown);
 
-        TH3F *DxErr;
-        TH3F *DyErr;
-        TH3F *DzErr;
+            std::vector<ThreeVector<float>> DMapMean(DMapsize, Unknown);
+            std::vector<ThreeVector<float>> DMapErr(DMapsize, Unknown);
 
-        if(NTT>1){
-            DxErr = (TH3F *) InFile->Get("Reco_Displacement_X_Error");
-            DyErr = (TH3F *) InFile->Get("Reco_Displacement_Y_Error");
-            DzErr = (TH3F *) InFile->Get("Reco_Displacement_Z_Error");
-        }
+            std::vector<std::vector<ThreeVector<float>>> DMapTT(NTT, DMapMean);
 
+            // Emap and vmap should have the same size to make this version work
+            std::vector<ThreeVector<float>> EMapIni(EMapsize, Unknown);
+            std::vector<std::vector<ThreeVector<float>>> EMapTT(NTT, EMapIni);
+            std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> EMap(EMapsize, PairIni);
+            std::vector<ThreeVector<float>> EMapMean(EMapsize, Unknown);
+            std::vector<ThreeVector<float>> EMapErr(EMapsize, Unknown);
 
+            std::vector<ThreeVector<float>> vMapIni(EMapsize, Unknown);
+            std::vector<std::vector<ThreeVector<float>>> vMapTT(NTT, vMapIni);
+            std::vector<std::pair<ThreeVector<float>, ThreeVector<float>>> vMap(EMapsize, PairIni);
+            std::vector<ThreeVector<float>> vMapMean(EMapsize, Unknown);
+            std::vector<ThreeVector<float>> vMapErr(EMapsize, Unknown);
 
-        for (unsigned Nx = 0; Nx < DetectorResolution[0]; Nx++) {
-            for (unsigned Ny = 0; Ny < DetectorResolution[1]; Ny++) {
-                for (unsigned Nz = 0; Nz < DetectorResolution[2]; Nz++) {
-                    ThreeVector<float> Dxyz = {(float) Dx->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
-                                               (float) Dy->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
-                                               (float) Dz->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
-
-                    DMapMean[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Dxyz;
+            std::cout<<"Checkpoint 0 "<<std::endl;
 
 
-                    if(NTT>1){
-                        ThreeVector<float> DxyzErr = {(float) DxErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
-                                                      (float) DyErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
-                                                      (float) DzErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
-                        DMapErr[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = DxyzErr;
+            std::string TH3_name_X = "Reco_Displacement_X_"+std::to_string(Set_id);
+            std::string TH3_name_Y = "Reco_Displacement_Y_"+std::to_string(Set_id);
+            std::string TH3_name_Z = "Reco_Displacement_Z_"+std::to_string(Set_id);
+
+            std::cout<<TH3_name_X<<std::endl;
+            std::cout<<TH3_name_Y<<std::endl;
+            std::cout<<TH3_name_Z<<std::endl;
+
+
+            TH3F *Dx = (TH3F *) InFile->Get(TH3_name_X.c_str());
+            TH3F *Dy = (TH3F *) InFile->Get(TH3_name_Y.c_str());
+            TH3F *Dz = (TH3F *) InFile->Get(TH3_name_Z.c_str());
+
+            std::cout<<"Checkpoint 1 "<<std::endl;
+
+            TH3F *DxErr;
+            TH3F *DyErr;
+            TH3F *DzErr;
+
+            if (NTT > 1) {
+                DxErr = (TH3F *) InFile->Get("Reco_Displacement_X_Error");
+                DyErr = (TH3F *) InFile->Get("Reco_Displacement_Y_Error");
+                DzErr = (TH3F *) InFile->Get("Reco_Displacement_Z_Error");
+            }
+
+            std::cout<<"Checkpoint 2 "<<std::endl;
+
+
+            for (unsigned Nx = 0; Nx < DetectorResolution[0]; Nx++) {
+                for (unsigned Ny = 0; Ny < DetectorResolution[1]; Ny++) {
+                    for (unsigned Nz = 0; Nz < DetectorResolution[2]; Nz++) {
+
+                        ThreeVector<float> Dxyz = {(float) Dx->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                                   (float) Dy->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                                   (float) Dz->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
+
+                        DMapMean[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = Dxyz;
+
+                        if (NTT > 1) {
+                            ThreeVector<float> DxyzErr = {(float) DxErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                                          (float) DyErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1),
+                                                          (float) DzErr->GetBinContent(Nx + 1, Ny + 1, Nz + 1)};
+                            DMapErr[Nz + (DetectorResolution[2] * (Ny + DetectorResolution[1] * Nx))] = DxyzErr;
+                        }
+
+
+                    }
+                }
+            }
+
+            std::cout<<"Checkpoint 3 "<<std::endl;
+
+
+
+            if (NTT > 1) {
+
+                for (int id = 0; id < DMapsize; id++) {
+                    if (DMapMean[id] == Unknown || DMapErr[id] == Unknown) {
+                        for (int n = 0; n < NTT; n++) {
+                            DMapTT[n][id] = Unknown;
+                        }
+                    } else {
+                        // produce Random generator which follows gaussian distribution in each bin
+                        // Mean and standard deviation are given by DMap
+                        std::default_random_engine generator;
+                        std::normal_distribution<float> BinDistributionX(DMapMean[id][0], DMapErr[id][0]);
+                        std::normal_distribution<float> BinDistributionY(DMapMean[id][1], DMapErr[id][1]);
+                        std::normal_distribution<float> BinDistributionZ(DMapMean[id][2], DMapErr[id][2]);
+
+                        for (int n = 0; n < NTT; n++) {
+
+                            // generate distortion by random throw with gaussian distribution
+                            float dX = BinDistributionX(generator);
+                            float dY = BinDistributionY(generator);
+                            float dZ = BinDistributionZ(generator);
+
+                            ThreeVector<float> Pt(dX, dY, dZ);
+                            DMapTT[n][id] = Pt;
+                        }
+                    }
+                }
+
+                for (int n = 0; n < NTT; n++) {
+
+                    std::cout << "---------Toy throw No. " << n << std::endl;
+
+                    auto vn_En = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapTT[n]);
+                    // The vector of Position and En, vn must have the exactly the same structure to make the interpolation (EInterpolateMap()) work
+                    std::vector<ThreeVector<float>> vn = std::get<0>(vn_En);
+                    std::vector<ThreeVector<float>> En = std::get<1>(vn_En);
+                    std::vector<ThreeVector<float>> Position = std::get<2>(vn_En);
+
+                    // Create mesh for Emap
+                    std::cout << "Generate mesh for E field..." << std::endl;
+                    xDelaunay EMesh = Mesher(Position, Detector);
+
+                    // Interpolate E Map (regularly spaced grid)
+                    std::cout << "Start interpolation the E field..." << std::endl;
+                    auto vEMap = EInterpolateMap(vn, En, Position, EMesh, Detector, EMapResolution);
+                    vMapTT[n] = vEMap.first;
+                    EMapTT[n] = vEMap.second;
+                }
+
+                // Emap and vmap should have same size in this version
+                TH1F *hvx[EMapsize];
+                TH1F *hvy[EMapsize];
+                TH1F *hvz[EMapsize];
+                TH1F *hEx[EMapsize];
+                TH1F *hEy[EMapsize];
+                TH1F *hEz[EMapsize];
+
+                // Save some histogram into the root file
+                std::string name;
+                name = "vEbinDistribution-NTT" + std::to_string(NTT) + ".root";
+                TFile vEbinPlotFile(name.c_str(), "recreate");
+
+                for (int binID = 0; binID < EMapsize; binID++) {
+
+                    std::string hvxName = "hvx" + std::to_string(binID);
+                    std::string hvyName = "hvy" + std::to_string(binID);
+                    std::string hvzName = "hvz" + std::to_string(binID);
+                    // v0 = 1.11436 mm/us, because of the fit of drift velocity as function of E field, while the LArSoft unit is cm/us
+                    // Be careful to choose the bin number, bin size and the histogram range!
+                    // This may affect the result of E most probable value (mode), especially with the number of toy throws
+                    // 0.5 and 1.5 means 50% change
+                    // Either use percentage or absolute value.
+                    // However using absolute value requires more preliminary knowledge of Ebin distribution
+                    // v0 is along x direction
+                    hvx[binID] = new TH1F(hvxName.c_str(), hvxName.c_str(), 200, 0.5 * v0, 1.5 * v0);
+                    hvy[binID] = new TH1F(hvyName.c_str(), hvyName.c_str(), 200, -0.5 * v0, 0.5 * v0);
+                    hvz[binID] = new TH1F(hvzName.c_str(), hvzName.c_str(), 200, -0.5 * v0, 0.5 * v0);
+
+
+                    std::string hExName = "hEx" + std::to_string(binID);
+                    std::string hEyName = "hEy" + std::to_string(binID);
+                    std::string hEzName = "hEz" + std::to_string(binID);
+                    // Ex,y,z[kV/cm], E0 = 0.273kV/cm
+                    // Be careful to choose the bin number, bin size and the histogram range!
+                    // This may affect the result of E most probable value (mode), especially with the number of toy throws
+                    // 0.5 and 1.5 means 50% change
+                    // Either use percentage or absolute value.
+                    // However using absolute value requires more preliminary knowledge of Ebin distribution
+                    // E0 is along x direction
+                    hEx[binID] = new TH1F(hExName.c_str(), hExName.c_str(), 200, 0.5 * E0, 1.5 * E0);
+                    hEy[binID] = new TH1F(hEyName.c_str(), hEyName.c_str(), 200, -0.5 * E0, 0.5 * E0);
+                    hEz[binID] = new TH1F(hEzName.c_str(), hEzName.c_str(), 200, -0.5 * E0, 0.5 * E0);
+
+                    for (int n = 0; n < NTT; n++) {
+                        if (vMapTT[n][binID] == Unknown || EMapTT[n][binID] == Unknown)continue;
+
+                        hvx[binID]->Fill(vMapTT[n][binID][0]);
+                        hvy[binID]->Fill(vMapTT[n][binID][1]);
+                        hvz[binID]->Fill(vMapTT[n][binID][2]);
+
+                        hEx[binID]->Fill(EMapTT[n][binID][0]);
+                        hEy[binID]->Fill(EMapTT[n][binID][1]);
+                        hEz[binID]->Fill(EMapTT[n][binID][2]);
+
                     }
 
+                    if (hEx[binID]->GetEntries() == 0 || hEx[binID]->GetEntries() == 0 ||
+                        hEx[binID]->GetEntries() == 0) {
+                        EMapMean[binID] = Unknown;
+                        EMapErr[binID] = Unknown;
+                    } else {
 
+
+                        ThreeVector<float> vmean = {(float) hvx[binID]->GetMean(), (float) hvy[binID]->GetMean(),
+                                                    (float) hvz[binID]->GetMean()};
+                        vMapMean[binID] = vmean;
+
+                        ThreeVector<float> vStdDev = {(float) hvx[binID]->GetStdDev(), (float) hvy[binID]->GetStdDev(),
+                                                      (float) hvz[binID]->GetStdDev()};
+                        vMapErr[binID] = vStdDev;
+
+                        ThreeVector<float> Emean = {(float) hEx[binID]->GetMean(), (float) hEy[binID]->GetMean(),
+                                                    (float) hEz[binID]->GetMean()};
+                        EMapMean[binID] = Emean;
+
+                        ThreeVector<float> EStdDev = {(float) hEx[binID]->GetStdDev(), (float) hEy[binID]->GetStdDev(),
+                                                      (float) hEz[binID]->GetStdDev()};
+                        EMapErr[binID] = EStdDev;
+                    }
                 }
+
+                // Close output file and clean up
+                vEbinPlotFile.Close();
+                gDirectory->GetList()->Delete();
+
+                // Fill displacement map into TH3 histograms and write them to file
+                std::cout << "Write vmap and Emap to File ..." << std::endl;
+                WriteEmapRootwErr(vMapMean, vMapErr, EMapMean, EMapErr, Detector, EMapResolution, E0,
+                                  ss_Eoutfile.str(), Set_id);
+                WriteTextFileEMapwErr(vMapMean, vMapErr, EMapMean, EMapErr, ss_E_outtxt.str());
+            }
+            if (NTT == 1) {
+                //The vector of Position and En, vn must have the exactly the same index to make the interpolation (EInterpolateMap()) work
+//            auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
+                auto vn_En = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapMean);
+                std::vector<ThreeVector<float>> vn = std::get<0>(vn_En);
+                std::vector<ThreeVector<float>> En = std::get<1>(vn_En);
+                std::vector<ThreeVector<float>> Position = std::get<2>(vn_En);
+
+                std::cout << "vn size: " << vn.size() << std::endl;
+                std::cout << "En size: " << En.size() << std::endl;
+                std::cout << "Position size: " << Position.size() << std::endl;
+
+
+                // Create mesh for Emap
+                std::cout << "Generate mesh for E field..." << std::endl;
+                xDelaunay EMesh = Mesher(Position, Detector);
+
+                // Interpolate E-field to make E Map (regularly spaced grid)
+                std::cout << "Start interpolation the E field..." << std::endl;
+                auto vn_EnMap = EInterpolateMap(vn, En, Position, EMesh, Detector, EMapResolution);
+
+                // Fill displacement map into TH3 histograms and write them to file
+                std::cout << "Write vmap and Emap to File ..." << std::endl;
+
+                WriteEmapRoot(vn_EnMap, Detector, EMapResolution, E0, ss_Eoutfile.str(), Set_id);
+                WriteTextFileEMap(vn_EnMap, ss_E_outtxt.str());
+
             }
         }
 
         // Close input file and clean up
         InFile->Close();
         gDirectory->GetList()->Delete();
-
-        if(NTT > 1) {
-
-            for (int id = 0; id < DMapsize; id++) {
-                if (DMapMean[id] == Unknown || DMapErr[id] == Unknown) {
-                    for (int n = 0; n < NTT; n++) {
-                        DMapTT[n][id] = Unknown;
-                    }
-                } else {
-                    // produce Random generator which follows gaussian distribution in each bin
-                    // Mean and standard deviation are given by DMap
-                    std::default_random_engine generator;
-                    std::normal_distribution<float> BinDistributionX(DMapMean[id][0], DMapErr[id][0]);
-                    std::normal_distribution<float> BinDistributionY(DMapMean[id][1], DMapErr[id][1]);
-                    std::normal_distribution<float> BinDistributionZ(DMapMean[id][2], DMapErr[id][2]);
-
-                    for (int n = 0; n < NTT; n++) {
-
-                        // generate distortion by random throw with gaussian distribution
-                        float dX = BinDistributionX(generator);
-                        float dY = BinDistributionY(generator);
-                        float dZ = BinDistributionZ(generator);
-
-                        ThreeVector<float> Pt(dX, dY, dZ);
-                        DMapTT[n][id] = Pt;
-                    }
-                }
-            }
-
-            for (int n = 0; n < NTT; n++) {
-
-                std::cout << "---------Toy throw No. " << n << std::endl;
-
-                auto vn_En = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapTT[n]);
-                // The vector of Position and En, vn must have the exactly the same structure to make the interpolation (EInterpolateMap()) work
-                std::vector<ThreeVector<float>> vn = std::get<0>(vn_En);
-                std::vector<ThreeVector<float>> En = std::get<1>(vn_En);
-                std::vector<ThreeVector<float>> Position = std::get<2>(vn_En);
-
-                // Create mesh for Emap
-                std::cout << "Generate mesh for E field..." << std::endl;
-                xDelaunay EMesh = Mesher(Position, Detector);
-
-                // Interpolate E Map (regularly spaced grid)
-                std::cout << "Start interpolation the E field..." << std::endl;
-                auto vEMap = EInterpolateMap(vn, En, Position, EMesh, Detector, EMapResolution);
-                vMapTT[n] = vEMap.first;
-                EMapTT[n] = vEMap.second;
-            }
-
-            // Emap and vmap should have same size in this version
-            TH1F *hvx[EMapsize]; TH1F *hvy[EMapsize]; TH1F *hvz[EMapsize];
-            TH1F *hEx[EMapsize]; TH1F *hEy[EMapsize]; TH1F *hEz[EMapsize];
-
-            // Save some histogram into the root file
-            std::string name;
-            name = "vEbinDistribution-NTT"+std::to_string(NTT)+".root";
-            TFile vEbinPlotFile(name.c_str(), "recreate");
-
-            for (int binID = 0; binID < EMapsize; binID++) {
-
-                std::string hvxName = "hvx" + std::to_string(binID);
-                std::string hvyName = "hvy" + std::to_string(binID);
-                std::string hvzName = "hvz" + std::to_string(binID);
-                // v0 = 1.11436 mm/us, because of the fit of drift velocity as function of E field, while the LArSoft unit is cm/us
-                // Be careful to choose the bin number, bin size and the histogram range!
-                // This may affect the result of E most probable value (mode), especially with the number of toy throws
-                // 0.5 and 1.5 means 50% change
-                // Either use percentage or absolute value.
-                // However using absolute value requires more preliminary knowledge of Ebin distribution
-                // v0 is along x direction
-                hvx[binID] = new TH1F(hvxName.c_str(), hvxName.c_str(), 200, 0.5 * v0, 1.5 * v0);
-                hvy[binID] = new TH1F(hvyName.c_str(), hvyName.c_str(), 200, -0.5 * v0, 0.5 * v0);
-                hvz[binID] = new TH1F(hvzName.c_str(), hvzName.c_str(), 200, -0.5 * v0, 0.5 * v0);
-
-
-                std::string hExName = "hEx" + std::to_string(binID);
-                std::string hEyName = "hEy" + std::to_string(binID);
-                std::string hEzName = "hEz" + std::to_string(binID);
-                // Ex,y,z[kV/cm], E0 = 0.273kV/cm
-                // Be careful to choose the bin number, bin size and the histogram range!
-                // This may affect the result of E most probable value (mode), especially with the number of toy throws
-                // 0.5 and 1.5 means 50% change
-                // Either use percentage or absolute value.
-                // However using absolute value requires more preliminary knowledge of Ebin distribution
-                // E0 is along x direction
-                hEx[binID] = new TH1F(hExName.c_str(), hExName.c_str(), 200, 0.5 * E0, 1.5 * E0);
-                hEy[binID] = new TH1F(hEyName.c_str(), hEyName.c_str(), 200, -0.5 * E0, 0.5 * E0);
-                hEz[binID] = new TH1F(hEzName.c_str(), hEzName.c_str(), 200, -0.5 * E0, 0.5 * E0);
-
-                for (int n = 0; n < NTT; n++) {
-                    if (vMapTT[n][binID] == Unknown || EMapTT[n][binID] == Unknown)continue;
-
-                    hvx[binID]->Fill(vMapTT[n][binID][0]);
-                    hvy[binID]->Fill(vMapTT[n][binID][1]);
-                    hvz[binID]->Fill(vMapTT[n][binID][2]);
-
-                    hEx[binID]->Fill(EMapTT[n][binID][0]);
-                    hEy[binID]->Fill(EMapTT[n][binID][1]);
-                    hEz[binID]->Fill(EMapTT[n][binID][2]);
-
-                }
-
-                if (hEx[binID]->GetEntries() == 0 || hEx[binID]->GetEntries() == 0 || hEx[binID]->GetEntries() == 0) {
-                    EMapMean[binID] = Unknown;
-                    EMapErr[binID] = Unknown;
-                } else {
-
-
-                    ThreeVector<float> vmean = {(float) hvx[binID]->GetMean(), (float) hvy[binID]->GetMean(),
-                                                (float) hvz[binID]->GetMean()};
-                    vMapMean[binID] = vmean;
-
-                    ThreeVector<float> vStdDev = {(float) hvx[binID]->GetStdDev(), (float) hvy[binID]->GetStdDev(),
-                                                  (float) hvz[binID]->GetStdDev()};
-                    vMapErr[binID] = vStdDev;
-
-                    ThreeVector<float> Emean = {(float) hEx[binID]->GetMean(), (float) hEy[binID]->GetMean(),
-                                                (float) hEz[binID]->GetMean()};
-                    EMapMean[binID] = Emean;
-
-                    ThreeVector<float> EStdDev = {(float) hEx[binID]->GetStdDev(), (float) hEy[binID]->GetStdDev(),
-                                                  (float) hEz[binID]->GetStdDev()};
-                    EMapErr[binID] = EStdDev;
-                }
-            }
-
-            // Close output file and clean up
-            vEbinPlotFile.Close();
-            gDirectory->GetList()->Delete();
-
-            // Fill displacement map into TH3 histograms and write them to file
-            std::cout << "Write vmap and Emap to File ..." << std::endl;
-            WriteEmapRootwErr(vMapMean, vMapErr, EMapMean, EMapErr, Detector, EMapResolution, E0, ss_Eoutfile.str());
-            WriteTextFileEMapwErr(vMapMean, vMapErr, EMapMean, EMapErr, ss_E_outtxt.str());
-        }
-        if(NTT==1){
-            //The vector of Position and En, vn must have the exactly the same index to make the interpolation (EInterpolateMap()) work
-//            auto E_field = Efield(Detector, cryoTemp, E0, v0, ss_Einfile.str().c_str());
-            auto vn_En = EfieldvecMap(Detector, cryoTemp, E0, v0, DMapMean);
-            std::vector<ThreeVector<float>> vn = std::get<0>(vn_En);
-            std::vector<ThreeVector<float>> En = std::get<1>(vn_En);
-            std::vector<ThreeVector<float>> Position = std::get<2>(vn_En);
-
-            std::cout<<"vn size: "<<vn.size()<<std::endl;
-            std::cout<<"En size: "<<En.size()<<std::endl;
-            std::cout<<"Position size: "<<Position.size()<<std::endl;
-
-
-            // Create mesh for Emap
-            std::cout << "Generate mesh for E field..." << std::endl;
-            xDelaunay EMesh = Mesher(Position, Detector);
-
-            // Interpolate E-field to make E Map (regularly spaced grid)
-            std::cout << "Start interpolation the E field..." << std::endl;
-            auto vn_EnMap = EInterpolateMap(vn, En, Position, EMesh, Detector, EMapResolution);
-//            vMapMean = vn_EnMap.first;
-//            EMapMean = vn_EnMap.second;
-
-            // Fill displacement map into TH3 histograms and write them to file
-            std::cout << "Write vmap and Emap to File ..." << std::endl;
-//            WriteEmapRoot(vMapMean, Detector, EMapResolution, E0, ss_Eoutfile.str());
-//            WriteTextFileEMap(EMapMean, ss_E_outtxt.str());
-
-            WriteEmapRoot(vn_EnMap, Detector, EMapResolution, E0, ss_Eoutfile.str());
-            WriteTextFileEMap(vn_EnMap, ss_E_outtxt.str());
-
-        }
 
     }
 
@@ -999,7 +1031,7 @@ void LaserInterpThread(Laser &LaserTrackSet, const Laser &InterpolationLaser, co
 // Write Emap into TH3 and store in root file
 void WriteEmapRootwErr(std::vector<ThreeVector<float>> &vMean, std::vector<ThreeVector<float>> &vErr,
                        std::vector<ThreeVector<float>> &EfieldMean, std::vector<ThreeVector<float>> &EfieldErr,
-                   TPCVolumeHandler &TPCVolume, ThreeVector<unsigned long> Resolution, float E0, std::string OutputFilename) {
+                   TPCVolumeHandler &TPCVolume, ThreeVector<unsigned long> Resolution, float E0, std::string OutputFilename, int id = 0) {
     // Store TPC properties which are important for the TH3 generation
     float float_max = std::numeric_limits<float>::max();
     ThreeVector<float> MinimumCoord = TPCVolume.GetMapMinimum();
@@ -1014,18 +1046,32 @@ void WriteEmapRootwErr(std::vector<ThreeVector<float>> &vMean, std::vector<Three
                                                Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
                                                Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
 
-    Distorted_vE[0].SetNameTitle("Distorted_v_X", "Distorted drift velocity X");
-    Distorted_vE[1].SetNameTitle("Distorted_v_Y", "Distorted drift velocity Y");
-    Distorted_vE[2].SetNameTitle("Distorted_v_Z", "Distorted drift velocity Z");
-    Distorted_vE[3].SetNameTitle("Distorted_v_X_Error", "Std dev of distorted drift velocity X");
-    Distorted_vE[4].SetNameTitle("Distorted_v_Y_Error", "Std dev of distorted drift velocity Y");
-    Distorted_vE[5].SetNameTitle("Distorted_v_Z_Error", "Std dev of distorted drift velocity Z");
-    Distorted_vE[6].SetNameTitle("Distorted_EField_X", "Disotrted EField X");
-    Distorted_vE[7].SetNameTitle("Distorted_EField_Y", "Disotrted EField Y");
-    Distorted_vE[8].SetNameTitle("Distorted_EField_Z", "Disotrted EField Z");
-    Distorted_vE[9].SetNameTitle("Distorted_EField_X_Error", "Std dev of EField X");
-    Distorted_vE[10].SetNameTitle("Distorted_EField_Y_Error", "Std dev of EField Y");
-    Distorted_vE[11].SetNameTitle("Distorted_EField_Z_Error", "Std dev of EField Z");
+
+    std::string Name_vX = "Distorted_v_X_"+std::to_string(id);
+    std::string Name_vY = "Distorted_v_Y_"+std::to_string(id);
+    std::string Name_vZ = "Distorted_v_Z_"+std::to_string(id);
+    std::string Name_vXerr = "Distorted_v_X_Error_"+std::to_string(id);
+    std::string Name_vYerr = "Distorted_v_Y_Error_"+std::to_string(id);
+    std::string Name_vZerr = "Distorted_v_Z_Error_"+std::to_string(id);
+    std::string Name_EX = "Distorted_EField_X_"+std::to_string(id);
+    std::string Name_EY = "Distorted_EField_Y_"+std::to_string(id);
+    std::string Name_EZ = "Distorted_EField_Z_"+std::to_string(id);
+    std::string Name_EXerr = "Distorted_EField_X_Error_"+std::to_string(id);
+    std::string Name_EYerr = "Distorted_EField_Y_Error_"+std::to_string(id);
+    std::string Name_EZerr = "Distorted_EField_Z_Error_"+std::to_string(id);
+
+    Distorted_vE[0].SetNameTitle(Name_vX.c_str(), "Distorted drift velocity X");
+    Distorted_vE[1].SetNameTitle(Name_vY.c_str(), "Distorted drift velocity Y");
+    Distorted_vE[2].SetNameTitle(Name_vZ.c_str(), "Distorted drift velocity Z");
+    Distorted_vE[3].SetNameTitle(Name_vXerr.c_str(), "Std dev of distorted drift velocity X");
+    Distorted_vE[4].SetNameTitle(Name_vYerr.c_str(), "Std dev of distorted drift velocity Y");
+    Distorted_vE[5].SetNameTitle(Name_vZerr.c_str(), "Std dev of distorted drift velocity Z");
+    Distorted_vE[6].SetNameTitle(Name_EX.c_str(), "Disotrted EField X");
+    Distorted_vE[7].SetNameTitle(Name_EY.c_str(), "Disotrted EField Y");
+    Distorted_vE[8].SetNameTitle(Name_EZ.c_str(), "Disotrted EField Z");
+    Distorted_vE[9].SetNameTitle(Name_EXerr.c_str(), "Std dev of EField X");
+    Distorted_vE[10].SetNameTitle(Name_EYerr.c_str(), "Std dev of EField Y");
+    Distorted_vE[11].SetNameTitle(Name_EZerr.c_str(), "Std dev of EField Z");
 
     // the loop should be consistent to the one in the EInterpolateMap()
     for (unsigned xbin = 0; xbin < Resolution[0]; xbin++) {
@@ -1048,7 +1094,7 @@ void WriteEmapRootwErr(std::vector<ThreeVector<float>> &vMean, std::vector<Three
     } // end zbin loop
 
     // Open and recreate output file
-    TFile OutputFile(OutputFilename.c_str(), "recreate");
+    TFile OutputFile(OutputFilename.c_str(), "update");
 
     // Loop over space coordinates
     for (unsigned nTH3 = 0; nTH3 < Distorted_vE.size(); nTH3++) {
@@ -1063,7 +1109,7 @@ void WriteEmapRootwErr(std::vector<ThreeVector<float>> &vMean, std::vector<Three
 
 // Write Emap into TH3 and store in root file
 void WriteEmapRoot(std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>> &v_E, TPCVolumeHandler &TPCVolume,
-                   ThreeVector<unsigned long> Resolution, float E0, std::string OutputFilename) {
+                   ThreeVector<unsigned long> Resolution, float E0, std::string OutputFilename, int id=0) {
     // Store TPC properties which are important for the TH3 generation
     float float_max = std::numeric_limits<float>::max();
     ThreeVector<float> MinimumCoord = TPCVolume.GetMapMinimum();
@@ -1074,29 +1120,39 @@ void WriteEmapRoot(std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeV
 
     // Initialize all TH3F
     std::vector<TH3F> vmap;
-    vmap.push_back(TH3F("Distorted_v_X", "Distorted drift velocity X",
+
+    std::string Name_vX = "Distorted_v_X_"+std::to_string(id);
+    std::string Name_vY = "Distorted_v_Y_"+std::to_string(id);
+    std::string Name_vZ = "Distorted_v_Z_"+std::to_string(id);
+
+    std::string Name_EX = "Distorted_EField_X_"+std::to_string(id);
+    std::string Name_EY = "Distorted_EField_Y_"+std::to_string(id);
+    std::string Name_EZ = "Distorted_EField_Z_"+std::to_string(id);
+
+
+    vmap.push_back(TH3F(Name_vX.c_str(), "Distorted drift velocity X",
                         Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
                         Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
                         Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
-    vmap.push_back(TH3F("Distorted_v_Y", "Distorted drift velocity Y",
+    vmap.push_back(TH3F(Name_vY.c_str(), "Distorted drift velocity Y",
                         Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
                         Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
                         Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
-    vmap.push_back(TH3F("Distorted_v_Z", "Distorted drift velocity Z",
+    vmap.push_back(TH3F(Name_vZ.c_str(), "Distorted drift velocity Z",
                         Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
                         Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
                         Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
 
     std::vector<TH3F> Emap;
-    Emap.push_back(TH3F("Distorted_EField_X", "Disotrted EField X",
+    Emap.push_back(TH3F(Name_EX.c_str(), "Disotrted EField X",
                         Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
                         Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
                         Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
-    Emap.push_back(TH3F("Distorted_EField_Y", "Disotrted EField Y",
+    Emap.push_back(TH3F(Name_EY.c_str(), "Disotrted EField Y",
                         Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
                         Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
                         Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
-    Emap.push_back(TH3F("Distorted_EField_Z", "Disotrted EField Z",
+    Emap.push_back(TH3F(Name_EZ.c_str(), "Disotrted EField Z",
                         Resolution[0], MinimumCoord[0] - Unit[0] * 0.5, MaximumCoord[0] + Unit[0] * 0.5,
                         Resolution[1], MinimumCoord[1] - Unit[1] * 0.5, MaximumCoord[1] + Unit[1] * 0.5,
                         Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
@@ -1137,7 +1193,7 @@ void WriteEmapRoot(std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeV
     } // end zbin loop
 
     // Open and recreate output file
-    TFile OutputFile(OutputFilename.c_str(), "recreate");
+    TFile OutputFile(OutputFilename.c_str(), "update");
 
     // Loop over space coordinates
     for (unsigned coord = 0; coord < Emap.size(); coord++) {
