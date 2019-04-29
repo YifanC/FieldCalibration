@@ -1047,18 +1047,18 @@ void WriteEmapRootwErr(std::vector<ThreeVector<float>> &vMean, std::vector<Three
                                                Resolution[2], MinimumCoord[2] - Unit[2] * 0.5, MaximumCoord[2] + Unit[2] * 0.5));
 
 
-    std::string Name_vX = "Distorted_v_X_"+std::to_string(id);
-    std::string Name_vY = "Distorted_v_Y_"+std::to_string(id);
-    std::string Name_vZ = "Distorted_v_Z_"+std::to_string(id);
-    std::string Name_vXerr = "Distorted_v_X_Error_"+std::to_string(id);
-    std::string Name_vYerr = "Distorted_v_Y_Error_"+std::to_string(id);
-    std::string Name_vZerr = "Distorted_v_Z_Error_"+std::to_string(id);
-    std::string Name_EX = "Distorted_EField_X_"+std::to_string(id);
-    std::string Name_EY = "Distorted_EField_Y_"+std::to_string(id);
-    std::string Name_EZ = "Distorted_EField_Z_"+std::to_string(id);
-    std::string Name_EXerr = "Distorted_EField_X_Error_"+std::to_string(id);
-    std::string Name_EYerr = "Distorted_EField_Y_Error_"+std::to_string(id);
-    std::string Name_EZerr = "Distorted_EField_Z_Error_"+std::to_string(id);
+    std::string Name_vX = "v_X_"+std::to_string(id);
+    std::string Name_vY = "v_Y_"+std::to_string(id);
+    std::string Name_vZ = "v_Z_"+std::to_string(id);
+    std::string Name_vXerr = "v_X_Error_"+std::to_string(id);
+    std::string Name_vYerr = "v_Y_Error_"+std::to_string(id);
+    std::string Name_vZerr = "v_Z_Error_"+std::to_string(id);
+    std::string Name_EX = "EField_X_"+std::to_string(id);
+    std::string Name_EY = "EField_Y_"+std::to_string(id);
+    std::string Name_EZ = "EField_Z_"+std::to_string(id);
+    std::string Name_EXerr = "EField_X_Error_"+std::to_string(id);
+    std::string Name_EYerr = "EField_Y_Error_"+std::to_string(id);
+    std::string Name_EZerr = "EField_Z_Error_"+std::to_string(id);
 
     Distorted_vE[0].SetNameTitle(Name_vX.c_str(), "Distorted drift velocity X");
     Distorted_vE[1].SetNameTitle(Name_vY.c_str(), "Distorted drift velocity Y");
@@ -1121,13 +1121,13 @@ void WriteEmapRoot(std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeV
     // Initialize all TH3F
     std::vector<TH3F> vmap;
 
-    std::string Name_vX = "Distorted_v_X_"+std::to_string(id);
-    std::string Name_vY = "Distorted_v_Y_"+std::to_string(id);
-    std::string Name_vZ = "Distorted_v_Z_"+std::to_string(id);
+    std::string Name_vX = "v_X_"+std::to_string(id);
+    std::string Name_vY = "v_Y_"+std::to_string(id);
+    std::string Name_vZ = "v_Z_"+std::to_string(id);
 
-    std::string Name_EX = "Distorted_EField_X_"+std::to_string(id);
-    std::string Name_EY = "Distorted_EField_Y_"+std::to_string(id);
-    std::string Name_EZ = "Distorted_EField_Z_"+std::to_string(id);
+    std::string Name_EX = "EField_X_"+std::to_string(id);
+    std::string Name_EY = "EField_Y_"+std::to_string(id);
+    std::string Name_EZ = "EField_Z_"+std::to_string(id);
 
 
     vmap.push_back(TH3F(Name_vX.c_str(), "Distorted drift velocity X",
