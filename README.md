@@ -2,7 +2,7 @@
 
 To execute spatial displacment calculation with laser tracks
 
-$ ./FieldCal -D -d [number of track subsets] -N [number of iteration steps] -t -A [filename1] [filename2]... 
+```$ ./FieldCal -D -d [number of track subsets] -N [number of iteration steps] -t -A [filename1] [filename2]... ```
 
 >>// "-D": one must have it to run the spatial displacement calculation
 
@@ -15,7 +15,7 @@ $ ./FieldCal -D -d [number of track subsets] -N [number of iteration steps] -t -
 >>// "-A": by default use boundary condition
 
 
-$ ./FieldCal -E -T -M [number of toy throw] 
+```$ ./FieldCal -E -T -M [number of toy throw] ```
 
 >>// "-E": one must have it to run the E-field calculation 
 
