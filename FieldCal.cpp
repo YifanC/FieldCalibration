@@ -43,6 +43,9 @@
 #include "TChain.h"
 #include "TVector3.h"
 #include "TTreeReader.h"
+#include "TGraph.h"
+#include "TLatex.h"
+#include "TLegend.h"
 #include "TTreeReaderValue.h"
 
 
@@ -667,7 +670,8 @@ int main(int argc, char **argv) {
                 // E0 is along x direction
                 hEx[binID] = new TH1F(hExName.c_str(), hExName.c_str(), 200, 0.5 * E0, 1.5 * E0);
                 hEy[binID] = new TH1F(hEyName.c_str(), hEyName.c_str(), 200, -0.5 * E0, 0.5 * E0);
-                hEz[binID] = new TH1F(hEzName.c_str(), hEzName.c_str(), 200, -0.5 * E0, 0.5 * E0);
+//                hEz[binID] = new TH1F(hEzName.c_str(), hEzName.c_str(), 200, -0.5 * E0, 0.5 * E0);
+                hEz[binID] = new TH1F(hEzName.c_str(), hEzName.c_str(), 80, -0.03, 0.03);
 
                 for (int n = 0; n < NTT; n++) {
                     if (vMapTT[n][binID] == Unknown || EMapTT[n][binID] == Unknown)continue;
@@ -705,6 +709,40 @@ int main(int argc, char **argv) {
                     EMapErr[binID] = EStdDev;
                 }
             }
+
+            TCanvas *c1 = new TCanvas("c1","c1",600,450);
+            c1->cd();
+            gStyle->SetOptStat(0);
+            gStyle->SetLabelSize(0.07,"xyz");
+            gStyle->SetTitleSize(0.07,"xyz");
+            gStyle->SetTitleFontSize(0.06);
+            gStyle->SetPadTopMargin(0.1);
+            gStyle->SetPadBottomMargin(0.13);
+            gStyle->SetPadLeftMargin(0.15);
+            gStyle->SetPadRightMargin(0.05);
+
+            hEz[5500]->Draw("hist");
+            hEz[5500]->Fit("gaus");
+            hEz[5500]->GetFunction("gaus")->SetLineColor(2);
+            hEz[5500]->GetFunction("gaus")->Draw("same");
+            hEz[5500]->GetXaxis()->SetTitle("E_{Z}[kV/cm]");
+            hEz[5500]->GetYaxis()->SetTitle("Entries");
+            int bin = hEz[5500]->GetMaximumBin();
+            double bin_max = hEz[5500]->GetBinContent(bin);
+            hEz[5500]->SetMaximum(1.2 * bin_max);
+            hEz[5500]->SetTitle("");
+
+            TLegend *legend1 = new TLegend(0.6,0.75,0.85,0.85);
+            legend1->SetTextColor(14);
+            legend1->SetTextSize(0.04);
+            legend1->SetHeader("MicroBooNE Simulation");
+            legend1->SetBorderSize(0);
+            legend1->Draw();
+
+            c1->Update();
+
+            c1->Update();
+            c1->SaveAs("test.pdf");
 
             // Close output file and clean up
             vEbinPlotFile.Close();
