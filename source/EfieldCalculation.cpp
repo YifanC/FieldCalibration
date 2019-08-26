@@ -22,9 +22,13 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
 
     TFile *InFile = new TFile(root_name, "READ");
 
-    TH3F *Dx = (TH3F *) InFile->Get("Reco_Displacement_X");
-    TH3F *Dy = (TH3F *) InFile->Get("Reco_Displacement_Y");
-    TH3F *Dz = (TH3F *) InFile->Get("Reco_Displacement_Z");
+//    TH3F *Dx = (TH3F *) InFile->Get("Reco_Displacement_X");
+//    TH3F *Dy = (TH3F *) InFile->Get("Reco_Displacement_Y");
+//    TH3F *Dz = (TH3F *) InFile->Get("Reco_Displacement_Z");
+
+    TH3F *Dx = (TH3F *) InFile->Get("RecoBkwd_Displacement_X_Pos");
+    TH3F *Dy = (TH3F *) InFile->Get("RecoBkwd_Displacement_Y_Pos");
+    TH3F *Dz = (TH3F *) InFile->Get("RecoBkwd_Displacement_Z_Pos");
 
 
     ThreeVector<unsigned long> NrGrid = TPCVolume.GetDetectorResolution();
@@ -40,7 +44,8 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
         for (unsigned Ny = 0; Ny < NrGrid[1]; Ny++) {
             // Since the E field calculation is based on the gap of the D map,
             // the number of x loop is one less than Resolution of the displacement map
-            for (unsigned Nx = 0; Nx < (NrGrid[0] - 1); Nx++) {
+//            for (unsigned Nx = 0; Nx < (NrGrid[0] - 1); Nx++) {
+            for (unsigned Nx = NrGrid[0]; Nx > 1; Nx--) {
                 //x = 0 (anode); x = Nx (cathode)
                 ThreeVector<float> RecoGrid(Nx * DetectorReso[0],
                                             Ny * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
@@ -53,12 +58,18 @@ Efield(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, const ch
 
                 ThreeVector<float> True = RecoGrid + Dxyz;
 
-                ThreeVector<float> RecoGrid_next((Nx + 1) * DetectorReso[0],
+                ThreeVector<float> RecoGrid_next((Nx - 1) * DetectorReso[0],
                                                  Ny * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
                                                  Nz * DetectorReso[2]);
-                ThreeVector<float> Dxyz_next = {(float) Dx->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
-                                                (float) Dy->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
-                                                (float) Dz->GetBinContent(Nx + 2, Ny + 1, Nz + 1)};
+//                ThreeVector<float> RecoGrid_next((Nx + 1) * DetectorReso[0],
+//                                                 Ny * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
+//                                                 Nz * DetectorReso[2]);
+                ThreeVector<float> Dxyz_next = {(float) Dx->GetBinContent(Nx, Ny + 1, Nz + 1),
+                                                (float) Dy->GetBinContent(Nx, Ny + 1, Nz + 1),
+                                                (float) Dz->GetBinContent(Nx, Ny + 1, Nz + 1)};
+//                ThreeVector<float> Dxyz_next = {(float) Dx->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
+//                                                (float) Dy->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
+//                                                (float) Dz->GetBinContent(Nx + 2, Ny + 1, Nz + 1)};
 
                 if(Dxyz_next == Unknown) continue;
 
@@ -122,7 +133,8 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
 
             // Since the E field calculation is based on the gap of the D map,
             // the number of x loop is one less than Resolution of the displacement map
-            for (unsigned Nx = 0; Nx < (NrGrid[0] - 1); Nx++) {
+//            for (unsigned Nx = 0; Nx < (NrGrid[0] - 1); Nx++) {
+            for (unsigned Nx = NrGrid[0]; Nx > 1; Nx--) {
                 //x = 0 (anode); x = Nx (cathode)
                 ThreeVector<float> RecoGrid(Nx * DetectorReso[0] + TPCVolume.GetDetectorOffset()[0],
                                             Ny * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
@@ -137,7 +149,10 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
 
                 ThreeVector<float> True = RecoGrid + Dxyz;
 
-                ThreeVector<float> RecoGrid_next((Nx + 1) * DetectorReso[0] + TPCVolume.GetDetectorOffset()[0],
+//                ThreeVector<float> RecoGrid_next((Nx + 1) * DetectorReso[0] + TPCVolume.GetDetectorOffset()[0],
+//                                                 Ny * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
+//                                                 Nz * DetectorReso[2] + TPCVolume.GetDetectorOffset()[2]);
+                ThreeVector<float> RecoGrid_next((Nx - 1) * DetectorReso[0] + TPCVolume.GetDetectorOffset()[0],
                                                  Ny * DetectorReso[1] + TPCVolume.GetDetectorOffset()[1],
                                                  Nz * DetectorReso[2] + TPCVolume.GetDetectorOffset()[2]);
 
@@ -145,7 +160,8 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
 //                                                (float) Dy->GetBinContent(Nx + 2, Ny + 1, Nz + 1),
 //                                                (float) Dz->GetBinContent(Nx + 2, Ny + 1, Nz + 1)};
 
-                ThreeVector<float> Dxyz_next = DMapTT[Nz + (NrGrid[2] * (Ny + NrGrid[1] * (Nx+1)))];
+//                ThreeVector<float> Dxyz_next = DMapTT[Nz + (NrGrid[2] * (Ny + NrGrid[1] * (Nx+1)))];
+                ThreeVector<float> Dxyz_next = DMapTT[Nz + (NrGrid[2] * (Ny + NrGrid[1] * (Nx - 1)))];
 
                 if(Dxyz_next == Unknown) continue;
 
@@ -173,18 +189,34 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
                     // Set the local E field (E field from each gap) at the middle of the gap
                     Position.push_back(True + (float) 0.5 * Rn);
 
-                    if(Nx == 0){
+                    std::cout<<"A"<<std::endl;
+
+//                    if(Nx == 0){
+//                        Velocity.push_back(vn / Rn.GetNorm() * Rn);
+//                        En.push_back(searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn);
+//                        Position.push_back(True);
+//                    }
+//
+//                    //Fill the boundary as inner value
+//                    if(Nx == NrGrid[0] - 2){
+//                        Velocity.push_back(vn / Rn.GetNorm() * Rn);
+//                        En.push_back(searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn);
+//                        Position.push_back(True_next);
+//                    }
+
+                    if(Nx == NrGrid[0]){
                         Velocity.push_back(vn / Rn.GetNorm() * Rn);
                         En.push_back(searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn);
                         Position.push_back(True);
                     }
 
                     //Fill the boundary as inner value
-                    if(Nx == NrGrid[0] - 2){
+                    if(Nx == 2) {
                         Velocity.push_back(vn / Rn.GetNorm() * Rn);
                         En.push_back(searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn);
                         Position.push_back(True_next);
                     }
+
                     //If the previous step has invalid value or Nx==0, just fill the joint with result from the current step
                     if(!AvgLast){
                         Velocity.push_back(vn / Rn.GetNorm() * Rn);
@@ -199,13 +231,8 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
                         En.push_back(Eaverage);
                         Position.push_back(True);
 
-//                        std::cout<<"------"<<std::endl;
-//                        std::cout<<"Last Ex: "<<Elast[0]<<", Ey: "<<Elast[1]<<", Ez: "<<Elast[2]<<std::endl;
-//                        std::cout<<"This Ex: "<<Ethis[0]<<", Ey: "<<Ethis[1]<<", Ez: "<<Ethis[2]<<std::endl;
-//                        std::cout<<"Average Ex: "<<Eaverage[0]<<", Ey: "<<Eaverage[1]<<", Ez: "<<Eaverage[2]<<std::endl;
-//                        std::cout<<"drift v: "<< ElectronDriftVelocity(cryoTemp, Eaverage.GetNorm())<<std::endl;
                     }
-
+                    std::cout<<Nx << "B"<<std::endl;
                     // store E-field vector for next calculation step
                     Elast = searchE(vn, cryoTemp, E0) / Rn.GetNorm() * Rn;
                 }
@@ -216,6 +243,7 @@ EfieldvecMap(TPCVolumeHandler &TPCVolume, float cryoTemp, float E0, float v0, st
 
 //    std::pair<std::vector<ThreeVector<float>>, std::vector<ThreeVector<float>>> field;
 //    field = std::make_pair(En,Position);
+    std::cout<<"C"<<std::endl;
     auto vnE = std::make_tuple(Velocity, En, Position);
 
     return vnE;
