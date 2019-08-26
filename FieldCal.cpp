@@ -255,14 +255,14 @@ int main(int argc, char **argv) {
     }
 
     // Choose detector dimensions, coordinate system offset and resolutions
-    ThreeVector<float> DetectorSize = {254.8, 232.5, 1036.8};
-    ThreeVector<float> DetectorOffset = {0.0, -DetectorSize[1] / static_cast<float>(2.0), 0.0};
-    ThreeVector<unsigned long> DetectorResolution = {26, 26, 101};
+    ThreeVector<float> DetectorSize = {360, 600, 700};
+    ThreeVector<float> DetectorOffset = {-360, 0.0, 0.0};
+    ThreeVector<unsigned long> DetectorResolution = {19, 31, 37};
     // Create the detector volume
     TPCVolumeHandler Detector(DetectorSize, DetectorOffset, DetectorResolution);
 
 //    ThreeVector<unsigned long> EMapResolution = {21, 21, 81};
-    ThreeVector<unsigned long> EMapResolution = {26, 26, 101};
+    ThreeVector<unsigned long> EMapResolution = {36, 61, 71};
 
     // The size of DMap and EMap if we store it as a vector
     int DMapsize = DetectorResolution[0] * DetectorResolution[1] * DetectorResolution[2];
@@ -270,8 +270,8 @@ int main(int argc, char **argv) {
 
     float cryoTemp = 89; // K
 //    float E0 = 0.2739; // kV/cm
-    float E0 = 0.265545; // kV/cm
-    float v0 = 1.098; // mm/us, because of the fit of drift velocity as function of E field, while the LArSoft unit is cm/us
+    float E0 = 0.4867; // kV/cm
+    float v0 = 1.52486; // mm/us, because of the fit of drift velocity as function of E field, while the LArSoft unit is cm/us
 //    float v0 = 1.11436 * 0.5; // mm/us, because of the fit of drift velocity as function of E field, while the LArSoft unit is cm/us
 
     std::stringstream ss_outfile;
@@ -538,9 +538,9 @@ int main(int argc, char **argv) {
         TFile *InFile = new TFile(ss_Einfile.str().c_str(), "READ");
 
 
-        TH3F *Dx = (TH3F *) InFile->Get("Reco_Displacement_X");
-        TH3F *Dy = (TH3F *) InFile->Get("Reco_Displacement_Y");
-        TH3F *Dz = (TH3F *) InFile->Get("Reco_Displacement_Z");
+        TH3F *Dx = (TH3F *) InFile->Get("RecoBkwd_Displacement_X_Pos");
+        TH3F *Dy = (TH3F *) InFile->Get("RecoBkwd_Displacement_Y_Pos");
+        TH3F *Dz = (TH3F *) InFile->Get("RecoBkwd_Displacement_Z_Pos");
 
         TH3F *DxErr;
         TH3F *DyErr;
