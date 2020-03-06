@@ -259,7 +259,9 @@ int main(int argc, char **argv) {
 
     // Choose detector dimensions, coordinate system offset and resolutions
     ThreeVector<float> DetectorSize = {254.8, 232.5, 1036.8};
+//    ThreeVector<float> DetectorSize = {256.4, 232.5, 1036.8};
     ThreeVector<float> DetectorOffset = {0.0, -DetectorSize[1] / static_cast<float>(2.0), 0.0};
+//    ThreeVector<unsigned long> DetectorResolution = {21, 21, 81};
     ThreeVector<unsigned long> DetectorResolution = {26, 26, 101};
     // Create the detector volume
     TPCVolumeHandler Detector(DetectorSize, DetectorOffset, DetectorResolution);
@@ -272,9 +274,13 @@ int main(int argc, char **argv) {
     int EMapsize = EMapResolution[0] * EMapResolution[1] * EMapResolution[2];
 
     float cryoTemp = 89; // K
-//    float E0 = 0.2739; // kV/cm
-    float E0 = 0.265545; // kV/cm
+//    float E0 = 0.273; // kV/cm
+    float E0 = 0.2739; // kV/cm
+
+//    float E0 = 0.265545; // kV/cm
     float v0 = 1.098; // mm/us, because of the fit of drift velocity as function of E field, while the LArSoft unit is cm/us
+//    float v0 = 1.114; // mm/us, because of the fit of drift velocity as function of E field, while the LArSoft unit is cm/us
+
 //    float v0 = 1.11436 * 0.5; // mm/us, because of the fit of drift velocity as function of E field, while the LArSoft unit is cm/us
 
     std::stringstream ss_outfile;
